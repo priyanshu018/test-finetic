@@ -15,6 +15,10 @@ const handler = {
   },
 }
 
+contextBridge.exposeInMainWorld('electron', {
+  bringTallyToForeground: () => ipcRenderer.invoke('bring-tally-to-foreground')
+});
+
 contextBridge.exposeInMainWorld('ipc', handler)
 
 export type IpcHandler = typeof handler

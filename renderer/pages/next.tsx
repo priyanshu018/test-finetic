@@ -1,13 +1,36 @@
-import React, { useState } from "react";
+"use client"
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FiSettings,
   FiUsers,
   FiDollarSign
 } from "react-icons/fi";
+import { ClimbingBoxLoader } from "react-spinners";
 
 export default function IndexPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const [status, setStatus] = useState('Click to bring Tally to the foreground');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleBringTallyToForeground = async () => {
+    setIsLoading(true);
+    setStatus('Bringing Tally to the foreground...');
+    setError(null);
+    try {
+      // @ts-ignore - Electron window object
+      await window.electron.bringTallyToForeground();
+      setStatus('Tally window brought to the foreground!');
+    } catch (error) {
+      setStatus('Failed to bring Tally to the foreground');
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
@@ -150,6 +173,17 @@ export default function IndexPage() {
               </p>
             </div>
           </Link>
+
+          <div className="text-red-500">
+            <h2>Tally Foreground</h2>
+            <p>{status}</p>
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+            <button onClick={handleBringTallyToForeground} disabled={isLoading}>
+              {isLoading ? 'Working...' : 'Bring Tally to Foreground'}
+            </button>
+          </div>
+
+
         </div>
       </div>
     </div>

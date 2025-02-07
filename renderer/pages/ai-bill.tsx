@@ -251,7 +251,7 @@ export default function BillWorkflow() {
                 const formData = new FormData();
                 formData.append("file", fileObj.file);
                 const response = await axios.post(
-                    "http://localhost:8000/extract-bill-details",
+                    "https://c697-223-178-213-181.ngrok-free.app/extract-bill-details",
                     formData,
                     {
                         headers: {
