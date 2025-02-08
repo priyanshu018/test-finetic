@@ -16,7 +16,8 @@ const handler = {
 }
 
 contextBridge.exposeInMainWorld('electron', {
-  bringTallyToForeground: () => ipcRenderer.invoke('bring-tally-to-foreground')
+  bringTallyToForegroundAndSendKeys: (keys: string[]) =>
+    ipcRenderer.invoke('bring-tally-to-foreground-and-send-keys', keys)
 });
 
 contextBridge.exposeInMainWorld('ipc', handler)

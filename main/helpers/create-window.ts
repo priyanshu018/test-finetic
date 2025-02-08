@@ -257,16 +257,26 @@ function searchCommonDirectories(): string | null {
   return null;
 }
 
-function bringTallyToForeground(): Promise<void> {
+// Function to bring Tally to the foreground and send multiple keystrokes
+function bringTallyToForegroundAndSendKeys(keys: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
-    // PowerShell command to find Tally process and bring it to the foreground
+    // Convert the keys array into a single string for PowerShell
+    const keysString = keys.join('');
+
+    // PowerShell command to find Tally process, bring it to the foreground, and send keys
     const command = `powershell -Command `
-      + `"Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | `
-      + `ForEach-Object { (New-Object -ComObject WScript.Shell).AppActivate($_.Id) }"`;
+      + `"$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' }; `
+      + `if ($tallyProcess) { `
+      + `  (New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `
+      + `  Start-Sleep -Milliseconds 500; ` // Wait for the window to come to the foreground
+      + `  [System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `
+      + `} else { `
+      + `  throw 'No Tally process found'; `
+      + `}"`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
-        reject(`Error bringing Tally to foreground: ${error.message}`);
+        reject(`Error: ${error.message}`);
         return;
       }
       if (stderr) {
@@ -278,12 +288,13 @@ function bringTallyToForeground(): Promise<void> {
   });
 }
 
-ipcMain.handle('bring-tally-to-foreground', async () => {
+// IPC handler to bring Tally to the foreground and send multiple keystrokes
+ipcMain.handle('bring-tally-to-foreground-and-send-keys', async (_, keys: string[]) => {
   try {
-    await bringTallyToForeground();
-    return 'Tally window brought to the foreground';
+    await bringTallyToForegroundAndSendKeys(keys);
+    return `Sent keys "${keys.join(' ')}" to Tally`;
   } catch (error) {
-    throw new Error(`Failed to bring Tally to foreground: ${error.message}`);
+    throw new Error(`Failed to send keys to Tally: ${error.message}`);
   }
 });
 

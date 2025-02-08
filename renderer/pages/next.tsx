@@ -11,25 +11,30 @@ import { ClimbingBoxLoader } from "react-spinners";
 export default function IndexPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const [status, setStatus] = useState('Click to bring Tally to the foreground');
+
+  const [status, setStatus] = useState('Click to send keys to Tally');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleBringTallyToForeground = async () => {
+  const handleSendKeys = async () => {
     setIsLoading(true);
-    setStatus('Bringing Tally to the foreground...');
+    setStatus('Sending keys to Tally...');
     setError(null);
     try {
+      // Define the sequence of keys to send
+      const keys = ['C', 'L', '{ENTER}', 'ABC', '{ENTER}'];
+
       // @ts-ignore - Electron window object
-      await window.electron.bringTallyToForeground();
-      setStatus('Tally window brought to the foreground!');
+      await window.electron.bringTallyToForegroundAndSendKeys(keys);
+      setStatus('Keys sent to Tally successfully!');
     } catch (error) {
-      setStatus('Failed to bring Tally to the foreground');
+      setStatus('Failed to send keys to Tally');
       setError(error.message);
     } finally {
       setIsLoading(false);
     }
   };
+
 
 
   return (
@@ -175,11 +180,11 @@ export default function IndexPage() {
           </Link>
 
           <div className="text-red-500">
-            <h2>Tally Foreground</h2>
+            <h2>Tally Keystrokes</h2>
             <p>{status}</p>
             {error && <p style={{ color: 'red' }}>{error}</p>}
-            <button onClick={handleBringTallyToForeground} disabled={isLoading}>
-              {isLoading ? 'Working...' : 'Bring Tally to Foreground'}
+            <button onClick={handleSendKeys} disabled={isLoading}>
+              {isLoading ? 'Sending...' : 'Send Keys to Tally'}
             </button>
           </div>
 

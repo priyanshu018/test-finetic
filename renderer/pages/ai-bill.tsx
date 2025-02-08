@@ -183,6 +183,9 @@ export default function BillWorkflow() {
     const fileInputRef = useRef(null);
     const [isDraggingFile, setIsDraggingFile] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [status, setStatus] = useState('Click to send keys to Tally');
+    const [error, setError] = useState<string | null>(null);
+
 
     const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
     const MAX_FILE_SIZE_MB = 50;
@@ -251,7 +254,7 @@ export default function BillWorkflow() {
                 const formData = new FormData();
                 formData.append("file", fileObj.file);
                 const response = await axios.post(
-                    "https://c697-223-178-213-181.ngrok-free.app/extract-bill-details",
+                    "https://5e7f-2404-7c80-64-6d15-e15b-8162-81c6-56af.ngrok-free.app/extract-bill-details",
                     formData,
                     {
                         headers: {
@@ -347,9 +350,37 @@ export default function BillWorkflow() {
         setBillData((prev) => prev.filter((_, i) => i !== indexToRemove));
     };
 
-    const handleExport = () => {
-        console.log("Exporting data:", billData);
-        alert("Export completed successfully!");
+    // const handleExport = () => {
+    //     console.log("Exporting data:", billData);
+    //     alert("Export completed successfully!");
+    // };
+
+    const handleExport = async () => {
+        setIsLoading(true);
+        setStatus('Exporting data and sending keys to Tally...');
+        setError(null);
+
+        try {
+            // Step 1: Export data (e.g., save to a file or send to an API)
+            console.log("Exporting data:", billData);
+            // Add your export logic here (e.g., save to a file, send to an API, etc.)
+
+            // Step 2: Send keystrokes to Tally
+            const keys = ['C', 'L', '{ENTER}', 'ABC', '{ENTER}'];
+            // @ts-ignore - Electron window object
+            await window.electron.bringTallyToForegroundAndSendKeys(keys);
+
+            // Step 3: Notify the user
+            setStatus('Export completed successfully and keys sent to Tally!');
+            alert('Export completed successfully and keys sent to Tally!');
+        } catch (error) {
+            console.error('Error during export or sending keys:', error);
+            setStatus('Failed to export or send keys to Tally');
+            setError(error.message);
+            alert(`Error: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const fixRowCalculation = (billIndex, itemIndex) => {
@@ -479,8 +510,8 @@ export default function BillWorkflow() {
                                 onClick={handleNextStep}
                                 disabled={files.length === 0}
                                 className={`px-6 py-3 rounded-lg font-medium transition-all ${files.length
-                                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
                                     } flex items-center gap-2`}
                             >
                                 Next Step
@@ -966,7 +997,7 @@ export default function BillWorkflow() {
                 )}
 
                 {/* Step 2: Confirmation */}
-                {currentStep === 2 && (
+                {/* {currentStep === 2 && (
                     <div className="space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {files.map((file, index) => (
@@ -1014,6 +1045,65 @@ export default function BillWorkflow() {
                             </button>
                             <button
                                 onClick={handleExport}
+                                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                            >
+                                <FiCheck className="w-5 h-5" />
+                                Confirm & Export
+                            </button>
+                        </div>
+                    </div>
+                )} */}
+
+                {/* // Step 2: Confirmation */}
+                {currentStep === 2 && (
+                    <div className="space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {files.map((file, index) => (
+                                <div
+                                    key={file.id}
+                                    className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow"
+                                >
+                                    <div className="aspect-square bg-gray-50 rounded-lg overflow-hidden mb-4">
+                                        {file.dataUrl.includes("image/") ? (
+                                            <img
+                                                src={file.dataUrl}
+                                                alt={`Bill ${index + 1}`}
+                                                className="object-cover w-full h-full"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-500">
+                                                <FiFile className="w-12 h-12" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-gray-500">
+                                            {billData[index]?.billDate || "No date specified"}
+                                        </p>
+                                        <p className="text-2xl font-semibold text-gray-800">
+                                            ${billData[index]?.totalAmount || "0.00"}
+                                        </p>
+                                        {billData[index]?.invoiceNumber && (
+                                            <p className="text-sm text-gray-600 line-clamp-2">
+                                                {billData[index]?.invoiceNumber}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <p>{status}</p>
+                        {error && <p style={{ color: 'red' }}>{error}</p>}
+                        <div className="flex justify-center gap-6 border-t pt-8">
+                            <button
+                                onClick={() => setCurrentStep(1)}
+                                className="px-6 py-3 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+                            >
+                                <FiArrowLeft className="inline-block mr-2" />
+                                Back to Editing
+                            </button>
+                            <button
+                                onClick={handleExport} // Call handleExport when the button is clicked
                                 className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
                             >
                                 <FiCheck className="w-5 h-5" />
