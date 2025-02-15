@@ -22,7 +22,9 @@ export default function IndexPage() {
     setError(null);
     try {
       // Define the sequence of keys to send
-      const keys = ['C', 'L', '{ENTER}', 'ABC', '{ENTER}'];
+      // const keys = ['C', 'L', '{ENTER}', 'ABC', '{ENTER}'];
+
+      // const keys = ['%e',"m","e","y"];
 
       // @ts-ignore - Electron window object
       await window.electron.bringTallyToForegroundAndSendKeys(keys);
