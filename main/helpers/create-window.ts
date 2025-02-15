@@ -259,24 +259,71 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     return null;
   }
 
+  // function bringTallyToForegroundAndSendKeys(keys: string[], delayBeforeY: number = 2000): Promise<void> {
+  //   return new Promise((resolve, reject) => {
+  //     // Convert the keys array into a single string for PowerShell
+  //     const keysString = keys.join('');
+
+  //     // PowerShell command to find Tally process, bring it to the foreground, and send keys
+  //     const command = `powershell -Command `
+  //       + `"$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' }; `
+  //       + `if ($tallyProcess) { `
+  //       + `  (New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `
+  //       // + `  Start-Sleep -Milliseconds 500; ` // Wait for the window to come to the foreground
+  //       + `  [System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `
+  //       + `  Start-Sleep -Milliseconds ${delayBeforeY}; ` // Wait for the overwrite prompt
+  //       // + `  [System.Windows.Forms.SendKeys]::SendWait('y'); ` // Send 'y' to confirm overwrite
+  //       + `} else { `
+  //       + `  throw 'No Tally process found'; `
+  //       + `}"`;
+
+  //     exec(command, (error, stdout, stderr) => {
+  //       if (error) {
+  //         reject(`Error: ${error.message}`);
+  //         return;
+  //       }
+  //       if (stderr) {
+  //         reject(`PowerShell error: ${stderr}`);
+  //         return;
+  //       }
+  //       resolve();
+  //     });
+  //   });
+  // }
+
+
   function bringTallyToForegroundAndSendKeys(keys: string[], delayBeforeY: number = 2000): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Convert the keys array into a single string for PowerShell
-      const keysString = keys.join('');
-  
-      // PowerShell command to find Tally process, bring it to the foreground, and send keys
-      const command = `powershell -Command `
-        + `"$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' }; `
-        + `if ($tallyProcess) { `
-        + `  (New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `
-        + `  Start-Sleep -Milliseconds 500; ` // Wait for the window to come to the foreground
-        + `  [System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `
-        + `  Start-Sleep -Milliseconds ${delayBeforeY}; ` // Wait for the overwrite prompt
-        + `  [System.Windows.Forms.SendKeys]::SendWait('y'); ` // Send 'y' to confirm overwrite
-        + `} else { `
-        + `  throw 'No Tally process found'; `
-        + `}"`;
-  
+      // Check if the keys array contains "prompt here"
+      const promptIndex = keys.findIndex(key => key === "prompt here");
+
+      // Build the PowerShell command:
+      let command = `powershell -Command "`;
+      command += `$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' }; `;
+      command += `if ($tallyProcess) { `;
+      command += `  (New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `;
+
+      if (promptIndex === -1) {
+        // No "prompt here": join all keys as before.
+        const keysString = keys.join('');
+        command += `  [System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `;
+        command += `  Start-Sleep -Milliseconds ${delayBeforeY}; `;
+      } else {
+        // "prompt here" exists: iterate through keys individually.
+        keys.forEach(key => {
+          if (key === "prompt here") {
+            // Wait for 500 seconds (500000 milliseconds) before proceeding.
+            command += `  Start-Sleep -Milliseconds 500; `;
+          } else {
+            command += `  [System.Windows.Forms.SendKeys]::SendWait('${key}'); `;
+          }
+        });
+      }
+
+      command += `} else { `;
+      command += `  throw 'No Tally process found'; `;
+      command += `}"`;
+
       exec(command, (error, stdout, stderr) => {
         if (error) {
           reject(`Error: ${error.message}`);
@@ -290,7 +337,8 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       });
     });
   }
-  
+
+
   function getTallyInstallPath(): Promise<string> {
     return new Promise((resolve, reject) => {
       // Check both 32-bit and 64-bit registry paths
@@ -298,7 +346,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         + `"$tallyPath = (Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Tally.ERP 9' -ErrorAction SilentlyContinue).InstallPath; `
         + `if (-not $tallyPath) { $tallyPath = (Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\WOW6432Node\\Tally.ERP 9' -ErrorAction SilentlyContinue).InstallPath; } `
         + `if ($tallyPath) { $tallyPath } else { 'C:\\Program Files\\TallyPrime' }"`; // Fallback to default path
-  
+
       exec(command, (error, stdout, stderr) => {
         if (error) {
           reject(`Error: ${error.message}`);
@@ -319,93 +367,117 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     if (buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf) {
       content = buffer.slice(3).toString('utf-8');
     }
-  
+
     // Remove ∩┐╜ characters and invisible Unicode characters
-    content = content.replace(/∩┐╜+/g, '').replace(/[^\x20-\x7E\n\r\t<>]/g, ''); 
-  
+    content = content.replace(/∩┐╜+/g, '').replace(/[^\x20-\x7E\n\r\t<>]/g, '');
+
     return content;
   }
-  
+
   async function exportAndCheckLedger(ledgerName: string): Promise<boolean> {
     try {
       // Step 1: Get Tally installation path
       const tallyInstallPath = await getTallyInstallPath();
       const exportedFilePath = `${tallyInstallPath}\\master.xml`;
-  
+
       console.log(`Tally installation path: ${tallyInstallPath}`);
       console.log(`Exporting file to: ${exportedFilePath}`);
-  
+
       // Step 2: Trigger Tally export
-      const keys = ['%e', 'm', 'e', '{ENTER}'];
+      const keys = ['%e', 'm', 'e', '{ENTER}','prompt here','y'];
       await bringTallyToForegroundAndSendKeys(keys, 1000);
       console.log('Tally export triggered successfully.');
-  
+
       // Step 3: Wait to ensure file is fully exported
       console.log('Waiting for the file to be exported...');
-      await new Promise((resolve) => setTimeout(resolve, 10000));
-  
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Step 4: Ensure the file exists
       if (!fs.existsSync(exportedFilePath)) {
         throw new Error(`Exported file not found at ${exportedFilePath}.`);
       }
-  
+
       // Step 5: Read and clean XML file
       let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
       xmlData = removeBOM(xmlData);
-  
+
       // Debug: Log cleaned XML start
       console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
-  
+
       // Step 6: Validate XML content
       if (!xmlData.trim().startsWith('<ENVELOPE>')) {
         throw new Error('File content is not valid XML.');
       }
-  
+
       // Step 7: Parse XML
       const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
       console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
-  
+
       // Step 8: Extract LEDGER details
       const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
-  
+
       if (!tallyMessages) {
         throw new Error('No TALLYMESSAGE found in the XML file.');
       }
-  
+
       // Ensure TALLYMESSAGE is an array
       const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
-  
+
       // Extract all LEDGER elements
       const ledgers = messagesArray.map((msg: any) => msg.LEDGER).filter(Boolean);
-  
+
       // Check if ledger exists by matching `ledger.$.NAME`
-      const ledgerExists = ledgers.some((ledger: any) => 
+      const ledgerExists = ledgers.some((ledger: any) =>
         ledger.$?.NAME?.toLowerCase() === ledgerName.toLowerCase()
       );
-  
+
       console.log(`Ledger "${ledgerName}" found: ${ledgerExists}`);
-      return ledgerExists;
+      // return ledgerExists;
+
+      if(ledgerExists){
+        return ledgerExists
+      }else{
+        const ledgerExists = await createPurchaseLedger(ledgerName);
+      }
     } catch (error) {
       console.error('Error:', error);
       throw error;
     }
   }
-  
+
+  async function createPurchaseLedger(ledgerName: string): Promise<void> {
+    try {
+
+      // Step 1: Press "c"
+      await bringTallyToForegroundAndSendKeys(['c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}', ledgerName, '{ENTER}', '{ENTER}', 'p', 'u', 'r', 'c', 'h', 'a', 's', 'e', ' ', 'a', 'c', 'c', 'o', 'u', 'n', 't',
+        '{ENTER}', '{ENTER}', 'g', 's', 't', '{ENTER}', 'g', 'o', 'o', 'd', 's', ' ', 'a', 'n', 'd', ' ', 's', 'e', 'r', 'v', 'i', 'c', 'e', 's',
+        '{ENTER}', '^a', '{ESC}', 'prompt here', 'y', '{ESC}']);
+
+    } catch (error) {
+      console.error('Error creating purchase ledger:', error);
+      throw error;
+    }
+  }
+
+
+
   // Example usage
   (async () => {
-    const ledgerName = 'priyanshu';
+    const ledgerName = 'harjaap';
     try {
+      // const ledgerExists = await createPurchaseLedger(ledgerName);
       const ledgerExists = await exportAndCheckLedger(ledgerName);
-      if (ledgerExists) {
-        console.log(`Ledger "${ledgerName}" exists in the exported file.`);
-      } else {
-        console.log(`Ledger "${ledgerName}" does not exist in the exported file.`);
-      }
+
+      // if (ledgerExists) {
+      //   console.log(`Ledger "${ledgerName}" exists in the exported file.`);
+      // } else {
+      //   console.log(`Ledger "${ledgerName}" does not exist in the exported file.`);
+      // }
     } catch (error) {
       console.error('Failed to export or check ledger:', error);
     }
   })();
-  
+
   // IPC handler to bring Tally to the foreground and send multiple keystrokes
   ipcMain.handle('bring-tally-to-foreground-and-send-keys', async (_, keys: string[]) => {
     try {
