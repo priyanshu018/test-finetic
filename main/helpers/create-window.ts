@@ -296,6 +296,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     return new Promise((resolve, reject) => {
       // Check if the keys array contains "prompt here"
       const promptIndex = keys.findIndex(key => key === "prompt here");
+      const percentageIndex = keys.findIndex(key => key === "percentage here");
 
       // Build the PowerShell command:
       let command = `powershell -Command "`;
@@ -314,6 +315,8 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
           if (key === "prompt here") {
             // Wait for 500 seconds (500000 milliseconds) before proceeding.
             command += `  Start-Sleep -Milliseconds 500; `;
+          } else if (key === "percentage here") {
+            command += `  [System.Windows.Forms.SendKeys]::SendWait('%'); `; // Send `%`
           } else {
             command += `  [System.Windows.Forms.SendKeys]::SendWait('${key}'); `;
           }
@@ -384,7 +387,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       console.log(`Exporting file to: ${exportedFilePath}`);
 
       // Step 2: Trigger Tally export
-      const keys = ['%e', 'm', 'e', '{ENTER}','prompt here','y'];
+      const keys = ['%e', 'm', 'e', '{ENTER}', 'prompt here', 'y'];
       await bringTallyToForegroundAndSendKeys(keys, 1000);
       console.log('Tally export triggered successfully.');
 
@@ -434,9 +437,9 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       console.log(`Ledger "${ledgerName}" found: ${ledgerExists}`);
       // return ledgerExists;
 
-      if(ledgerExists){
+      if (ledgerExists) {
         return ledgerExists
-      }else{
+      } else {
         const ledgerExists = await createPurchaseLedger(ledgerName);
       }
     } catch (error) {
@@ -460,13 +463,72 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   }
 
 
+  
+  async function createPurchaseEntry(ledgerName: string, date: number): Promise<void> {
+    try {
+
+      // Step 1: Press "c"
+      await bringTallyToForegroundAndSendKeys(['v', '{F2}', '2', '-', '11', '-', '2024', '{ENTER}', '11223344']);
+
+    } catch (error) {
+      console.error('Error creating purchase ledger:', error);
+      throw error;
+    }
+  }
+
+
+  async function createIgstLedger(name: string): Promise<void> {
+    try {
+
+      // Step 1: Press "c"
+      await bringTallyToForegroundAndSendKeys([
+        'c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}',
+        name, '{ENTER}', '{ENTER}',
+        'D', 'u', 't', 'i', 'e', 's', ' ', '&', ' ', 'T', 'a', 'x', 'e', 's', '{ENTER}',
+        'G', 'S', 'T', '{ENTER}',
+        'I', 'G', 'S', 'T', '{ENTER}', '{ENTER}', '^a', '{ESC}', 'prompt here', 'y', '{ESC}'
+      ]);
+
+    } catch (error) {
+      console.error('Error creating purchase ledger:', error);
+      throw error;
+    }
+  }
+
+  async function createCgstLedger(name: string): Promise<void> {
+    try {
+
+      // Step 1: Press "c"
+      await bringTallyToForegroundAndSendKeys([
+        'c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}',
+        name, '{ENTER}', '{ENTER}',
+        'D', 'u', 't', 'i', 'e', 's', ' ', '&', ' ', 'T', 'a', 'x', 'e', 's', '{ENTER}',
+        'G', 'S', 'T', '{ENTER}',
+        'C', 'G', 'S', 'T', '{ENTER}', '{ENTER}', '^a', '{ESC}', 'prompt here', 'y', '{ESC}'
+      ]);
+
+    } catch (error) {
+      console.error('Error creating purchase ledger:', error);
+      throw error;
+    }
+  }
 
   // Example usage
   (async () => {
     const ledgerName = 'harjaap';
     try {
-      // const ledgerExists = await createPurchaseLedger(ledgerName);
-      const ledgerExists = await exportAndCheckLedger(ledgerName);
+      // await createPurchaseLedger(ledgerName);
+      // await createIgstLedger('Igst 0+5');
+      // await createIgstLedger('Igst 5+5');
+      // await createIgstLedger('Igst 12+5');
+      // await createIgstLedger('Igst 18+5');
+      // await createIgstLedger('Igst 28+5');
+       await createCgstLedger('Cgst 0+5');
+       await createCgstLedger('Cgst 2.5+5');
+       await createCgstLedger('Cgst 6+5');
+       await createCgstLedger('Cgst 9+5');
+       await createCgstLedger('Cgst 14+5');
+
 
       // if (ledgerExists) {
       //   console.log(`Ledger "${ledgerName}" exists in the exported file.`);
