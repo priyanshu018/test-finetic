@@ -261,22 +261,40 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
   // function bringTallyToForegroundAndSendKeys(keys: string[], delayBeforeY: number = 2000): Promise<void> {
   //   return new Promise((resolve, reject) => {
-  //     // Convert the keys array into a single string for PowerShell
-  //     const keysString = keys.join('');
-
-  //     // PowerShell command to find Tally process, bring it to the foreground, and send keys
-  //     const command = `powershell -Command `
-  //       + `"$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' }; `
-  //       + `if ($tallyProcess) { `
-  //       + `  (New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `
-  //       // + `  Start-Sleep -Milliseconds 500; ` // Wait for the window to come to the foreground
-  //       + `  [System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `
-  //       + `  Start-Sleep -Milliseconds ${delayBeforeY}; ` // Wait for the overwrite prompt
-  //       // + `  [System.Windows.Forms.SendKeys]::SendWait('y'); ` // Send 'y' to confirm overwrite
-  //       + `} else { `
-  //       + `  throw 'No Tally process found'; `
-  //       + `}"`;
-
+  //     // Check if the keys array contains "prompt here"
+  //     const promptIndex = keys.findIndex(key => key === "prompt here");
+  //     const percentageIndex = keys.findIndex(key => key === "percentage here");
+  
+  //     // Build the PowerShell command:
+  //     let command = `powershell -Command "`;
+  //     // Use Select-Object -First 1 to ensure a single process is returned
+  //     command += `$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; `;
+  //     command += `if ($tallyProcess) { `;
+  //     command += `  (New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `;
+  
+  //     if (promptIndex === -1) {
+  //       // No "prompt here": join all keys as before.
+  //       const keysString = keys.join('');
+  //       command += `  [System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `;
+  //       command += `  Start-Sleep -Milliseconds ${delayBeforeY}; `;
+  //     } else {
+  //       // "prompt here" exists: iterate through keys individually.
+  //       keys.forEach(key => {
+  //         if (key === "prompt here") {
+  //           // Wait for 500 milliseconds before proceeding.
+  //           command += `  Start-Sleep -Milliseconds 500; `;
+  //         } else if (key === "percentage here") {
+  //           command += `  [System.Windows.Forms.SendKeys]::SendWait('%'); `;
+  //         } else {
+  //           command += `  [System.Windows.Forms.SendKeys]::SendWait('${key}'); `;
+  //         }
+  //       });
+  //     }
+  
+  //     command += `} else { `;
+  //     command += `  throw 'No Tally process found'; `;
+  //     command += `}"`;
+  
   //     exec(command, (error, stdout, stderr) => {
   //       if (error) {
   //         reject(`Error: ${error.message}`);
@@ -290,43 +308,45 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   //     });
   //   });
   // }
+  
 
 
-  function bringTallyToForegroundAndSendKeys(keys: string[], delayBeforeY: number = 2000): Promise<void> {
+  function bringTallyToForegroundAndSendKeys(keys, delayBeforeY = 2000) {
     return new Promise((resolve, reject) => {
       // Check if the keys array contains "prompt here"
       const promptIndex = keys.findIndex(key => key === "prompt here");
       const percentageIndex = keys.findIndex(key => key === "percentage here");
-
+  
       // Build the PowerShell command:
-      let command = `powershell -Command "`;
-      command += `$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' }; `;
+      let command = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; `;
+      // Use Select-Object -First 1 to ensure a single process is returned
+      command += `$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; `;
       command += `if ($tallyProcess) { `;
-      command += `  (New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `;
-
+      command += `(New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `;
+  
       if (promptIndex === -1) {
         // No "prompt here": join all keys as before.
         const keysString = keys.join('');
-        command += `  [System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `;
-        command += `  Start-Sleep -Milliseconds ${delayBeforeY}; `;
+        command += `[System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `;
+        command += `Start-Sleep -Milliseconds ${delayBeforeY}; `;
       } else {
         // "prompt here" exists: iterate through keys individually.
         keys.forEach(key => {
           if (key === "prompt here") {
-            // Wait for 500 seconds (500000 milliseconds) before proceeding.
-            command += `  Start-Sleep -Milliseconds 500; `;
+            // Wait for 500 milliseconds before proceeding.
+            command += `Start-Sleep -Milliseconds 500; `;
           } else if (key === "percentage here") {
-            command += `  [System.Windows.Forms.SendKeys]::SendWait('%'); `; // Send `%`
+            command += `[System.Windows.Forms.SendKeys]::SendWait('%'); `;
           } else {
-            command += `  [System.Windows.Forms.SendKeys]::SendWait('${key}'); `;
+            command += `[System.Windows.Forms.SendKeys]::SendWait('${key}'); `;
           }
         });
       }
-
+  
       command += `} else { `;
-      command += `  throw 'No Tally process found'; `;
+      command += `throw 'No Tally process found'; `;
       command += `}"`;
-
+  
       exec(command, (error, stdout, stderr) => {
         if (error) {
           reject(`Error: ${error.message}`);
@@ -341,7 +361,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     });
   }
 
-
+  
   function getTallyInstallPath(): Promise<string> {
     return new Promise((resolve, reject) => {
       // Check both 32-bit and 64-bit registry paths
@@ -523,11 +543,11 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       // await createIgstLedger('Igst 12+5');
       // await createIgstLedger('Igst 18+5');
       // await createIgstLedger('Igst 28+5');
-       await createCgstLedger('Cgst 0+5');
-       await createCgstLedger('Cgst 2.5+5');
-       await createCgstLedger('Cgst 6+5');
-       await createCgstLedger('Cgst 9+5');
-       await createCgstLedger('Cgst 14+5');
+      //  await createCgstLedger('Cgst 0+5');
+      //  await createCgstLedger('Cgst 2.5+5');
+      //  await createCgstLedger('Cgst 6+5');
+      //  await createCgstLedger('Cgst 9+5');
+      //  await createCgstLedger('Cgst 14+5');
 
 
       // if (ledgerExists) {
@@ -547,6 +567,16 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       return `Sent keys "${keys.join(' ')}" to Tally`;
     } catch (error) {
       throw new Error(`Failed to send keys to Tally: ${error.message}`);
+    }
+  });
+
+  ipcMain.handle('create-cgst-ledger', async (_, ledgerName: string) => {
+    try {
+      await createCgstLedger(ledgerName);
+      return { success: true, ledgerName };
+    } catch (error) {
+      // You might want to pass more details for error handling
+      return { success: false, error: error.message };
     }
   });
 

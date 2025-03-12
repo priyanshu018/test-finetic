@@ -17,7 +17,11 @@ const handler = {
 
 contextBridge.exposeInMainWorld('electron', {
   bringTallyToForegroundAndSendKeys: (keys: string[]) =>
-    ipcRenderer.invoke('bring-tally-to-foreground-and-send-keys', keys)
+    ipcRenderer.invoke('bring-tally-to-foreground-and-send-keys', keys),
+
+  createCgstLedger: (ledgerName: string) =>
+    ipcRenderer.invoke('create-cgst-ledger', ledgerName),
+
 });
 
 contextBridge.exposeInMainWorld('ipc', handler)

@@ -9,15 +9,23 @@ import {
     FiCheck
 } from "react-icons/fi";
 import axios from "axios";
-import Link from 'next/link'
+import { BackendLink } from "../../service/api"
 import { useRouter } from "next/router"; // or next/navigation in app router
 import { ChevronLeft } from "lucide-react";
-
 /**
  * ZoomableImage
  * 
  * (Same as your existing component)
  */
+
+declare global {
+    interface Window {
+      electronAPI: {
+        createCgstLedger: (ledgerName: string) => Promise<{ success: boolean; ledgerName?: string; error?: string }>;
+      };
+    }
+  }
+
 function ZoomableImage({ src, alt, style }) {
     const [scale, setScale] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -254,7 +262,7 @@ export default function BillWorkflow() {
                 const formData = new FormData();
                 formData.append("file", fileObj.file);
                 const response = await axios.post(
-                    "https://f6dc-223-178-209-225.ngrok-free.app/extract-bill-details",
+                    `${BackendLink}/extract-bill-details`,
                     formData,
                     {
                         headers: {
@@ -365,10 +373,11 @@ export default function BillWorkflow() {
             console.log("Exporting data:", billData);
             // Add your export logic here (e.g., save to a file, send to an API, etc.)
 
-            // Step 2: Send keystrokes to Tally
-            const keys = ['C', 'L', '{ENTER}', 'ABC', '{ENTER}'];
-            // @ts-ignore - Electron window object
-            await window.electron.bringTallyToForegroundAndSendKeys(keys);
+            
+            await window.electron.createCgstLedger('Cgst 2.5+5');
+            await window.electron.createCgstLedger('Cgst 6+5');
+            await window.electron.createCgstLedger('Cgst 9+5');
+            await window.electron.createCgstLedger('Cgst 14+5');
 
             // Step 3: Notify the user
             setStatus('Export completed successfully and keys sent to Tally!');

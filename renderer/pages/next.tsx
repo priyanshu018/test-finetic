@@ -1,43 +1,14 @@
 "use client"
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   FiSettings,
   FiUsers,
   FiDollarSign
 } from "react-icons/fi";
-import { ClimbingBoxLoader } from "react-spinners";
 
 export default function IndexPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-
-  const [status, setStatus] = useState('Click to send keys to Tally');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSendKeys = async () => {
-    setIsLoading(true);
-    setStatus('Sending keys to Tally...');
-    setError(null);
-    try {
-      // Define the sequence of keys to send
-      // const keys = ['C', 'L', '{ENTER}', 'ABC', '{ENTER}'];
-
-      // const keys = ['%e',"m","e","y"];
-
-      // @ts-ignore - Electron window object
-      await window.electron.bringTallyToForegroundAndSendKeys(keys);
-      setStatus('Keys sent to Tally successfully!');
-    } catch (error) {
-      setStatus('Failed to send keys to Tally');
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
@@ -180,16 +151,6 @@ export default function IndexPage() {
               </p>
             </div>
           </Link>
-
-          <div className="text-red-500">
-            <h2>Tally Keystrokes</h2>
-            <p>{status}</p>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            <button onClick={handleSendKeys} disabled={isLoading}>
-              {isLoading ? 'Sending...' : 'Send Keys to Tally'}
-            </button>
-          </div>
-
 
         </div>
       </div>
