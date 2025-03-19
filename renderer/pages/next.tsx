@@ -37,13 +37,15 @@ export default function IndexPage() {
   }
 
   const handleCreatePurchase = async () => {
-    await window.electron.createPurchaseEntry('purchase', "02-11-2024");
+    await window.electron.createPurchaseEntry(123456, "02-11-2024", "Priyanshu", "Purchase", [
+      { name: "Item", quantity: 2, price: 100 }
+    ],true,14,0,0);;
   }
 
   const handleCheckLedger = async () => {
-   const response = await window.electron.exportLedger('igstcreating');
-alert(response.success)
-   
+    const response = await window.electron.exportLedger('igstcreating');
+    alert(response.success)
+
   }
 
   const handleCheckItem = async () => {
@@ -209,15 +211,15 @@ alert(response.success)
           </button>
 
           <button onClick={handleCreatePurchase} className="p-2 px-4 bg-gray-200 text-black rounded-full">
-           create purchase
+            create purchase
           </button>
 
           <button onClick={handleCreateItem} className="p-2 px-4 bg-gray-200 text-black rounded-full">
-           create item
+            create item
           </button>
 
           <button onClick={handleCheckLedger} className="p-2 px-4 bg-gray-200 text-black rounded-full">
-           check ledger exist
+            check ledger exist
           </button>
 
           <button onClick={handleCheckItem} className="p-2 px-4 bg-gray-200 text-black rounded-full">

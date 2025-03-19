@@ -1,1 +1,1 @@
-export const BackendLink = "http://192.168.1.4:8000"
+export const BackendLink = "https://9190-2401-4900-8324-bb68-38c9-61ff-4062-8ee0.ngrok-free.app"

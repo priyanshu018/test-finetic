@@ -373,7 +373,7 @@
 //             console.log("Exporting data:", billData);
 //             // Add your export logic here (e.g., save to a file, send to an API, etc.)
 
-            
+
 //             await window.electron.createCgstLedger('Cgst 2.5+5');
 //             await window.electron.createCgstLedger('Cgst 6+5');
 //             await window.electron.createCgstLedger('Cgst 9+5');
@@ -1141,7 +1141,8 @@ import {
 import axios from "axios";
 import { BackendLink } from "../../service/api";
 import { useRouter } from "next/router"; // or next/navigation in app router
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, CloudCog } from "lucide-react";
+import { toast } from "react-toastify";
 
 declare global {
   interface Window {
@@ -1465,8 +1466,62 @@ export default function BillWorkflow() {
     setBillData((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
+  // const handleCheckCgst = async () => {
+  //   // await window.electron.exportLedger('Cgst0');
+  //   // await window.electron.exportLedger('Cgst2.5');
+  //   // await window.electron.exportLedger('Cgst6');
+  //   // await window.electron.exportLedger('Cgst9');
+  //   // await window.electron.exportLedger('Cgst14');
+
+  //   // await window.electron.exportLedger('Igst0');
+  //   // await window.electron.exportLedger('Igst5');
+  //   // await window.electron.exportLedger('Igst12');
+  //   // await window.electron.exportLedger('Igst18');
+  //   // await window.electron.exportLedger('Igst28');
+
+  //   // await window.electron.exportLedger('Ut/Sgst0');
+  //   // await window.electron.exportLedger('Ut/Sgst2.5');
+  //   // await window.electron.exportLedger('Ut/Sgst6');
+  //   // await window.electron.exportLedger('Ut/Sgst9');
+  //   // await window.electron.exportLedger('Ut/Sgst14');
+
+
+  //   toast("YOUR CGST --- IGST --- UT/SGST has been created in the Tally Software");
+
+  // }
+
+  const handleCheckCgst = async () => {
+    const ledgerNames = [
+      'Cgst0', 'Cgst2.5', 'Cgst6', 'Cgst9', 'Cgst14',
+      'Igst0', 'Igst5', 'Igst12', 'Igst18', 'Igst28',
+      'Ut/Sgst0', 'Ut/Sgst2.5', 'Ut/Sgst6', 'Ut/Sgst9', 'Ut/Sgst14'
+    ];
+
+    try {
+      const response = await window.electron.exportLedger(ledgerNames);
+      alert("Check Done")
+      if (response.created && response.created.length > 0) {
+        if (response.existed && response.existed.length > 0) {
+          toast(`Some ledgers already existed: ${response.existed.join(", ")}. New ledgers created: ${response.created.join(", ")}`);
+        } else {
+          toast(`New ledgers created: ${response.created.join(", ")}`);
+        }
+      } else {
+        toast("All ledgers already exist.");
+      }
+    } catch (error) {
+      console.error("Error while processing ledgers:", error);
+      toast("Error while processing ledgers. Check console for details.");
+    }
+  }
+
+
   const handleExport = async () => {
     console.log(role)
+    console.log(billData)
+    handleCheckCgst()
+
+
     // setIsLoading(true);
     // setStatus('Exporting data and sending keys to Tally...');
     // setError(null);
@@ -1556,9 +1611,8 @@ export default function BillWorkflow() {
           {stepsArray.map((step, index) => (
             <div key={step} className="flex items-center">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  currentStep >= index ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-600"
-                } transition-colors duration-300`}
+                className={`w-10 h-10 rounded-full flex items-center justify-center ${currentStep >= index ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-600"
+                  } transition-colors duration-300`}
               >
                 {index + 1}
               </div>
@@ -1579,9 +1633,8 @@ export default function BillWorkflow() {
               onDragOver={handleDragOverFiles}
               onDragLeave={handleDragLeaveFiles}
               onDrop={handleDropFiles}
-              className={`group relative bg-white rounded-2xl border-2 border-dashed ${
-                isDraggingFile ? "border-blue-500 bg-blue-50" : "border-gray-300"
-              } transition-all duration-200 p-12 text-center cursor-pointer shadow-md`}
+              className={`group relative bg-white rounded-2xl border-2 border-dashed ${isDraggingFile ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                } transition-all duration-200 p-12 text-center cursor-pointer shadow-md`}
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="space-y-4">
@@ -1640,11 +1693,10 @@ export default function BillWorkflow() {
               <button
                 onClick={handleNextStep}
                 disabled={files.length === 0}
-                className={`px-8 py-4 rounded-lg font-semibold transition-all flex items-center gap-3 ${
-                  files.length
-                    ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg"
-                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                }`}
+                className={`px-8 py-4 rounded-lg font-semibold transition-all flex items-center gap-3 ${files.length
+                  ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  }`}
               >
                 Next Step
                 <FiArrowRight className="w-6 h-6" />
@@ -1885,7 +1937,7 @@ export default function BillWorkflow() {
                           : true;
                       const netValid =
                         item["G AMT"] &&
-                        (item["NET AMT"] || item["NET AMT"] === 0)
+                          (item["NET AMT"] || item["NET AMT"] === 0)
                           ? calcNet !== null && Math.abs(calcNet - netAmt) < 0.01
                           : true;
                       const rowHasError = !grossValid || !netValid;

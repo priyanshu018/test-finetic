@@ -25,8 +25,8 @@ contextBridge.exposeInMainWorld('electron', {
   createCgstLedger: (ledgerName: string) =>
     ipcRenderer.invoke('create-cgst-ledger', ledgerName),
 
-  createPurchaseEntry: (ledgerName: string,date:number) =>
-    ipcRenderer.invoke('create-purchase-entry', ledgerName,date),
+  createPurchaseEntry: (invoiceNumber: number, date: string, partyName: string, purchaseLedger: string, items: { name: string, quantity: number, price: number }[],isWitinState:boolean,cgst:number,sgst:number,igst:number) =>
+    ipcRenderer.invoke('create-purchase-entry', invoiceNumber, date,partyName,purchaseLedger,items,isWitinState,cgst,sgst,igst),
 
   exportLedger: (ledgerName: string) =>
     ipcRenderer.invoke('export-ledger', ledgerName),
