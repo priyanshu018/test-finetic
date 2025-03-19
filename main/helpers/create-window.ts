@@ -1,97 +1,8 @@
-// import {
-//   screen,
-//   BrowserWindow,
-//   BrowserWindowConstructorOptions,
-//   Rectangle,
-// } from 'electron'
-// import Store from 'electron-store'
-
-// export const createWindow = (
-//   windowName: string,
-//   options: BrowserWindowConstructorOptions
-// ): BrowserWindow => {
-//   const key = 'window-state'
-//   const name = `window-state-${windowName}`
-//   const store = new Store<Rectangle>({ name })
-//   const defaultSize = {
-//     width: options.width,
-//     height: options.height,
-//   }
-//   let state = {}
-
-//   const restore = () => store.get(key, defaultSize)
-
-//   const getCurrentPosition = () => {
-//     const position = win.getPosition()
-//     const size = win.getSize()
-//     return {
-//       x: position[0],
-//       y: position[1],
-//       width: size[0],
-//       height: size[1],
-//     }
-//   }
-
-//   const windowWithinBounds = (windowState, bounds) => {
-//     return (
-//       windowState.x >= bounds.x &&
-//       windowState.y >= bounds.y &&
-//       windowState.x + windowState.width <= bounds.x + bounds.width &&
-//       windowState.y + windowState.height <= bounds.y + bounds.height
-//     )
-//   }
-
-//   const resetToDefaults = () => {
-//     const bounds = screen.getPrimaryDisplay().bounds
-//     return Object.assign({}, defaultSize, {
-//       x: (bounds.width - defaultSize.width) / 2,
-//       y: (bounds.height - defaultSize.height) / 2,
-//     })
-//   }
-
-//   const ensureVisibleOnSomeDisplay = (windowState) => {
-//     const visible = screen.getAllDisplays().some((display) => {
-//       return windowWithinBounds(windowState, display.bounds)
-//     })
-//     if (!visible) {
-//       // Window is partially or fully not visible now.
-//       // Reset it to safe defaults.
-//       return resetToDefaults()
-//     }
-//     return windowState
-//   }
-
-//   const saveState = () => {
-//     if (!win.isMinimized() && !win.isMaximized()) {
-//       Object.assign(state, getCurrentPosition())
-//     }
-//     store.set(key, state)
-//   }
-
-//   state = ensureVisibleOnSomeDisplay(restore())
-
-//   const win = new BrowserWindow({
-//     ...state,
-//     ...options,
-//     webPreferences: {
-//       nodeIntegration: false,
-//       contextIsolation: true,
-//       ...options.webPreferences,
-//     },
-//   })
-
-//   win.on('close', saveState)
-
-//   return win
-// }
-
-
 import { screen, BrowserWindow, BrowserWindowConstructorOptions, Rectangle, ipcMain } from 'electron';
 import { exec, execSync } from 'child_process';
 import Store from 'electron-store';
 import * as fs from 'fs';
 import { parseStringPromise } from 'xml2js';
-import { coolGray } from 'tailwindcss/colors';
 
 export const createWindow = (windowName: string, options: BrowserWindowConstructorOptions): BrowserWindow => {
   const key = 'window-state';
@@ -264,14 +175,14 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   //     // Check if the keys array contains "prompt here"
   //     const promptIndex = keys.findIndex(key => key === "prompt here");
   //     const percentageIndex = keys.findIndex(key => key === "percentage here");
-  
+
   //     // Build the PowerShell command:
   //     let command = `powershell -Command "`;
   //     // Use Select-Object -First 1 to ensure a single process is returned
   //     command += `$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; `;
   //     command += `if ($tallyProcess) { `;
   //     command += `  (New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `;
-  
+
   //     if (promptIndex === -1) {
   //       // No "prompt here": join all keys as before.
   //       const keysString = keys.join('');
@@ -290,11 +201,11 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   //         }
   //       });
   //     }
-  
+
   //     command += `} else { `;
   //     command += `  throw 'No Tally process found'; `;
   //     command += `}"`;
-  
+
   //     exec(command, (error, stdout, stderr) => {
   //       if (error) {
   //         reject(`Error: ${error.message}`);
@@ -308,7 +219,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   //     });
   //   });
   // }
-  
+
 
 
   function bringTallyToForegroundAndSendKeys(keys, delayBeforeY = 2000) {
@@ -316,14 +227,14 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       // Check if the keys array contains "prompt here"
       const promptIndex = keys.findIndex(key => key === "prompt here");
       const percentageIndex = keys.findIndex(key => key === "percentage here");
-  
+
       // Build the PowerShell command:
       let command = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; `;
       // Use Select-Object -First 1 to ensure a single process is returned
       command += `$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; `;
       command += `if ($tallyProcess) { `;
       command += `(New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `;
-  
+
       if (promptIndex === -1) {
         // No "prompt here": join all keys as before.
         const keysString = keys.join('');
@@ -342,11 +253,11 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
           }
         });
       }
-  
+
       command += `} else { `;
       command += `throw 'No Tally process found'; `;
       command += `}"`;
-  
+
       exec(command, (error, stdout, stderr) => {
         if (error) {
           reject(`Error: ${error.message}`);
@@ -361,7 +272,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     });
   }
 
-  
+
   function getTallyInstallPath(): Promise<string> {
     return new Promise((resolve, reject) => {
       // Check both 32-bit and 64-bit registry paths
@@ -483,18 +394,35 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   }
 
 
-  
+
   async function createPurchaseEntry(ledgerName: string, date: number): Promise<void> {
     try {
+      // Format the date as dd-MM-yyyy (for example, 02-11-2024)
+      const dateObj = new Date(date);
+      // Format using toLocaleDateString with options or manual formatting:
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+      const year = dateObj.getFullYear();
+      const formattedDate = `${day}-${month}-${year}`;
 
-      // Step 1: Press "c"
-      await bringTallyToForegroundAndSendKeys(['v', '{F2}', '2', '-', '11', '-', '2024', '{ENTER}', '11223344']);
+      // Build the keys array:
+      // Here, we're sending 'v' then F2, then the formatted date (each character separately),
+      // then {ENTER} and finally the ledgerName.
+      const keys = [
+        'v',
+        '{F2}',
+        ...formattedDate.split(''),
+        '{ENTER}',
+        ledgerName
+      ];
 
+      await bringTallyToForegroundAndSendKeys(keys);
     } catch (error) {
       console.error('Error creating purchase ledger:', error);
       throw error;
     }
   }
+
 
 
   async function createIgstLedger(name: string): Promise<void> {
@@ -532,6 +460,25 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       throw error;
     }
   }
+
+
+  async function createItem(name: string, symbol: string, decimal: number, hsn: number,gst:number): Promise<void> {
+    try {
+      // Step 1: Bring Tally to foreground and send keys for item creation
+      await bringTallyToForegroundAndSendKeys([
+        'c', 'i', 't', 'e', 'm', '{ENTER}',  // Open item creation
+        name, '{ENTER}', '{ENTER}', '{ENTER}',          // Enter item name and confirm
+        'C', 'r', 'e', 'a', 't', 'e', '{ENTER}', symbol, '{ENTER}', '{ENTER}', '{ENTER}'
+        , decimal, '{ENTER}',
+        'prompt here', 'y', '{ENTER}','{ENTER}', "specify", '{ENTER}', hsn, '{ENTER}', '{ENTER}',"specify details", '{ENTER}', '{ENTER}',gst, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}'    // Create and exit
+      ]);
+      console.log(decimal, "decimal")
+    } catch (error) {
+      console.error('Error creating item:', error);
+      throw error;
+    }
+  }
+
 
   // Example usage
   (async () => {
@@ -576,6 +523,26 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       return { success: true, ledgerName };
     } catch (error) {
       // You might want to pass more details for error handling
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('create-purchase-entry', async (_, ledgerName: string, date: number) => {
+    try {
+      await createPurchaseEntry(ledgerName, date);
+      return { success: true, ledgerName };
+    } catch (error) {
+      console.error('Error creating purchase entry:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('create-item', async (_, itemName: string, symbol: string, decimal: number, hsn: number,gst:number) => {
+    try {
+      await createItem(itemName, symbol, decimal, hsn,gst);
+      return { success: true, itemName };
+    } catch (error) {
+      console.error('Error creating item:', error);
       return { success: false, error: error.message };
     }
   });

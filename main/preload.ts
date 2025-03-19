@@ -22,6 +22,9 @@ contextBridge.exposeInMainWorld('electron', {
   createCgstLedger: (ledgerName: string) =>
     ipcRenderer.invoke('create-cgst-ledger', ledgerName),
 
+  createItem: (itemName: string,symbol:string,decimal: number,hsn: number,gst:number) =>
+    ipcRenderer.invoke('create-item', itemName,symbol,decimal,hsn,gst),
+
 });
 
 contextBridge.exposeInMainWorld('ipc', handler)

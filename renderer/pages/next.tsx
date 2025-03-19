@@ -7,8 +7,22 @@ import {
   FiDollarSign
 } from "react-icons/fi";
 
+
+declare global {
+  interface Window {
+    electronAPI: {
+      createItem: (ledgerName: string) => Promise<{ success: boolean; ledgerName?: string; error?: string }>;
+    };
+  }
+}
+
 export default function IndexPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  
+  const handleCreateItem = async() =>{
+    await window.electron.createItem('item',"test",3,112233,14);
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
@@ -153,6 +167,11 @@ export default function IndexPage() {
           </Link>
 
         </div>
+
+        
+        <button onClick={handleCreateItem} className="text-black">
+                    item test
+                  </button>
       </div>
     </div>
   );
