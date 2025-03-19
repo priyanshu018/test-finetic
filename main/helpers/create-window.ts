@@ -170,57 +170,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     return null;
   }
 
-  // function bringTallyToForegroundAndSendKeys(keys: string[], delayBeforeY: number = 2000): Promise<void> {
-  //   return new Promise((resolve, reject) => {
-  //     // Check if the keys array contains "prompt here"
-  //     const promptIndex = keys.findIndex(key => key === "prompt here");
-  //     const percentageIndex = keys.findIndex(key => key === "percentage here");
-
-  //     // Build the PowerShell command:
-  //     let command = `powershell -Command "`;
-  //     // Use Select-Object -First 1 to ensure a single process is returned
-  //     command += `$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; `;
-  //     command += `if ($tallyProcess) { `;
-  //     command += `  (New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `;
-
-  //     if (promptIndex === -1) {
-  //       // No "prompt here": join all keys as before.
-  //       const keysString = keys.join('');
-  //       command += `  [System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `;
-  //       command += `  Start-Sleep -Milliseconds ${delayBeforeY}; `;
-  //     } else {
-  //       // "prompt here" exists: iterate through keys individually.
-  //       keys.forEach(key => {
-  //         if (key === "prompt here") {
-  //           // Wait for 500 milliseconds before proceeding.
-  //           command += `  Start-Sleep -Milliseconds 500; `;
-  //         } else if (key === "percentage here") {
-  //           command += `  [System.Windows.Forms.SendKeys]::SendWait('%'); `;
-  //         } else {
-  //           command += `  [System.Windows.Forms.SendKeys]::SendWait('${key}'); `;
-  //         }
-  //       });
-  //     }
-
-  //     command += `} else { `;
-  //     command += `  throw 'No Tally process found'; `;
-  //     command += `}"`;
-
-  //     exec(command, (error, stdout, stderr) => {
-  //       if (error) {
-  //         reject(`Error: ${error.message}`);
-  //         return;
-  //       }
-  //       if (stderr) {
-  //         reject(`PowerShell error: ${stderr}`);
-  //         return;
-  //       }
-  //       resolve();
-  //     });
-  //   });
-  // }
-
-
 
   function bringTallyToForegroundAndSendKeys(keys, delayBeforeY = 2000) {
     return new Promise((resolve, reject) => {
@@ -379,6 +328,76 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   }
 
+
+  async function exportAndCheckItem(itemName: string): Promise<boolean> {
+    try {
+      // Step 1: Get Tally installation path
+      const tallyInstallPath = await getTallyInstallPath();
+      const exportedFilePath = `${tallyInstallPath}\\master.xml`;
+
+      console.log(`Tally installation path: ${tallyInstallPath}`);
+      console.log(`Exporting file to: ${exportedFilePath}`);
+
+      // Step 2: Trigger Tally export
+      const keys = ['%e', 'm', 'c', 'type of master', '{ENTER}', 'stock items', '{ENTER}', '{ESC}', '{ESC}', 'e', 'prompt here', 'y'];
+      await bringTallyToForegroundAndSendKeys(keys, 1000);
+      console.log('Tally export triggered successfully.');
+
+      // Step 3: Wait to ensure file is fully exported
+      console.log('Waiting for the file to be exported...');
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Step 4: Ensure the file exists
+      if (!fs.existsSync(exportedFilePath)) {
+        throw new Error(`Exported file not found at ${exportedFilePath}.`);
+      }
+
+      // Step 5: Read and clean XML file
+      let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
+      xmlData = removeBOM(xmlData);
+
+      // Debug: Log cleaned XML start
+      console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
+
+      // Step 6: Validate XML content
+      if (!xmlData.trim().startsWith('<ENVELOPE>')) {
+        throw new Error('File content is not valid XML.');
+      }
+
+      // Step 7: Parse XML
+      const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
+      console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
+
+      // Step 8: Extract ITEM details
+      const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
+
+      if (!tallyMessages) {
+        throw new Error('No TALLYMESSAGE found in the XML file.');
+      }
+
+      // Ensure TALLYMESSAGE is an array
+      const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
+
+      // Extract all ITEM elements
+      const items = messagesArray.map((msg: any) => msg.STOCKITEM).filter(Boolean);
+
+      // Check if item exists by matching `item.$.NAME`
+      const itemExists = items.some((item: any) =>
+        item.$?.NAME?.toLowerCase() === itemName.toLowerCase()
+      );
+
+      console.log(`item "${itemName}" found: ${itemExists}`);
+      // return itemExists;
+
+
+      return itemExists
+
+    } catch (error) {
+      console.error('Error:', error);
+      throw error;
+    }
+  }
+
   async function createPurchaseLedger(ledgerName: string): Promise<void> {
     try {
 
@@ -392,7 +411,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       throw error;
     }
   }
-
 
 
   async function createPurchaseEntry(ledgerName: string, date: number): Promise<void> {
@@ -422,7 +440,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       throw error;
     }
   }
-
 
 
   async function createIgstLedger(name: string): Promise<void> {
@@ -462,7 +479,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   }
 
 
-  async function createItem(name: string, symbol: string, decimal: number, hsn: number,gst:number): Promise<void> {
+  async function createItem(name: string, symbol: string, decimal: number, hsn: number, gst: number): Promise<void> {
     try {
       // Step 1: Bring Tally to foreground and send keys for item creation
       await bringTallyToForegroundAndSendKeys([
@@ -470,7 +487,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         name, '{ENTER}', '{ENTER}', '{ENTER}',          // Enter item name and confirm
         'C', 'r', 'e', 'a', 't', 'e', '{ENTER}', symbol, '{ENTER}', '{ENTER}', '{ENTER}'
         , decimal, '{ENTER}',
-        'prompt here', 'y', '{ENTER}','{ENTER}', "specify", '{ENTER}', hsn, '{ENTER}', '{ENTER}',"specify details", '{ENTER}', '{ENTER}',gst, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}'    // Create and exit
+        'prompt here', 'y', '{ENTER}', "specify details", '{ENTER}', hsn, '{ENTER}', '{ENTER}', "specify details", '{ENTER}', '{ENTER}', gst, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', 'prompt here', 'y', '{ESC}', '{ESC}', 'prompt here', 'y', '{ESC}'  // Create and exit
       ]);
       console.log(decimal, "decimal")
     } catch (error) {
@@ -517,6 +534,18 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   });
 
+  ipcMain.handle('create-igst-ledger', async (_, ledgerName: string) => {
+    try {
+      await createIgstLedger(ledgerName);
+      return { success: true, ledgerName };
+    } catch (error) {
+      // You might want to pass more details for error handling
+      return { success: false, error: error.message };
+    }
+  });
+
+
+
   ipcMain.handle('create-cgst-ledger', async (_, ledgerName: string) => {
     try {
       await createCgstLedger(ledgerName);
@@ -537,9 +566,32 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   });
 
-  ipcMain.handle('create-item', async (_, itemName: string, symbol: string, decimal: number, hsn: number,gst:number) => {
+
+  ipcMain.handle('export-ledger', async (_, ledgerName: string) => {
     try {
-      await createItem(itemName, symbol, decimal, hsn,gst);
+      await exportAndCheckLedger(ledgerName);
+      return { success: true, ledgerName };
+    } catch (error) {
+      console.error('Error creating purchase entry:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+
+  ipcMain.handle('export-item', async (_, itemName: string) => {
+    try {
+      await exportAndCheckItem(itemName);
+      return { success: true, itemName };
+    } catch (error) {
+      console.error('Error creating purchase entry:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+
+  ipcMain.handle('create-item', async (_, itemName: string, symbol: string, decimal: number, hsn: number, gst: number) => {
+    try {
+      await createItem(itemName, symbol, decimal, hsn, gst);
       return { success: true, itemName };
     } catch (error) {
       console.error('Error creating item:', error);

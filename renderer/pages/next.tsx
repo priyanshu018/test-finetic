@@ -19,9 +19,35 @@ declare global {
 export default function IndexPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  
-  const handleCreateItem = async() =>{
-    await window.electron.createItem('item',"test",3,112233,14);
+
+  const handleCreateItem = async () => {
+    await window.electron.createItem('item', "test", 3, 112233, 14);
+  }
+
+  const handleCreateIgst = async () => {
+    await window.electron.createIgstLedger("igstcreating");
+  }
+
+  const handleCreateCgst = async () => {
+    await window.electron.createCgstLedger('cgstcreating');
+  }
+
+  const handleCreateUgst = async () => {
+    await window.electron.createCgstLedger('ugstcreating');
+  }
+
+  const handleCreatePurchase = async () => {
+    await window.electron.createPurchaseEntry('purchase', "02-11-2024");
+  }
+
+  const handleCheckLedger = async () => {
+   const response = await window.electron.exportLedger('igstcreating');
+alert(response.success)
+   
+  }
+
+  const handleCheckItem = async () => {
+    await window.electron.exportItem('item');
   }
 
   return (
@@ -168,10 +194,36 @@ export default function IndexPage() {
 
         </div>
 
-        
-        <button onClick={handleCreateItem} className="text-black">
-                    item test
-                  </button>
+        <div className="flex gap-4 justify-center">
+
+          <button onClick={handleCreateIgst} className="p-2 px-4 bg-gray-200 text-black rounded-full">
+            create Igst
+          </button>
+
+          <button onClick={handleCreateCgst} className="p-2 px-4 bg-gray-200 text-black rounded-full">
+            create cgst
+          </button>
+
+          <button onClick={handleCreateUgst} className="p-2 px-4 bg-gray-200 text-black rounded-full">
+            create ugst
+          </button>
+
+          <button onClick={handleCreatePurchase} className="p-2 px-4 bg-gray-200 text-black rounded-full">
+           create purchase
+          </button>
+
+          <button onClick={handleCreateItem} className="p-2 px-4 bg-gray-200 text-black rounded-full">
+           create item
+          </button>
+
+          <button onClick={handleCheckLedger} className="p-2 px-4 bg-gray-200 text-black rounded-full">
+           check ledger exist
+          </button>
+
+          <button onClick={handleCheckItem} className="p-2 px-4 bg-gray-200 text-black rounded-full">
+            check item exist
+          </button>
+        </div>
       </div>
     </div>
   );
