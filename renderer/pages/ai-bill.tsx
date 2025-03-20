@@ -1466,30 +1466,6 @@ export default function BillWorkflow() {
     setBillData((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
-  // const handleCheckCgst = async () => {
-  //   // await window.electron.exportLedger('Cgst0');
-  //   // await window.electron.exportLedger('Cgst2.5');
-  //   // await window.electron.exportLedger('Cgst6');
-  //   // await window.electron.exportLedger('Cgst9');
-  //   // await window.electron.exportLedger('Cgst14');
-
-  //   // await window.electron.exportLedger('Igst0');
-  //   // await window.electron.exportLedger('Igst5');
-  //   // await window.electron.exportLedger('Igst12');
-  //   // await window.electron.exportLedger('Igst18');
-  //   // await window.electron.exportLedger('Igst28');
-
-  //   // await window.electron.exportLedger('Ut/Sgst0');
-  //   // await window.electron.exportLedger('Ut/Sgst2.5');
-  //   // await window.electron.exportLedger('Ut/Sgst6');
-  //   // await window.electron.exportLedger('Ut/Sgst9');
-  //   // await window.electron.exportLedger('Ut/Sgst14');
-
-
-  //   toast("YOUR CGST --- IGST --- UT/SGST has been created in the Tally Software");
-
-  // }
-
   const handleCheckCgst = async () => {
     const ledgerNames = [
       'Cgst0', 'Cgst2.5', 'Cgst6', 'Cgst9', 'Cgst14',
@@ -1497,18 +1473,24 @@ export default function BillWorkflow() {
       'Ut/Sgst0', 'Ut/Sgst2.5', 'Ut/Sgst6', 'Ut/Sgst9', 'Ut/Sgst14'
     ];
 
+    const purchaserName = role === "Purchaser" ? billData?.[0]?.receiverDetails?.name : billData?.[0]?.senderDetails?.name
+
     try {
-      const response = await window.electron.exportLedger(ledgerNames);
-      alert("Check Done")
-      if (response.created && response.created.length > 0) {
-        if (response.existed && response.existed.length > 0) {
-          toast(`Some ledgers already existed: ${response.existed.join(", ")}. New ledgers created: ${response.created.join(", ")}`);
-        } else {
-          toast(`New ledgers created: ${response.created.join(", ")}`);
-        }
-      } else {
-        toast("All ledgers already exist.");
-      }
+      const response = await window.electron.exportItem(billData?.[0]?.items)
+      // const response = await window.electron.exportLedger(ledgerNames,false);
+      // const response2 = await window.electron.exportLedger(purchaserName,role === "Purchaser");
+      // alert("Check Done")
+ 
+
+      // if (response.created && response.created.length > 0) {
+      //   if (response.existed && response.existed.length > 0) {
+      //     toast(`Some ledgers already existed: ${response.existed.join(", ")}. New ledgers created: ${response.created.join(", ")}`);
+      //   } else {
+      //     toast(`New ledgers created: ${response.created.join(", ")}`);
+      //   }
+      // } else {
+      //   toast("All ledgers already exist.");
+      // }
     } catch (error) {
       console.error("Error while processing ledgers:", error);
       toast("Error while processing ledgers. Check console for details.");

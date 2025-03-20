@@ -25,17 +25,31 @@ contextBridge.exposeInMainWorld('electron', {
   createCgstLedger: (ledgerName: string) =>
     ipcRenderer.invoke('create-cgst-ledger', ledgerName),
 
-  createPurchaseEntry: (invoiceNumber: number, date: string, partyName: string, purchaseLedger: string, items: { name: string, quantity: number, price: number }[],isWitinState:boolean,cgst:number,sgst:number,igst:number) =>
-    ipcRenderer.invoke('create-purchase-entry', invoiceNumber, date,partyName,purchaseLedger,items,isWitinState,cgst,sgst,igst),
+  createPurchaseEntry: (invoiceNumber: number, date: string, partyName: string, purchaseLedger: string, items: { name: string, quantity: number, price: number }[], isWitinState: boolean, cgst: number, sgst: number, igst: number) =>
+    ipcRenderer.invoke('create-purchase-entry', invoiceNumber, date, partyName, purchaseLedger, items, isWitinState, cgst, sgst, igst),
 
-  exportLedger: (ledgerName: string) =>
-    ipcRenderer.invoke('export-ledger', ledgerName),
+  exportLedger: (ledgerName: string, isPurchase: boolean) =>
+    ipcRenderer.invoke('export-ledger', ledgerName, isPurchase),
 
-  exportItem: (ledgerName: string) =>
-    ipcRenderer.invoke('export-item', ledgerName),
+  exportItem: (item: {
+    Product: string;
+    HSN: string;
+    symbol?: string;
+    decimal?: string | number;
+    gst?: string | number;
+    SGST?: string;
+    CGST?: string;
+  }) =>
+    ipcRenderer.invoke('export-item', item),
 
-  createItem: (itemName: string,symbol:string,decimal: number,hsn: number,gst:number) =>
-    ipcRenderer.invoke('create-item', itemName,symbol,decimal,hsn,gst),
+    exportUnit: (unit: {
+      Name: string;
+      conversionRate?: number;
+    }) =>
+      ipcRenderer.invoke('export-unit', unit),
+
+  createItem: (itemName: string, symbol: string, decimal: number, hsn: number, gst: number) =>
+    ipcRenderer.invoke('create-item', itemName, symbol, decimal, hsn, gst),
 
 });
 

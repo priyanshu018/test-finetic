@@ -39,7 +39,7 @@ export default function IndexPage() {
   const handleCreatePurchase = async () => {
     await window.electron.createPurchaseEntry(123456, "02-11-2024", "Priyanshu", "Purchase", [
       { name: "Item", quantity: 2, price: 100 }
-    ],true,14,0,0);;
+    ], true, 14, 0, 0);;
   }
 
   const handleCheckLedger = async () => {
@@ -50,6 +50,11 @@ export default function IndexPage() {
 
   const handleCheckItem = async () => {
     await window.electron.exportItem('item');
+  }
+
+  const handleCheckUnit = async () => {
+
+    await window.electron.exportUnit({ Name: "testing", conversionRate: 5 });
   }
 
   return (
@@ -224,6 +229,10 @@ export default function IndexPage() {
 
           <button onClick={handleCheckItem} className="p-2 px-4 bg-gray-200 text-black rounded-full">
             check item exist
+          </button>
+
+          <button onClick={handleCheckUnit} className="p-2 px-4 bg-gray-200 text-black rounded-full">
+            check Unit exist
           </button>
         </div>
       </div>
