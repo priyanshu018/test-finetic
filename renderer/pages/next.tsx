@@ -19,19 +19,19 @@ declare global {
       createIgstLedger: (name: string) => Promise<any>;
       createCgstLedger: (name: string) => Promise<any>;
       createPurchaseEntry: (
-        voucherNumber: number, 
-        date: string, 
-        partyName: string, 
-        type: string, 
-        items: {name: string, quantity: number, price: number}[], 
-        includeGst: boolean, 
-        taxRate: number, 
-        discount: number, 
+        voucherNumber: number,
+        date: string,
+        partyName: string,
+        type: string,
+        items: { name: string, quantity: number, price: number }[],
+        includeGst: boolean,
+        taxRate: number,
+        discount: number,
         roundOff: number
       ) => Promise<any>;
-      exportLedger: (name: string) => Promise<{success: boolean}>;
+      exportLedger: (name: string) => Promise<{ success: boolean }>;
       exportItem: (name: string) => Promise<any>;
-      exportUnit: (unit: {Name: string, conversionRate: number}) => Promise<any>;
+      exportUnit: (unit: { Name: string, conversionRate: number }) => Promise<any>;
     };
   }
 }
@@ -72,14 +72,14 @@ export default function IndexPage() {
   }
 
   const handleCheckUnit = async () => {
-    await window.electron.exportUnit({ Name: "testing", conversionRate: 5 });
+    await window.electron.exportUnit({ Name: "testing", conversionRate: 3 });
   }
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Subtle professional background pattern */}
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] pointer-events-none"></div>
-      
+
       {/* Subtle gradient accents */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute -top-10 -left-10 w-56 h-56 bg-blue-400 rounded-full opacity-[0.07] blur-3xl"></div>
@@ -105,16 +105,16 @@ export default function IndexPage() {
                 <FiClock className="w-4 h-4 mr-1.5 text-gray-500" />
                 <span>Activity</span>
               </button> */}
-              
+
               {/* <button 
                 className="hidden md:flex items-center text-sm text-gray-700 py-1.5 px-3 rounded-md hover:bg-gray-100 transition-colors duration-150"
               >
                 <FiShield className="w-4 h-4 mr-1.5 text-gray-500" />
                 <span>Support</span>
               </button> */}
-              
+
               <div className="h-5 w-px bg-gray-300 hidden md:block"></div>
-              
+
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center space-x-2 p-1.5 rounded-full hover:bg-gray-100 transition-all duration-150"
@@ -171,9 +171,9 @@ export default function IndexPage() {
                       <FiDollarSign className="w-4 h-4 mr-3 text-gray-500" />
                       Billing
                     </Link>
-                    
+
                     {/* Logout */}
-                    <button 
+                    <button
                       className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all duration-150"
                     >
                       <svg className="w-4 h-4 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,7 +195,7 @@ export default function IndexPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">Welcome back</h1>
           <p className="text-gray-600 mt-1">Select an option to get started</p>
         </div>
-        
+
         {/* Action Cards Grid - Professional Version */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {/* AI Workflow Card */}
@@ -260,7 +260,7 @@ export default function IndexPage() {
             </div>
           </Link>
         </div>
-        
+
         {/* Activity summary - a professional touch */}
         {/* <div className="mt-10 max-w-5xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-200 flex justify-between items-center">
@@ -282,7 +282,11 @@ export default function IndexPage() {
           </div>
         </div> */}
       </div>
-      
+
+      <div>
+        <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create item</button>
+      </div>
+
       {/* Footer - professional touch */}
       <footer className="bg-white absolute bottom-0 left-0 w-full border-t border-gray-200 py-4 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

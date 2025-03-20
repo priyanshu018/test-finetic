@@ -435,7 +435,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       const exportedFilePath = `${tallyInstallPath}\\master.xml`;
       console.log(`Tally installation path: ${tallyInstallPath}`);
       console.log(`Exporting file to: ${exportedFilePath}`);
-  
+
       // Step 2: Trigger Tally export for stock items
       const keys = [
         '%e', 'm', 'c', 'type of master', '{ENTER}',
@@ -444,31 +444,31 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       ];
       await bringTallyToForegroundAndSendKeys(keys, 1000);
       console.log('Tally export triggered successfully.');
-  
+
       // Step 3: Wait to ensure file is fully exported
       console.log('Waiting for the file to be exported...');
       await new Promise((resolve) => setTimeout(resolve, 1000));
-  
+
       // Step 4: Ensure the exported file exists
       if (!fs.existsSync(exportedFilePath)) {
         throw new Error(`Exported file not found at ${exportedFilePath}.`);
       }
-  
+
       // Step 5: Read and clean XML file
       let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
       xmlData = removeBOM(xmlData);
       // console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
-  
+
       console.log(item)
       // Step 6: Validate XML content
       if (!xmlData.trim().startsWith('<ENVELOPE>')) {
         throw new Error('File content is not valid XML.');
       }
-  
+
       // Step 7: Parse XML
       const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
       console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
-  
+
       // Step 8: Extract STOCKITEM details
       const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
       if (!tallyMessages) {
@@ -476,13 +476,13 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       }
       const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
       const items = messagesArray.map((msg: any) => msg.STOCKITEM).filter(Boolean);
-  
+
       // Check if the item exists by matching the STOCKITEM's NAME with the item's Product field
       const itemExists = items.some((stockItem: any) =>
         stockItem.$?.NAME?.toLowerCase() === item.Product?.toLowerCase()
       );
       console.log(`Stock item "${item.Product}" found: ${itemExists}`);
-  
+
       // If the item does not exist, call createItem with dynamic parameters from the item props
       if (!itemExists) {
         const name = item.Product;
@@ -501,118 +501,118 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         } else {
           gstValue = 0;
         }
-  
+
         console.log(
           `Item "${name}" does not exist. Creating item with symbol "${symbol}", decimal ${decimal}, HSN ${hsn}, and GST ${gstValue}...`
         );
         await createItem(name, symbol, decimal, hsn, gstValue);
       }
-  
+
       return itemExists;
     } catch (error) {
       console.error('Error in exportAndCheckItem:', error);
       throw error;
     }
   }
-  
+
   // Function to export, check, and create a unit if missing
-async function exportAndCheckUnit(unit: {
-  Name: string;
-  conversionRate?: number;
-}): Promise<boolean> {
-  try {
-    // Step 1: Get Tally installation path and set file path
-    const tallyInstallPath = await getTallyInstallPath();
-    const exportedFilePath = `${tallyInstallPath}\\master.xml`;
-    console.log(`Tally installation path: ${tallyInstallPath}`);
-    console.log(`Exporting file to: ${exportedFilePath}`);
+  async function exportAndCheckUnit(unit: {
+    Name: string;
+    conversionRate?: number;
+  }): Promise<boolean> {
+    try {
+      // Step 1: Get Tally installation path and set file path
+      const tallyInstallPath = await getTallyInstallPath();
+      const exportedFilePath = `${tallyInstallPath}\\master.xml`;
+      console.log(`Tally installation path: ${tallyInstallPath}`);
+      console.log(`Exporting file to: ${exportedFilePath}`);
 
-    // Step 2: Trigger Tally export for units
-    // Adjust the keys to match your Tally sequence for exporting UNIT masters
-    const keys = [
-      '%e', 'm', 'u', 'type of master', '{ENTER}',
-      'units', '{ENTER}', '{ESC}', '{ESC}', 'e',
-      'prompt here', 'y'
-    ];
-    await bringTallyToForegroundAndSendKeys(keys, 1000);
-    console.log('Tally export for units triggered successfully.');
+      // Step 2: Trigger Tally export for units
+      // Adjust the keys to match your Tally sequence for exporting UNIT masters
+      const keys = [
+        '%e', 'm', 'c', 'type of master', '{ENTER}', 'units', '{ENTER}', '{ESC}', '{ESC}', 'e',
+        'prompt here', 'y'
+      ];
+      await bringTallyToForegroundAndSendKeys(keys, 1000);
+      console.log('Tally export for units triggered successfully.');
 
-    // Step 3: Wait to ensure file is fully exported
-    console.log('Waiting for the unit file to be exported...');
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Step 3: Wait to ensure file is fully exported
+      console.log('Waiting for the unit file to be exported...');
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Step 4: Ensure the exported file exists
-    if (!fs.existsSync(exportedFilePath)) {
-      throw new Error(`Exported file not found at ${exportedFilePath}.`);
+      // Step 4: Ensure the exported file exists
+      if (!fs.existsSync(exportedFilePath)) {
+        throw new Error(`Exported file not found at ${exportedFilePath}.`);
+      }
+
+      // Step 5: Read and clean XML file
+      let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
+      xmlData = removeBOM(xmlData);
+      console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
+
+      // Step 6: Validate XML content
+      if (!xmlData.trim().startsWith('<ENVELOPE>')) {
+        throw new Error('File content is not valid XML.');
+      }
+
+      // Step 7: Parse XML
+      const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
+      console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
+
+      // Step 8: Extract UNIT details
+      const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
+      if (!tallyMessages) {
+        throw new Error('No TALLYMESSAGE found in the XML file.');
+      }
+      const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
+      // Assume each TALLYMESSAGE for units contains a UNIT element
+      const units = messagesArray.map((msg: any) => msg.UNIT).filter(Boolean);
+
+      // Step 9: Check if the unit exists by matching UNIT's NAME attribute
+      const unitExists = units.some((unitElem: any) =>
+        unitElem.$?.NAME?.toLowerCase() === unit.Name.toLowerCase()
+      );
+      console.log(`Unit "${unit.Name}" found: ${unitExists}`);
+
+      // Step 10: If the unit does not exist, create it dynamically
+      if (!unitExists) {
+        console.log(`Unit "${unit.Name}" does not exist. Creating unit...`);
+        await createUnit(
+          unit.Name,
+          unit.conversionRate // conversion rate provided dynamically
+        );
+      }
+
+      return unitExists;
+    } catch (error) {
+      console.error('Error in exportAndCheckUnit:', error);
+      throw error;
     }
-
-    // Step 5: Read and clean XML file
-    let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
-    xmlData = removeBOM(xmlData);
-    console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
-
-    // Step 6: Validate XML content
-    if (!xmlData.trim().startsWith('<ENVELOPE>')) {
-      throw new Error('File content is not valid XML.');
-    }
-
-    // Step 7: Parse XML
-    const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
-    console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
-
-    // Step 8: Extract UNIT details
-    const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
-    if (!tallyMessages) {
-      throw new Error('No TALLYMESSAGE found in the XML file.');
-    }
-    const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
-    // Assume each TALLYMESSAGE for units contains a UNIT element
-    const units = messagesArray.map((msg: any) => msg.UNIT).filter(Boolean);
-
-    // Step 9: Check if the unit exists by matching UNIT's NAME attribute
-    const unitExists = units.some((unitElem: any) =>
-      unitElem.$?.NAME?.toLowerCase() === unit.Name.toLowerCase()
-    );
-    console.log(`Unit "${unit.Name}" found: ${unitExists}`);
-
-    // Step 10: If the unit does not exist, create it dynamically
-    // if (!unitExists) {
-    //   console.log(`Unit "${unit.Name}" does not exist. Creating unit...`);
-    //   await createUnit(
-    //     unit.Name,
-    //     unit.conversionRate // conversion rate provided dynamically
-    //   );
-    // }
-
-    // return unitExists;
-  } catch (error) {
-    console.error('Error in exportAndCheckUnit:', error);
-    throw error;
   }
-}
 
-// Example createUnit function using dynamic parameters
-async function createUnit(
-  name: string,
-  conversionRate: number
-): Promise<void> {
-  try {
-    // Bring Tally to the foreground and send keys for unit creation.
-    // The key sequence below is an example; adjust it to match your Tally workflow.
-    await bringTallyToForegroundAndSendKeys([
-      'c',
-      //  'u', 'n', 'i', 't', 
-      // '{ENTER}', // Open unit creation window
-      // name, '{ENTER}','{ENTER}',                    // Enter unit name
-      // conversionRate !== undefined ? String(conversionRate) : '1', '{ENTER}', // Enter conversion rate (default to 1 if missing)
-      // 'prompt here', 'y', '{ESC}'         // Complete and exit
-    ]);
-    console.log(`Unit created: ${name}`);
-  } catch (error) {
-    console.error('Error creating unit:', error);
-    throw error;
+  // Example createUnit function using dynamic parameters
+  async function createUnit(
+    name: string,
+    conversionRate: number
+  ): Promise<void> {
+    try {
+      // Bring Tally to the foreground and send keys for unit creation.
+      // The key sequence below is an example; adjust it to match your Tally workflow.
+      await bringTallyToForegroundAndSendKeys([
+        'c',
+         'u', 'n', 'i', 't', 
+        '{ENTER}', // Open unit creation window
+        name, '{ENTER}','{ENTER}','{ENTER}',                    // Enter unit name
+        conversionRate !== undefined ? String(conversionRate) : 1, 
+        '{ENTER}', // Enter conversion rate (default to 1 if missing)
+        'prompt here', 'y', '{ESC}','prompt here', 'y', '{ESC}'        // Complete and exit
+      ]);
+      console.log(`Unit created: ${name}`, conversionRate !== undefined ? String(conversionRate) : '1');
+    } catch (error) {
+      console.error('Error creating unit:', error);
+      throw error;
+    }
   }
-}
 
 
   async function createPurchaseLedger(ledgerName: string): Promise<void> {
@@ -841,7 +841,7 @@ async function createUnit(
       const responses: Array<{ product: string; exists: boolean }> = [];
       // If items is an array, iterate; otherwise treat it as a single item.
       const itemsArray = Array.isArray(items) ? items : [items];
-      
+
       for (const item of itemsArray) {
         // Ensure the item object has a Product property.
         if (!item || !item.Product) {
@@ -856,20 +856,29 @@ async function createUnit(
       return { success: false, error: error.message };
     }
   });
-  
+
 
   ipcMain.handle('export-unit', async (_, units: any) => {
     try {
-     
-        const exists = await exportAndCheckUnit(units);
-       
-      return { success: true };
+      // const responses: Array<{ unit: string; exists: boolean }> = [];
+      // // If units is an array, iterate; otherwise treat it as a single unit.
+      // const unitsArray = Array.isArray(units) ? units : [units];
+
+      // for (const unit of unitsArray) {
+      //   // Ensure the unit object has a Name property.
+      //   if (!unit || !unit.Name) {
+      //     throw new Error("Invalid unit object passed. 'Name' property is required.");
+      //   }
+      const exists = await exportAndCheckUnit(units);
+      //   responses.push({ unit: unit.Name, exists });
+      // }
+      return { success: true, exists };
     } catch (error) {
       console.error('Error exporting unit:', error);
       return { success: false, error: error.message };
     }
   });
-  
+
 
 
   ipcMain.handle('create-item', async (_, itemName: string, symbol: string, decimal: number, hsn: number, gst: number) => {
