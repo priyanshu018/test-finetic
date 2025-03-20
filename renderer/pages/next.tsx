@@ -4,14 +4,34 @@ import Link from "next/link";
 import {
   FiSettings,
   FiUsers,
-  FiDollarSign
+  FiDollarSign,
+  FiTrendingUp,
+  FiBarChart2,
+  FiChevronRight,
+  FiClock,
+  FiShield
 } from "react-icons/fi";
-
 
 declare global {
   interface Window {
-    electronAPI: {
-      createItem: (ledgerName: string) => Promise<{ success: boolean; ledgerName?: string; error?: string }>;
+    electron: {
+      createItem: (name: string, description: string, quantity: number, code: number, taxRate: number) => Promise<any>;
+      createIgstLedger: (name: string) => Promise<any>;
+      createCgstLedger: (name: string) => Promise<any>;
+      createPurchaseEntry: (
+        voucherNumber: number, 
+        date: string, 
+        partyName: string, 
+        type: string, 
+        items: {name: string, quantity: number, price: number}[], 
+        includeGst: boolean, 
+        taxRate: number, 
+        discount: number, 
+        roundOff: number
+      ) => Promise<any>;
+      exportLedger: (name: string) => Promise<{success: boolean}>;
+      exportItem: (name: string) => Promise<any>;
+      exportUnit: (unit: {Name: string, conversionRate: number}) => Promise<any>;
     };
   }
 }
@@ -19,7 +39,7 @@ declare global {
 export default function IndexPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-
+  // Keep existing electron functions
   const handleCreateItem = async () => {
     await window.electron.createItem('item', "test", 3, 112233, 14);
   }
@@ -39,13 +59,12 @@ export default function IndexPage() {
   const handleCreatePurchase = async () => {
     await window.electron.createPurchaseEntry(123456, "02-11-2024", "Priyanshu", "Purchase", [
       { name: "Item", quantity: 2, price: 100 }
-    ], true, 14, 0, 0);;
+    ], true, 14, 0, 0);
   }
 
   const handleCheckLedger = async () => {
     const response = await window.electron.exportLedger('igstcreating');
-    alert(response.success)
-
+    alert(response.success);
   }
 
   const handleCheckItem = async () => {
@@ -53,36 +72,59 @@ export default function IndexPage() {
   }
 
   const handleCheckUnit = async () => {
-
     await window.electron.exportUnit({ Name: "testing", conversionRate: 5 });
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      {/* Animated Blob Background */}
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Subtle professional background pattern */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] pointer-events-none"></div>
+      
+      {/* Subtle gradient accents */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-0 left-0 w-40 h-40 bg-blue-300 rounded-full mix-blend-multiply opacity-50 blur-3xl animate-blob"></div>
-        <div className="absolute bottom-0 right-0 w-40 h-40 bg-green-300 rounded-full mix-blend-multiply opacity-50 blur-3xl animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 w-40 h-40 bg-purple-300 rounded-full mix-blend-multiply opacity-50 blur-3xl animate-blob animation-delay-4000"></div>
+        <div className="absolute -top-10 -left-10 w-56 h-56 bg-blue-400 rounded-full opacity-[0.07] blur-3xl"></div>
+        <div className="absolute -bottom-10 -right-10 w-56 h-56 bg-indigo-400 rounded-full opacity-[0.07] blur-3xl"></div>
       </div>
 
-      {/* Glassmorphic Navigation Bar */}
-      <nav className="fixed top-0 w-full bg-white/70 backdrop-blur-md border-b border-gray-200 z-50">
+      {/* Professional Navigation Bar */}
+      <nav className="fixed top-0 w-full bg-white shadow-sm z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Software Name */}
-            <span className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent">
-              Finetic AI
-            </span>
+            {/* Company logo/name */}
+            <div className="flex items-center">
+              <span className="text-xl font-semibold text-gray-900">
+                <span className="text-blue-600">Finetic</span>AI
+              </span>
+            </div>
 
-            {/* Dropdown Button + Menu */}
-            <div className="relative">
+            {/* Professional user menu */}
+            <div className="relative flex items-center space-x-4">
+              {/* <button 
+                className="hidden md:flex items-center text-sm text-gray-700 py-1.5 px-3 rounded-md hover:bg-gray-100 transition-colors duration-150"
+              >
+                <FiClock className="w-4 h-4 mr-1.5 text-gray-500" />
+                <span>Activity</span>
+              </button> */}
+              
+              {/* <button 
+                className="hidden md:flex items-center text-sm text-gray-700 py-1.5 px-3 rounded-md hover:bg-gray-100 transition-colors duration-150"
+              >
+                <FiShield className="w-4 h-4 mr-1.5 text-gray-500" />
+                <span>Support</span>
+              </button> */}
+              
+              <div className="h-5 w-px bg-gray-300 hidden md:block"></div>
+              
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-all duration-300"
+                className="flex items-center space-x-2 p-1.5 rounded-full hover:bg-gray-100 transition-all duration-150"
+                aria-label="User menu"
               >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white text-sm font-medium">
+                  U
+                </div>
                 <svg
-                  className="w-6 h-6 text-gray-700"
+                  className="w-5 h-5 text-gray-500 hidden md:block"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -91,151 +133,178 @@ export default function IndexPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M4 6h16M4 12h16m-7 6h7"
+                    d="M19 9l-7 7-7-7"
                   />
                 </svg>
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white shadow-2xl rounded-xl border border-gray-200 overflow-hidden animate-fadeIn">
+                <div className="absolute right-0 top-full mt-1 w-56 bg-white shadow-lg rounded-lg border border-gray-200 overflow-hidden z-10">
+                  <div className="p-3 border-b border-gray-100">
+                    <div className="font-medium text-gray-900">User Account</div>
+                    <div className="text-xs text-gray-500">user@company.com</div>
+                  </div>
                   <div className="divide-y divide-gray-100">
                     {/* Profile */}
                     <Link
                       href="/profile"
-                      className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-all duration-300"
+                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all duration-150"
                     >
-                      <FiUsers className="w-5  pr-2" />
+                      <FiUsers className="w-4 h-4 mr-3 text-gray-500" />
                       Profile
                     </Link>
 
                     {/* Settings */}
                     <Link
                       href="/settings"
-                      className="flex  items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-all duration-300"
+                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all duration-150"
                     >
-                      <FiSettings className="w-5  pr-2" />
+                      <FiSettings className="w-4 h-4 mr-3 text-gray-500" />
                       Settings
                     </Link>
 
                     {/* Billing */}
                     <Link
                       href="/billing"
-                      className="flex space-x-4 items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-all duration-300"
+                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all duration-150"
                     >
-                      <FiDollarSign className="w-5 pr-2" />
+                      <FiDollarSign className="w-4 h-4 mr-3 text-gray-500" />
                       Billing
                     </Link>
+                    
+                    {/* Logout */}
+                    <button 
+                      className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all duration-150"
+                    >
+                      <svg className="w-4 h-4 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      Sign out
+                    </button>
                   </div>
                 </div>
               )}
             </div>
-
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <div className="relative z-10 mt-20 text-center space-y-12">
-        {/* Animated Header */}
-        {/* Action Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl px-4">
+      <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="mb-8 text-center sm:text-left">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">Welcome back</h1>
+          <p className="text-gray-600 mt-1">Select an option to get started</p>
+        </div>
+        
+        {/* Action Cards Grid - Professional Version */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {/* AI Workflow Card */}
           <Link
             href="/ai-bill"
-            className="group relative bg-white/50 backdrop-blur-lg rounded-2xl p-8 border border-gray-200 hover:border-cyan-300 transition-all duration-500 hover:shadow-xl"
+            className="group flex bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
           >
-            <div className="space-y-4">
-              <div className="inline-block p-4 rounded-xl bg-gradient-to-br from-cyan-100 to-blue-100">
-                <svg
-                  className="w-12 h-12 text-cyan-600 group-hover:scale-110 transition-transform duration-300"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                  />
-                </svg>
+            <div className="w-3 bg-blue-600 hidden sm:block"></div>
+            <div className="flex-1 p-6 sm:p-8">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center">
+                    <FiTrendingUp className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+                <div className="ml-4 flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <h2 className="text-lg font-medium text-gray-900">
+                      AI Workflow
+                    </h2>
+                    <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all duration-200" />
+                  </div>
+                  <p className="text-gray-600">
+                    Automated bill processing powered by AI
+                  </p>
+                  <div className="mt-4 flex items-center text-xs text-blue-600">
+                    <span className="font-medium">Get started</span>
+                  </div>
+                </div>
               </div>
-              <h2 className="text-2xl font-semibold text-gray-800">
-                AI Workflow
-              </h2>
-              <p className="text-gray-600 group-hover:text-gray-800 transition-colors duration-300">
-                Automated bill processing powered by AI
-              </p>
             </div>
           </Link>
 
           {/* Management Card */}
           <Link
             href="/bill-management"
-            className="group relative bg-white/50 backdrop-blur-lg rounded-2xl p-8 border border-gray-200 hover:border-purple-300 transition-all duration-500 hover:shadow-xl"
+            className="group flex bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
           >
-            <div className="space-y-4">
-              <div className="inline-block p-4 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100">
-                <svg
-                  className="w-12 h-12 text-purple-600 group-hover:scale-110 transition-transform duration-300"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 17v-6m3 6v-6m3 6v-6M3 12h18"
-                  />
-                </svg>
+            <div className="w-3 bg-indigo-600 hidden sm:block"></div>
+            <div className="flex-1 p-6 sm:p-8">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-lg bg-indigo-50 flex items-center justify-center">
+                    <FiBarChart2 className="w-6 h-6 text-indigo-600" />
+                  </div>
+                </div>
+                <div className="ml-4 flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <h2 className="text-lg font-medium text-gray-900">
+                      Management
+                    </h2>
+                    <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all duration-200" />
+                  </div>
+                  <p className="text-gray-600">
+                    Advanced bill tracking and analytics
+                  </p>
+                  <div className="mt-4 flex items-center text-xs text-indigo-600">
+                    <span className="font-medium">Get started</span>
+                  </div>
+                </div>
               </div>
-              <h2 className="text-2xl font-semibold text-gray-800">
-                Management
-              </h2>
-              <p className="text-gray-600 group-hover:text-gray-800 transition-colors duration-300">
-                Advanced bill tracking and analytics
-              </p>
             </div>
           </Link>
-
         </div>
-
-        <div className="flex gap-4 justify-center">
-
-          <button onClick={handleCreateIgst} className="p-2 px-4 bg-gray-200 text-black rounded-full">
-            create Igst
-          </button>
-
-          <button onClick={handleCreateCgst} className="p-2 px-4 bg-gray-200 text-black rounded-full">
-            create cgst
-          </button>
-
-          <button onClick={handleCreateUgst} className="p-2 px-4 bg-gray-200 text-black rounded-full">
-            create ugst
-          </button>
-
-          <button onClick={handleCreatePurchase} className="p-2 px-4 bg-gray-200 text-black rounded-full">
-            create purchase
-          </button>
-
-          <button onClick={handleCreateItem} className="p-2 px-4 bg-gray-200 text-black rounded-full">
-            create item
-          </button>
-
-          <button onClick={handleCheckLedger} className="p-2 px-4 bg-gray-200 text-black rounded-full">
-            check ledger exist
-          </button>
-
-          <button onClick={handleCheckItem} className="p-2 px-4 bg-gray-200 text-black rounded-full">
-            check item exist
-          </button>
-
-          <button onClick={handleCheckUnit} className="p-2 px-4 bg-gray-200 text-black rounded-full">
-            check Unit exist
-          </button>
-        </div>
+        
+        {/* Activity summary - a professional touch */}
+        {/* <div className="mt-10 max-w-5xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 className="text-sm font-medium text-gray-900">Recent Activity</h2>
+            <button className="text-xs text-blue-600 font-medium">View all</button>
+          </div>
+          <div className="divide-y divide-gray-100">
+            <div className="px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className="ml-3 text-sm text-gray-700">Bill processed successfully</span>
+              </div>
+              <span className="text-xs text-gray-500">Just now</span>
+            </div>
+          </div>
+        </div> */}
       </div>
+      
+      {/* Footer - professional touch */}
+      <footer className="bg-white absolute bottom-0 left-0 w-full border-t border-gray-200 py-4 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+            <div>&copy; 2025 FineticAI. All rights reserved.</div>
+            <div className="flex space-x-4 mt-3 md:mt-0">
+              <a href="#" className="hover:text-gray-700">Terms</a>
+              <a href="#" className="hover:text-gray-700">Privacy</a>
+              <a href="#" className="hover:text-gray-700">Help</a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
+
+/* Add this to your global CSS
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+*/

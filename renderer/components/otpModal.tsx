@@ -66,7 +66,7 @@ export function EmailOtpModal() {
             setSuccess('Successfully verified!');
             localStorage.setItem("email", email)
             setTimeout(() => {
-                push('/next')
+                // push('/next')
                 setIsOpen(false)
             }, 2000);
         } catch (err) {
