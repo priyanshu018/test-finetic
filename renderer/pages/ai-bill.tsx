@@ -718,6 +718,7 @@ export default function BillWorkflow() {
     const items = billData?.[0]?.items
     const isPurchaser = role === "Purchaser"
     const date = formatDateToDDMMYYYY(billData?.[0]?.billDate)
+    const invoiceNumber = billData?.[0]?.invoiceNumber
     // const allLedgerResponse = await window.electron.exportLedger(ledgerNames, false)
     // const purchaserLedgerResponse = await window.electron.exportLedger(purchaserName, isPurchaser)
     // const unitResponse = await window.electron.exportUnit({ Name: "pcs", conversionRate: 3 });
@@ -725,13 +726,14 @@ export default function BillWorkflow() {
     // console.log("allLedgerResponse:", allLedgerResponse, "purchaserLedgerResponse:", purchaserLedgerResponse, "itemResponse:", itemResponse, "unitResponse:", unitResponse)
     // const respone = await window.electron.createPurchaseEntry(billData?.invoiceNumber,"02-11-2024",purchaserName,)
     // handleCheckAllGstLedger(role === "Purchaser");
-    // console.log(date,purchaserName,)
+    console.log(invoiceNumber,date,purchaserName,purchaserName,items,true,)
+
 
     
-    await window.electron.createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase", [
-      { name: "Item", quantity: 2, price: 100 },
-      { name: "Item Name", quantity: 1, price: 50 }
-    ], true, 0, 14, 12);
+    // await window.electron.createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase", [
+    //   { name: "Item", quantity: 2, price: 100 },
+    //   { name: "Item Name", quantity: 1, price: 50 }
+    // ], true, 0, 14, 12);
   };
 
   const fixRowCalculation = (billIndex: number, itemIndex: number) => {
