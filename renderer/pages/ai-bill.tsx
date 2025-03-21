@@ -2,15 +2,15 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { BackendLink } from "../../service/api";
 import { useRouter } from "next/router";
-import { 
-  ChevronLeft, 
-  Upload, 
-  FileText, 
-  X, 
-  ChevronRight, 
-  ArrowLeft, 
-  Check, 
-  Plus, 
+import {
+  ChevronLeft,
+  Upload,
+  FileText,
+  X,
+  ChevronRight,
+  ArrowLeft,
+  Check,
+  Plus,
   CloudCog,
   Trash2,
   Filter,
@@ -46,28 +46,28 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
   const [showGuide, setShowGuide] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
-  
+
   // Show initial guide on first render
 
 
   const adjustZoom = (amount: number) => {
     // Calculate new zoom level with limits
     const newZoom = Math.max(1, Math.min(5, zoom + amount));
-    
+
     // If no change, don't do anything
     if (newZoom === zoom) return;
-    
+
     // Get container and image dimensions
     if (!containerRef.current || !imageRef.current) return;
-    
+
     const containerRect = containerRef.current.getBoundingClientRect();
     const containerWidth = containerRect.width;
     const containerHeight = containerRect.height;
-    
+
     // Calculate the center point of the container
     const centerX = containerWidth / 2;
     const centerY = containerHeight / 2;
-    
+
     // Calculate new position to zoom toward center
     if (newZoom > zoom) {
       // Zooming in - adjust position to keep center point fixed
@@ -80,7 +80,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
       const scaleFactor = newZoom / zoom;
       const newPosX = position.x * scaleFactor;
       const newPosY = position.y * scaleFactor;
-      
+
       // If we're zooming out to 1, reset position entirely
       if (newZoom === 1) {
         setPosition({ x: 0, y: 0 });
@@ -88,10 +88,10 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
         setPosition({ x: newPosX, y: newPosY });
       }
     }
-    
+
     // Apply new zoom
     setZoom(newZoom);
-    
+
     // Show guide briefly when zooming
     if (!isFirstVisit && !showGuide) {
       setShowGuide(true);
@@ -99,13 +99,13 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
       return () => clearTimeout(timer);
     }
   };
-  
+
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY * -0.003; // Smaller increment for smoother zoom
     adjustZoom(delta);
   };
-  
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (zoom > 1) {
       setIsDragging(true);
@@ -119,7 +119,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
       }
     }
   };
-  
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging) {
       setPosition({
@@ -128,7 +128,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
       });
     }
   };
-  
+
   const handleMouseUp = () => {
     setIsDragging(false);
     // Reset cursor
@@ -136,7 +136,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
       containerRef.current.style.cursor = zoom > 1 ? "grab" : "default";
     }
   };
-  
+
   const handleDoubleClick = (e: React.MouseEvent) => {
     if (zoom > 1) {
       setZoom(1);
@@ -144,15 +144,15 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
     } else {
       // Get the click position relative to the container
       if (!containerRef.current) return;
-      
+
       const rect = containerRef.current.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
-      
+
       // Calculate center offsets
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
-      
+
       // Zoom in centered on the click point
       setZoom(2);
       setPosition({
@@ -161,17 +161,17 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
       });
     }
   };
-  
+
   const resetView = () => {
     setZoom(1);
     setPosition({ x: 0, y: 0 });
     setShowGuide(true);
     setTimeout(() => setShowGuide(false), 2000);
   };
-  
+
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
-    
+
     if (document.fullscreenElement) {
       document.exitFullscreen();
     } else {
@@ -180,11 +180,11 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
   };
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className="relative overflow-hidden rounded-xl bg-gray-50"
-      style={{ 
-        ...style, 
+      style={{
+        ...style,
         cursor: isDragging ? 'grabbing' : zoom > 1 ? 'grab' : 'default',
         userSelect: 'none'
       }}
@@ -209,13 +209,13 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
           pointerEvents: 'none' // Prevent image dragging interference
         }}
       />
-      
+
       {/* Zoom Percentage Indicator */}
       <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-sm shadow-sm">
         <ZoomIn className="w-3.5 h-3.5" />
         {Math.round(zoom * 100)}%
       </div>
-      
+
       {/* Controls Panel */}
       <div className="absolute top-3 right-3 transition-opacity opacity-80 hover:opacity-100">
         <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-lg shadow-lg flex gap-1 border border-gray-200">
@@ -227,7 +227,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
           >
             <ZoomOut className="w-4 h-4" />
           </button>
-          
+
           <button
             onClick={() => adjustZoom(0.25)}
             className="p-1.5 rounded-md hover:bg-gray-100 text-gray-700 transition-colors"
@@ -236,9 +236,9 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
           >
             <ZoomIn className="w-4 h-4" />
           </button>
-          
+
           <div className="w-px h-6 my-auto bg-gray-200 mx-0.5"></div>
-          
+
           <button
             onClick={resetView}
             className="p-1.5 rounded-md hover:bg-gray-100 text-gray-700 transition-colors"
@@ -246,7 +246,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
           >
             <RotateCcw className="w-4 h-4" />
           </button>
-          
+
           <button
             onClick={toggleFullscreen}
             className="p-1.5 rounded-md hover:bg-gray-100 text-gray-700 transition-colors"
@@ -256,7 +256,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
           </button>
         </div>
       </div>
-      
+
       {/* Mobile Controls (bottom) */}
       <div className="md:hidden absolute bottom-12 left-1/2 transform -translate-x-1/2 transition-opacity opacity-80 hover:opacity-100">
         <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg flex gap-1 border border-gray-200">
@@ -267,7 +267,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
           >
             <Minus className="w-5 h-5" />
           </button>
-          
+
           <button
             onClick={() => adjustZoom(0.25)}
             className="p-2 rounded-full hover:bg-gray-100 text-gray-700"
@@ -277,7 +277,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
           </button>
         </div>
       </div>
-      
+
       {/* Usage Guide Overlay */}
       {showGuide && (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center transition-opacity">
@@ -303,7 +303,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
                 <span className="text-gray-600">Double-click to toggle zoom</span>
               </li>
             </ul>
-            <button 
+            <button
               className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg w-full hover:bg-blue-700 transition-colors"
               onClick={() => setShowGuide(false)}
             >
@@ -312,7 +312,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
           </div>
         </div>
       )}
-      
+
       {/* Subtle instruction hint when zoom > 1 */}
       {zoom > 1 && !showGuide && (
         <div className="absolute bottom-12 left-3 bg-black/40 text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm opacity-80">
@@ -370,7 +370,7 @@ export function LoadingScreen({ isLoading }: { isLoading: boolean }) {
           <div className="absolute inset-0 w-full h-full border-4 border-t-transparent border-l-transparent border-r-blue-500 border-b-blue-500 rounded-full animate-spin" style={{ animationDuration: '1.5s' }} />
           <CloudCog className="w-10 h-10 text-blue-600" />
         </div>
-        
+
         <div className="space-y-2 text-center">
           <p className="text-xl font-semibold text-gray-800">
             {steps[currentStep]}
@@ -378,17 +378,17 @@ export function LoadingScreen({ isLoading }: { isLoading: boolean }) {
           <div className="text-gray-500 font-medium flex items-center gap-2 justify-center">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <circle cx="12" cy="12" r="10" strokeWidth="2" stroke="#CBD5E0" />
-              <path 
-                strokeLinecap="round" 
-                d="M12 6v6l4 2" 
-                strokeWidth="2" 
-                stroke="currentColor" 
+              <path
+                strokeLinecap="round"
+                d="M12 6v6l4 2"
+                strokeWidth="2"
+                stroke="currentColor"
               />
             </svg>
             {formatTime(elapsed)}
           </div>
         </div>
-        
+
         <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
           <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: `${(currentStep + 1) * 25}%` }}></div>
         </div>
@@ -409,26 +409,24 @@ const Stepper = ({ steps, currentStep }: StepperProps) => {
         {steps.map((step, index) => (
           <div key={step} className="flex-1  relative">
             <div className="flex flex-col items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${
-                currentStep >= index 
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-200" 
-                  : "bg-gray-200 text-gray-500"
-              }`}>
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${currentStep >= index
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                : "bg-gray-200 text-gray-500"
+                }`}>
                 {currentStep > index ? (
                   <Check className="w-5 h-5" />
                 ) : (
                   index + 1
                 )}
               </div>
-              <div className={`mt-2 text-center ${
-                currentStep >= index ? "text-gray-800 font-medium" : "text-gray-400"
-              }`}>
+              <div className={`mt-2 text-center ${currentStep >= index ? "text-gray-800 font-medium" : "text-gray-400"
+                }`}>
                 <span className="hidden md:block">{step}</span>
                 <span className="md:hidden">{step.split(' ')[0]}</span>
               </div>
             </div>
-            
-           
+
+
           </div>
         ))}
       </div>
@@ -641,18 +639,12 @@ export default function BillWorkflow() {
     setBillData((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
-  const handleCheckCgst = async () => {
-    const ledgerNames = [
-      'Cgst0', 'Cgst2.5', 'Cgst6', 'Cgst9', 'Cgst14',
-      'Igst0', 'Igst5', 'Igst12', 'Igst18', 'Igst28',
-      'Ut/Sgst0', 'Ut/Sgst2.5', 'Ut/Sgst6', 'Ut/Sgst9', 'Ut/Sgst14'
-    ];
+  const handleCheckAllGstLedger = async (isPurchaser) => {
 
-    const purchaserName = role === "Purchaser" ? billData?.[0]?.receiverDetails?.name : billData?.[0]?.senderDetails?.name;
 
     try {
       setIsLoading(true);
-      const response = await window.electron.exportItem(billData?.[0]?.items);
+      const response2 = await window.electron.exportItem(billData?.[0]?.items);
       setIsLoading(false);
       toast.success("Data exported successfully!");
     } catch (error) {
@@ -665,7 +657,23 @@ export default function BillWorkflow() {
   const handleExport = async () => {
     console.log(role);
     console.log(billData);
-    handleCheckCgst();
+    const purchaserName = role === "Purchaser" ? billData?.[0]?.receiverDetails?.name : billData?.[0]?.senderDetails?.name;
+    const ledgerNames = [
+      'Cgst0', 'Cgst2.5', 'Cgst6', 'Cgst9', 'Cgst14',
+      'Igst0', 'Igst5', 'Igst12', 'Igst18', 'Igst28',
+      'Ut/Sgst0', 'Ut/Sgst2.5', 'Ut/Sgst6', 'Ut/Sgst9', 'Ut/Sgst14'
+    ];
+    const items = billData?.[0]?.items
+    const isPurchaser = role === "Purchaser"
+    const allLedgerResponse = await window.electron.exportLedger(ledgerNames, isPurchaser)
+    const purchaserLedgerResponse = await window.electron.exportLedger(purchaserName, isPurchaser)
+    const unitResponse = await window.electron.exportUnit("pcs");
+    const itemResponse = await window.electron.exportItem(billData?.[0]?.items);
+    console.log("allLedgerResponse:", allLedgerResponse, "purchaserLedgerResponse:", purchaserLedgerResponse, "itemResponse:", itemResponse, "unitResponse:", unitResponse)
+
+
+    // handleCheckAllGstLedger(role === "Purchaser");
+
   };
 
   const fixRowCalculation = (billIndex: number, itemIndex: number) => {
@@ -709,7 +717,7 @@ export default function BillWorkflow() {
             <h1 className="text-2xl font-bold text-gray-800 ml-6">Bill Management System</h1>
           </div>
         </header>
-        
+
         <main className="flex-1 flex items-center justify-center p-8">
           <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden">
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -720,7 +728,7 @@ export default function BillWorkflow() {
                 Choose the type of bills you want to manage
               </p>
             </div>
-            
+
             <div className="p-8 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {/* Purchase Bills Option */}
@@ -745,7 +753,7 @@ export default function BillWorkflow() {
                     Select
                   </div>
                 </button>
-        
+
                 {/* Sales Bills Option */}
                 <button
                   onClick={() => {
@@ -779,7 +787,7 @@ export default function BillWorkflow() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 relative">
       <LoadingScreen isLoading={isLoading} />
-      
+
       <header className="py-6 px-8 border-b border-gray-200 bg-white shadow-sm sticky top-0 z-20">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6">
@@ -794,7 +802,7 @@ export default function BillWorkflow() {
               {role === "Purchaser" ? "Purchase Bill Management" : "Sales Bill Management"}
             </h1>
           </div>
-          
+
           <div className="text-sm flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full">
             <span className="font-medium text-blue-700">
               {role === "Purchaser" ? "Purchase Mode" : "Sales Mode"}
@@ -802,9 +810,9 @@ export default function BillWorkflow() {
           </div>
         </div>
       </header>
-      
+
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <Stepper 
+        <Stepper
           steps={["Role Selection", "Upload Files", "Verify Data", "Confirm"]}
           currentStep={currentStep}
         />
@@ -816,11 +824,10 @@ export default function BillWorkflow() {
               onDragOver={handleDragOverFiles}
               onDragLeave={handleDragLeaveFiles}
               onDrop={handleDropFiles}
-              className={`group relative bg-white rounded-2xl border-2 border-dashed ${
-                isDraggingFile 
-                  ? "border-blue-500 bg-blue-50" 
-                  : "border-gray-300 hover:border-gray-400"
-              } transition-all duration-200 py-16 px-6 text-center cursor-pointer shadow-lg hover:shadow-xl`}
+              className={`group relative bg-white rounded-2xl border-2 border-dashed ${isDraggingFile
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300 hover:border-gray-400"
+                } transition-all duration-200 py-16 px-6 text-center cursor-pointer shadow-lg hover:shadow-xl`}
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="space-y-6 relative z-10">
@@ -858,7 +865,7 @@ export default function BillWorkflow() {
                     Uploaded Files ({files.length})
                   </h3>
                   {files.length > 1 && (
-                    <button 
+                    <button
                       onClick={() => setFiles([])}
                       className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center gap-1"
                     >
@@ -867,7 +874,7 @@ export default function BillWorkflow() {
                     </button>
                   )}
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {files.map((file) => (
                     <div
@@ -904,11 +911,10 @@ export default function BillWorkflow() {
               <button
                 onClick={handleNextStep}
                 disabled={files.length === 0}
-                className={`px-6 py-3 rounded-lg font-medium text-base transition-all flex items-center gap-2 ${
-                  files.length
-                    ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
-                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                }`}
+                className={`px-6 py-3 rounded-lg font-medium text-base transition-all flex items-center gap-2 ${files.length
+                  ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  }`}
               >
                 Process Files
                 <ChevronRight className="w-5 h-5" />
@@ -940,35 +946,33 @@ export default function BillWorkflow() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex items-center justify-between mt-4">
                     <button
                       onClick={() => setCurrentBillIndex((prev) => Math.max(0, prev - 1))}
                       disabled={currentBillIndex === 0}
-                      className={`flex items-center justify-center p-2 rounded-full ${
-                        currentBillIndex === 0
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                      } transition-colors`}
+                      className={`flex items-center justify-center p-2 rounded-full ${currentBillIndex === 0
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                        } transition-colors`}
                     >
                       <ArrowLeft className="w-5 h-5" />
                     </button>
-                    
+
                     <div className="flex items-center gap-2">
                       {files.map((_, idx) => (
                         <button
                           key={idx}
                           onClick={() => setCurrentBillIndex(idx)}
-                          className={`w-2.5 h-2.5 rounded-full transition-all ${
-                            currentBillIndex === idx
-                              ? "bg-blue-600 w-6"
-                              : "bg-gray-300 hover:bg-gray-400"
-                          }`}
+                          className={`w-2.5 h-2.5 rounded-full transition-all ${currentBillIndex === idx
+                            ? "bg-blue-600 w-6"
+                            : "bg-gray-300 hover:bg-gray-400"
+                            }`}
                           aria-label={`Go to bill ${idx + 1}`}
                         />
                       ))}
                     </div>
-                    
+
                     <button
                       onClick={() => {
                         if (currentBillIndex === files.length - 1)
@@ -982,20 +986,20 @@ export default function BillWorkflow() {
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="lg:w-1/2 space-y-6">
                   <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                     <FileDigit className="w-5 h-5" />
                     Bill Information
                   </h3>
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <TextField
                       label="Invoice Number"
                       value={billData[currentBillIndex]?.invoiceNumber || ""}
                       onChange={(e) => handleDataChange("invoiceNumber", e.target.value)}
                     />
-                    
+
                     <div className="space-y-1.5">
                       <label className="block text-sm font-medium text-gray-700 flex items-center gap-1.5">
                         <Calendar className="w-4 h-4" />
@@ -1010,13 +1014,13 @@ export default function BillWorkflow() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="pt-2">
                     <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
                       <Building className="w-5 h-5" />
                       {role === "Purchaser" ? "Receiver Details" : "Sender Details"}
                     </h3>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <TextField
                         label={role === "Purchaser" ? "Receiver Name" : "Sender Name"}
@@ -1039,7 +1043,7 @@ export default function BillWorkflow() {
                           }
                         }}
                       />
-                      
+
                       <TextField
                         label={role === "Purchaser" ? "Receiver GST" : "Sender GST"}
                         value={
@@ -1074,7 +1078,7 @@ export default function BillWorkflow() {
                   <Filter className="w-5 h-5" />
                   Item Details
                 </h3>
-                
+
                 <button
                   onClick={() => addItem(currentBillIndex)}
                   className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors shadow-sm"
@@ -1083,7 +1087,7 @@ export default function BillWorkflow() {
                   Add Item
                 </button>
               </div>
-              
+
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -1245,7 +1249,7 @@ export default function BillWorkflow() {
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
-                              
+
                               {(!grossValid || !netValid) && (
                                 <button
                                   onClick={() => fixRowCalculation(currentBillIndex, idx)}
@@ -1260,7 +1264,7 @@ export default function BillWorkflow() {
                         </tr>
                       );
                     })}
-                    
+
                     {(!billData[currentBillIndex]?.items || billData[currentBillIndex]?.items.length === 0) && (
                       <tr>
                         <td colSpan={12} className="px-6 py-8 text-center text-gray-500">
@@ -1288,7 +1292,7 @@ export default function BillWorkflow() {
             {/* Totals Section */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Financial Summary</h3>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
                   <label className="block text-sm font-medium text-gray-700">Total Amount</label>
@@ -1299,7 +1303,7 @@ export default function BillWorkflow() {
                     className="block w-full border border-gray-300 rounded-lg p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white hover:bg-gray-50 focus:bg-white"
                   />
                 </div>
-                
+
                 <div className="space-y-1.5">
                   <label className="block text-sm font-medium text-gray-700">Grand Total</label>
                   <input
@@ -1310,10 +1314,10 @@ export default function BillWorkflow() {
                   />
                 </div>
               </div>
-              
+
               <div className="mt-6 pt-6 border-t border-gray-100">
                 <h4 className="text-md font-semibold text-gray-700 mb-4">Tax Details</h4>
-                
+
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
                     { label: "SGST", key: "SGST" },
@@ -1342,7 +1346,7 @@ export default function BillWorkflow() {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex justify-between pt-6">
               <button
                 onClick={() => setCurrentStep(1)}
@@ -1351,7 +1355,7 @@ export default function BillWorkflow() {
                 <ArrowLeft className="w-4 h-4" />
                 Back to Files
               </button>
-              
+
               <button
                 onClick={() => {
                   if (currentBillIndex === files.length - 1) {
@@ -1374,7 +1378,7 @@ export default function BillWorkflow() {
           <div className="space-y-8">
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-xl font-semibold text-gray-800 mb-6">Bill Summary</h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {files.map((file, index) => (
                   <div
@@ -1397,7 +1401,7 @@ export default function BillWorkflow() {
                         Bill #{index + 1}
                       </div>
                     </div>
-                    
+
                     <div className="p-4">
                       <div className="flex justify-between items-start mb-2">
                         <p className="text-sm font-medium text-gray-500">
@@ -1407,13 +1411,13 @@ export default function BillWorkflow() {
                           {billData[index]?.invoiceNumber || "No invoice #"}
                         </p>
                       </div>
-                      
+
                       <div className="space-y-1">
                         <p className="text-2xl font-bold text-gray-800">
                           ₹{billData[index]?.totalAmount || "0.00"}
                         </p>
                         <p className="text-sm text-gray-600 truncate">
-                          {role === "Purchaser" 
+                          {role === "Purchaser"
                             ? `From: ${billData[index]?.senderDetails?.name || "Unknown"}`
                             : `To: ${billData[index]?.receiverDetails?.name || "Unknown"}`}
                         </p>
@@ -1421,7 +1425,7 @@ export default function BillWorkflow() {
                           {billData[index]?.items?.length || 0} items
                         </p>
                       </div>
-                      
+
                       <button
                         onClick={() => {
                           setCurrentBillIndex(index);
@@ -1437,7 +1441,7 @@ export default function BillWorkflow() {
                 ))}
               </div>
             </div>
-            
+
             <div className="bg-white rounded-xl shadow-lg p-8">
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-full mb-4">
@@ -1448,7 +1452,7 @@ export default function BillWorkflow() {
                   All bills have been processed and are ready to be exported to your accounting system.
                 </p>
               </div>
-              
+
               <div className="flex flex-col md:flex-row gap-4 justify-center mt-8">
                 <button
                   onClick={() => setCurrentStep(2)}
@@ -1457,7 +1461,7 @@ export default function BillWorkflow() {
                   <ArrowLeft className="w-5 h-5" />
                   Review Bills Again
                 </button>
-                
+
                 <button
                   onClick={handleExport}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-lg"
@@ -1466,7 +1470,7 @@ export default function BillWorkflow() {
                   Export Data to Tally
                 </button>
               </div>
-              
+
               <div className="border-t border-gray-100 mt-8 pt-6">
                 <p className="text-center text-gray-500 text-sm">
                   {status}
@@ -1477,7 +1481,7 @@ export default function BillWorkflow() {
           </div>
         )}
       </main>
-    
+
     </div>
   );
 }

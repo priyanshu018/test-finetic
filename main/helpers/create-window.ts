@@ -600,12 +600,12 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       // The key sequence below is an example; adjust it to match your Tally workflow.
       await bringTallyToForegroundAndSendKeys([
         'c',
-         'u', 'n', 'i', 't', 
+        'u', 'n', 'i', 't',
         '{ENTER}', // Open unit creation window
-        name, '{ENTER}','{ENTER}','{ENTER}',                    // Enter unit name
-        conversionRate !== undefined ? String(conversionRate) : 1, 
+        name, '{ENTER}', '{ENTER}', '{ENTER}',                    // Enter unit name
+        conversionRate !== undefined ? String(conversionRate) : 1,
         '{ENTER}', // Enter conversion rate (default to 1 if missing)
-        'prompt here', 'y', '{ESC}','prompt here', 'y', '{ESC}'        // Complete and exit
+        'prompt here', 'y', '{ESC}', 'prompt here', 'y', '{ESC}'        // Complete and exit
       ]);
       console.log(`Unit created: ${name}`, conversionRate !== undefined ? String(conversionRate) : '1');
     } catch (error) {
@@ -736,10 +736,10 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       // Step 1: Bring Tally to foreground and send keys for item creation
       await bringTallyToForegroundAndSendKeys([
         'c', 'i', 't', 'e', 'm', '{ENTER}',  // Open item creation
-        name, '{ENTER}', '{ENTER}', '{ENTER}',          // Enter item name and confirm
-        'C', 'r', 'e', 'a', 't', 'e', '{ENTER}', symbol, '{ENTER}', '{ENTER}', '{ENTER}'
-        , decimal, '{ENTER}',
-        'prompt here', 'y', '{ENTER}', "specify details", '{ENTER}', hsn, '{ENTER}', '{ENTER}', "specify details", '{ENTER}', '{ENTER}', gst, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', 'prompt here', 'y', '{ESC}', '{ESC}', 'prompt here', 'y', '{ESC}'  // Create and exit
+        name,
+        '{ENTER}', '{ENTER}', '{ENTER}', symbol, '{ENTER}',     // Enter item name and confirm
+        '{ENTER}', "specify details", '{ENTER}', hsn, '{ENTER}', '{ENTER}', "specify details", '{ENTER}', '{ENTER}', gst, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', 'prompt here', 'y', '{ESC}', '{ESC}', 
+        'prompt here', 'y', '{ESC}'  // Create and exit
       ]);
       console.log(decimal, "decimal")
     } catch (error) {
@@ -860,24 +860,26 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
   ipcMain.handle('export-unit', async (_, units: any) => {
     try {
-      // const responses: Array<{ unit: string; exists: boolean }> = [];
-      // // If units is an array, iterate; otherwise treat it as a single unit.
-      // const unitsArray = Array.isArray(units) ? units : [units];
-
-      // for (const unit of unitsArray) {
-      //   // Ensure the unit object has a Name property.
-      //   if (!unit || !unit.Name) {
-      //     throw new Error("Invalid unit object passed. 'Name' property is required.");
-      //   }
-      const exists = await exportAndCheckUnit(units);
-      //   responses.push({ unit: unit.Name, exists });
-      // }
-      return { success: true, exists };
+      // Check if units is an array
+      if (Array.isArray(units)) {
+        const results = [];
+        // Loop through each unit in the array
+        for (const unit of units) {
+          const exists = await exportAndCheckUnit(unit);
+          results.push({ name: unit.Name, exists });
+        }
+        return { success: true, results };
+      } else {
+        // Fallback for single unit objects
+        const exists = await exportAndCheckUnit(units);
+        return { success: true, exists };
+      }
     } catch (error) {
       console.error('Error exporting unit:', error);
       return { success: false, error: error.message };
     }
   });
+
 
 
 

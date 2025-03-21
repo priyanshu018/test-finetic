@@ -41,7 +41,7 @@ export default function IndexPage() {
 
   // Keep existing electron functions
   const handleCreateItem = async () => {
-    await window.electron.createItem('item', "test", 3, 112233, 14);
+    await window.electron.createItem('item2', "test", 3, 112233, 14);
   }
 
   const handleCreateIgst = async () => {
@@ -67,14 +67,24 @@ export default function IndexPage() {
     alert(response.success);
   }
 
-  const handleCheckItem = async () => {
-    await window.electron.exportItem('item');
-  }
-
+  const handleExportItems = async () => {
+    const items = [
+      { Product: "item2", HSN: "654321", symbol: "box", decimal: 0, SGST: "9", CGST: "9" },
+      { Product: "item1", HSN: "123456", symbol: "pcs", decimal: 2, gst: 18 },
+      // Add as many items as needed
+    ];
+    const response = await window.electron.exportItem(items);
+    console.log(response);
+  };
+  
   const handleCheckUnit = async () => {
-    await window.electron.exportUnit({ Name: "testing", conversionRate: 3 });
-  }
-
+    const units = [
+      { Name: "testing", conversionRate: 3 }
+    ];
+    const response = await window.electron.exportUnit(units);
+    console.log(response,"here is ");
+  };
+  
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Subtle professional background pattern */}
@@ -284,7 +294,9 @@ export default function IndexPage() {
       </div>
 
       <div>
-        <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create item</button>
+        <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
+        {/* <button className="text-black bg-blue-400 p-4" onClick={handleCreateItem}>Create item</button> */}
+
       </div>
 
       {/* Footer - professional touch */}
