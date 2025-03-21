@@ -76,15 +76,22 @@ export default function IndexPage() {
     const response = await window.electron.exportItem(items);
     console.log(response);
   };
-  
+
   const handleCheckUnit = async () => {
     const units = [
       { Name: "testing", conversionRate: 3 }
     ];
     const response = await window.electron.exportUnit(units);
-    console.log(response,"here is ");
+    console.log(response, "here is ");
   };
-  
+
+  const handlePurchaseEntry = async () => {
+    await window.electron.createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase", [
+      { name: "Item", quantity: 2, price: 100 },
+      { name: "Item Name", quantity: 1, price: 50 }
+    ], false, 0, 14, 12);
+  }
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Subtle professional background pattern */}
@@ -294,7 +301,7 @@ export default function IndexPage() {
       </div>
 
       <div>
-        <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
+        <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create item</button>
         {/* <button className="text-black bg-blue-400 p-4" onClick={handleCreateItem}>Create item</button> */}
 
       </div>

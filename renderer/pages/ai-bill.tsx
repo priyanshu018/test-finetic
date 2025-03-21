@@ -654,6 +654,58 @@ export default function BillWorkflow() {
     }
   };
 
+  function formatDateToDDMMYYYY(dateInput: Date | string): string {
+    let date: Date;
+  
+    if (dateInput instanceof Date) {
+      date = dateInput;
+    } else {
+      // If the input contains '/' it might be in a non-ISO format.
+      if (dateInput?.includes('/')) {
+        const parts = dateInput.split('/');
+        if (parts.length === 3) {
+          const [part1, part2, part3] = parts;
+          const num1 = parseInt(part1, 10);
+          const num2 = parseInt(part2, 10);
+          const num3 = parseInt(part3, 10);
+  
+          let day: number, month: number, year: number;
+          // Heuristic to decide which part is the day or month:
+          if (num1 > 12) {
+            // If the first number is greater than 12, assume dd/mm/yyyy.
+            day = num1;
+            month = num2;
+          } else if (num2 > 12) {
+            // If the second number is greater than 12, assume mm/dd/yyyy.
+            month = num1;
+            day = num2;
+          } else {
+            // Ambiguous: default to dd/mm/yyyy.
+            day = num1;
+            month = num2;
+          }
+          year = num3;
+  
+          date = new Date(year, month - 1, day);
+        } else {
+          // If not exactly 3 parts, let Date handle it.
+          date = new Date(dateInput);
+        }
+      } else {
+        // For other formats (like ISO), use the Date constructor.
+        date = new Date(dateInput);
+      }
+    }
+  
+    // Format day and month with leading zeros if needed.
+    const dd = date.getDate().toString().padStart(2, '0');
+    const mm = (date.getMonth() + 1).toString().padStart(2, '0');
+    const yyyy = date.getFullYear();
+  
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  
+
   const handleExport = async () => {
     console.log(role);
     console.log(billData);
@@ -665,15 +717,21 @@ export default function BillWorkflow() {
     ];
     const items = billData?.[0]?.items
     const isPurchaser = role === "Purchaser"
-    const allLedgerResponse = await window.electron.exportLedger(ledgerNames, false)
-    const purchaserLedgerResponse = await window.electron.exportLedger(purchaserName, isPurchaser)
-    const unitResponse = await window.electron.exportUnit({ Name: "pcs", conversionRate: 3 });
-    const itemResponse = await window.electron.exportItem(billData?.[0]?.items);
-    console.log("allLedgerResponse:", allLedgerResponse, "purchaserLedgerResponse:", purchaserLedgerResponse, "itemResponse:", itemResponse, "unitResponse:", unitResponse)
-
-
+    const date = formatDateToDDMMYYYY(billData?.[0]?.billDate)
+    // const allLedgerResponse = await window.electron.exportLedger(ledgerNames, false)
+    // const purchaserLedgerResponse = await window.electron.exportLedger(purchaserName, isPurchaser)
+    // const unitResponse = await window.electron.exportUnit({ Name: "pcs", conversionRate: 3 });
+    // const itemResponse = await window.electron.exportItem(billData?.[0]?.items);
+    // console.log("allLedgerResponse:", allLedgerResponse, "purchaserLedgerResponse:", purchaserLedgerResponse, "itemResponse:", itemResponse, "unitResponse:", unitResponse)
+    // const respone = await window.electron.createPurchaseEntry(billData?.invoiceNumber,"02-11-2024",purchaserName,)
     // handleCheckAllGstLedger(role === "Purchaser");
+    // console.log(date,purchaserName,)
 
+    
+    await window.electron.createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase", [
+      { name: "Item", quantity: 2, price: 100 },
+      { name: "Item Name", quantity: 1, price: 50 }
+    ], true, 0, 14, 12);
   };
 
   const fixRowCalculation = (billIndex: number, itemIndex: number) => {

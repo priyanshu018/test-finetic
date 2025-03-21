@@ -631,7 +631,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
 
   async function createPurchaseEntry(
-    invoiceNumber: number,
+    invoiceNumber: string,
     date: string,
     partyName: string,
     purchaseLedger: string,
@@ -673,6 +673,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
           item.name, '{ENTER}',
           item.quantity.toString(), '{ENTER}',
           item.price.toString(), '{ENTER}',
+          '{ENTER}',
           '{ENTER}' // Move to next row
         );
       }
@@ -680,10 +681,16 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       // Append keys based on whether it's within the state or not
       if (isWithinState) {
         // If within state, add CGST and SGST entries
-        keys.push('{ENTER}', '{ENTER}', `Cgst${cgst}`, '{ENTER}', '{ENTER}', `Sgst${sgst}`, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}',);
+        keys.push('{ENTER}', `Cgst${cgst}`, '{ENTER}', '{ENTER}', `Sgst${sgst}`, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}',
+          '{ENTER}', '{ENTER}',
+          '{ENTER}', '{ENTER}'
+        );
       } else {
         // Else add IGST entry
-        keys.push('{ENTER}', '{ENTER}', `Igst${igst}%`, '{ENTER}');
+        keys.push('{ENTER}', `Igst${igst}%`, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}',
+          '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}',
+          '{ENTER}'
+        );
       }
 
       await bringTallyToForegroundAndSendKeys(keys);
@@ -738,7 +745,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         'c', 'i', 't', 'e', 'm', '{ENTER}',  // Open item creation
         name,
         '{ENTER}', '{ENTER}', '{ENTER}', symbol, '{ENTER}',     // Enter item name and confirm
-        '{ENTER}', "specify details", '{ENTER}', hsn, '{ENTER}', '{ENTER}', "specify details", '{ENTER}', '{ENTER}', gst, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', 'prompt here', 'y', '{ESC}', '{ESC}', 
+        '{ENTER}', "specify details", '{ENTER}', hsn, '{ENTER}', '{ENTER}', "specify details", '{ENTER}', '{ENTER}', gst, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', 'prompt here', 'y', '{ESC}', '{ESC}',
         'prompt here', 'y', '{ESC}'  // Create and exit
       ]);
       console.log(decimal, "decimal")
@@ -766,10 +773,10 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       //  await createCgstLedger('Cgst 14+5');
 
 
-      // await createPurchaseEntry(123456, "02-11-2024", "Priyanshu", "Purchase", [
+      // await createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase", [
       //   { name: "Item", quantity: 2, price: 100 },
-      //   { name: "Item", quantity: 1, price: 50 },
-      // ]);
+      //   { name: "Item", quantity: 1, price: 50 }
+      // ], true, 0, 14, 12);
 
 
       // if (ledgerExists) {
@@ -814,7 +821,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   });
 
-  ipcMain.handle('create-purchase-entry', async (_, invoiceNumber: number, date: string, partyName: string, purchaseLedger: string, items: { name: string, quantity: number, price: number }[], isWitinState: boolean, cgst: number, sgst: number, igst: number) => {
+  ipcMain.handle('create-purchase-entry', async (_, invoiceNumber: string, date: string, partyName: string, purchaseLedger: string, items: { name: string, quantity: number, price: number }[], isWitinState: boolean, cgst: number, sgst: number, igst: number) => {
     try {
       await createPurchaseEntry(invoiceNumber, date, partyName, purchaseLedger, items, isWitinState, cgst, sgst, igst);
       return { success: true };
