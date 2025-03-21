@@ -665,9 +665,9 @@ export default function BillWorkflow() {
     ];
     const items = billData?.[0]?.items
     const isPurchaser = role === "Purchaser"
-    const allLedgerResponse = await window.electron.exportLedger(ledgerNames, isPurchaser)
+    const allLedgerResponse = await window.electron.exportLedger(ledgerNames, false)
     const purchaserLedgerResponse = await window.electron.exportLedger(purchaserName, isPurchaser)
-    const unitResponse = await window.electron.exportUnit("pcs");
+    const unitResponse = await window.electron.exportUnit({ Name: "pcs", conversionRate: 3 });
     const itemResponse = await window.electron.exportItem(billData?.[0]?.items);
     console.log("allLedgerResponse:", allLedgerResponse, "purchaserLedgerResponse:", purchaserLedgerResponse, "itemResponse:", itemResponse, "unitResponse:", unitResponse)
 

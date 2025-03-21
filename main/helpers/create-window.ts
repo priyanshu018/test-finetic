@@ -570,7 +570,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
       // Step 9: Check if the unit exists by matching UNIT's NAME attribute
       const unitExists = units.some((unitElem: any) =>
-        unitElem.$?.NAME?.toLowerCase() === unit.Name.toLowerCase()
+        unitElem.$?.NAME?.toLowerCase() === unit?.Name?.toLowerCase()
       );
       console.log(`Unit "${unit.Name}" found: ${unitExists}`);
 
