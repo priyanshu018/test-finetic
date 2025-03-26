@@ -656,7 +656,7 @@ export default function BillWorkflow() {
 
   function formatDateToDDMMYYYY(dateInput: Date | string): string {
     let date: Date;
-  
+
     if (dateInput instanceof Date) {
       date = dateInput;
     } else {
@@ -668,7 +668,7 @@ export default function BillWorkflow() {
           const num1 = parseInt(part1, 10);
           const num2 = parseInt(part2, 10);
           const num3 = parseInt(part3, 10);
-  
+
           let day: number, month: number, year: number;
           // Heuristic to decide which part is the day or month:
           if (num1 > 12) {
@@ -685,7 +685,7 @@ export default function BillWorkflow() {
             month = num2;
           }
           year = num3;
-  
+
           date = new Date(year, month - 1, day);
         } else {
           // If not exactly 3 parts, let Date handle it.
@@ -696,13 +696,135 @@ export default function BillWorkflow() {
         date = new Date(dateInput);
       }
     }
-  
+
     // Format day and month with leading zeros if needed.
     const dd = date.getDate().toString().padStart(2, '0');
     const mm = (date.getMonth() + 1).toString().padStart(2, '0');
     const yyyy = date.getFullYear();
-  
+
     return `${dd}-${mm}-${yyyy}`;
+  }
+
+  function transformItems(rawItems) {
+    // Comprehensive list of known units (extend or modify as needed)
+    const knownUnits = [
+      "MILLILITER", "MILLILITERS", "ML",
+      "LITER", "LITERS", "L", "LTR",
+      "GRAM", "GRAMS", "G","GM",
+      "KILOGRAM", "KILOGRAMS", "KG",
+      "CENTIMETER", "CENTIMETERS", "CM",
+      "METER", "METERS", "M",
+      "MILLIGRAM", "MILLIGRAMS", "MG",
+      "PIECE", "PIECES", "PCS",
+      "DOZEN",
+      "BOTTLE",
+      "PACK",
+      "BOX",
+      "SHEET",
+      "ROLL",
+      "GALLON",
+      "OUNCE", "OZ",
+      "POUND", "LB"
+    ];
+  
+    // Sort knownUnits by descending length to match longer strings first
+    knownUnits.sort((a, b) => b.length - a.length);
+  
+    // Utility to extract a known unit from a text (case-insensitive)
+    function extractUnit(text) {
+      if (!text) return "";
+      for (const unit of knownUnits) {
+        // The regex allows an optional number and whitespace before the unit,
+        // and requires a word boundary at the end.
+        const regex = new RegExp(`\\d*\\s*(${unit})\\b`, "i");
+        const match = text.match(regex);
+        if (match && match[1]) {
+          return match[1].toUpperCase();
+        }
+      }
+      return "";
+    }
+  
+    return rawItems
+      .filter(item => item.Product && item.Product.toLowerCase() !== "null")
+      .map(item => {
+        // First, try to extract the unit from the QTY field.
+        let unit = extractUnit(item.QTY);
+        // If not found in QTY, try to extract the unit from the Product field.
+        if (!unit) {
+          unit = extractUnit(item.Product);
+        }
+        // If still not found, default to "PCS".
+        if (!unit) {
+          unit = "PCS";
+        }
+        return {
+          name: item.Product,
+          unit: unit, // Return the unit only.
+          quantity: item.QTY,
+          price: item.RATE,
+        };
+      });
+  }
+  
+
+  function extractUnitsFromItems(rawItems: any[]): { name: string; unit: string; conversionRate: number }[] {
+    // Comprehensive list of known units (extend as needed)
+    const knownUnits = [
+      "MILLILITER", "MILLILITERS", "ML",
+      "LITER", "LITERS", "L", "LTR",
+      "GRAM", "GRAMS", "G","GM",
+      "KILOGRAM", "KILOGRAMS", "KG",
+      "CENTIMETER", "CENTIMETERS", "CM",
+      "METER", "METERS", "M",
+      "MILLIGRAM", "MILLIGRAMS", "MG",
+      "PIECE", "PIECES", "PCS",
+      "DOZEN",
+      "BOTTLE",
+      "PACK",
+      "BOX",
+      "SHEET",
+      "ROLL",
+      "GALLON",
+      "OUNCE", "OZ",
+      "POUND", "LB"
+    ];
+  
+    // Sort knownUnits by descending length to ensure longer, more specific units match first
+    knownUnits.sort((a, b) => b.length - a.length);
+  
+    // Utility function to extract a unit from text using the known units list
+    function extractUnit(text: string): string {
+      if (!text) return "";
+      for (const unit of knownUnits) {
+        // Allow an optional number and whitespace before the unit, followed by a word boundary
+        const regex = new RegExp(`\\d*\\s*(${unit})\\b`, "i");
+        const match = text.match(regex);
+        if (match && match[1]) {
+          return match[1].toUpperCase();
+        }
+      }
+      return "";
+    }
+  
+    return rawItems
+      .filter(item => item.Product && item.Product.toLowerCase() !== "null")
+      .map(item => {
+        // Attempt to extract the unit from the QTY field first
+        let unit = extractUnit(item.QTY);
+        // If no unit found in QTY, try to extract from the Product field
+        if (!unit) {
+          unit = extractUnit(item.Product);
+        }
+        // Default to "PCS" if still not found
+        if (!unit) {
+          unit = "PCS";
+        }
+        return {
+          Name: unit,
+          conversionRate: 3
+        };
+      });
   }
   
 
@@ -718,22 +840,91 @@ export default function BillWorkflow() {
     const items = billData?.[0]?.items
     const isPurchaser = role === "Purchaser"
     const date = formatDateToDDMMYYYY(billData?.[0]?.billDate)
+    const updatedItems = transformItems(items)
+    const updatedUnits = extractUnitsFromItems(items)
     const invoiceNumber = billData?.[0]?.invoiceNumber
     // const allLedgerResponse = await window.electron.exportLedger(ledgerNames, false)
     // const purchaserLedgerResponse = await window.electron.exportLedger(purchaserName, isPurchaser)
-    // const unitResponse = await window.electron.exportUnit({ Name: "pcs", conversionRate: 3 });
-    // const itemResponse = await window.electron.exportItem(billData?.[0]?.items);
+    const unitResponse = await window.electron.exportUnit(updatedUnits);
+    // const itemResponse = await window.electron.exportItem(updatedItems);
     // console.log("allLedgerResponse:", allLedgerResponse, "purchaserLedgerResponse:", purchaserLedgerResponse, "itemResponse:", itemResponse, "unitResponse:", unitResponse)
     // const respone = await window.electron.createPurchaseEntry(billData?.invoiceNumber,"02-11-2024",purchaserName,)
-    // handleCheckAllGstLedger(role === "Purchaser");
-    console.log(invoiceNumber,date,purchaserName,purchaserName,items,true,)
 
-
+    console.log(invoiceNumber, date, purchaserName, purchaserName, updatedItems, true,updatedUnits)
     
-    // await window.electron.createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase", [
-    //   { name: "Item", quantity: 2, price: 100 },
-    //   { name: "Item Name", quantity: 1, price: 50 }
-    // ], true, 0, 14, 12);
+
+    // PT001657 25-12-2024 null null
+
+  //   [
+  //     {
+  //         "name": "KEYA ALPURPOSE SEAS BOTTLE",
+  //         "quantity": 3,
+  //         "price": 103.44,
+  //         "sgst": 6,
+  //         "cgst": 6,
+  //         "igst": 0
+  //     },
+  //     {
+  //         "name": "KEYA GARLIC POWDER BOTTLE",
+  //         "quantity": 4,
+  //         "price": 88.55,
+  //         "sgst": 6,
+  //         "cgst": 6,
+  //         "igst": 0
+  //     },
+  //     {
+  //         "name": "KEYA INSPASTA MACNCHESE AMERIC",
+  //         "quantity": 3,
+  //         "price": 82.5,
+  //         "sgst": 0,
+  //         "cgst": 0,
+  //         "igst": 0
+  //     },
+  //     {
+  //         "name": "KEYA LEMON JUICE 250ML",
+  //         "quantity": 6,
+  //         "price": 29.6,
+  //         "sgst": 6,
+  //         "cgst": 6,
+  //         "igst": 0
+  //     },
+  //     {
+  //         "name": "KEYA OREGANO BOTTLE",
+  //         "quantity": 5,
+  //         "price": 70.72,
+  //         "sgst": 6,
+  //         "cgst": 6,
+  //         "igst": 0
+  //     },
+  //     {
+  //         "name": "KEYA RED CHILI FLAKES BOTTLE",
+  //         "quantity": 3,
+  //         "price": 90.84,
+  //         "sgst": 0,
+  //         "cgst": 0,
+  //         "igst": 0
+  //     },
+  //     {
+  //         "name": "KEYA SACHET PIZZA OREGANO",
+  //         "quantity": 3,
+  //         "price": 78.58,
+  //         "sgst": 2.5,
+  //         "cgst": 2.5,
+  //         "igst": 0
+  //     },
+  //     {
+  //         "name": "KEYA SAUCE DARK SOYA",
+  //         "quantity": 40,
+  //         "price": 7.59,
+  //         "sgst": 6,
+  //         "cgst": 6,
+  //         "igst": 0
+  //     }
+  // ]
+
+// true
+
+    // await window.electron.createPurchaseEntry(invoiceNumber, "02-11-2024", purchaserName, purchaserName, updatedItems, true);
   };
 
   const fixRowCalculation = (billIndex: number, itemIndex: number) => {

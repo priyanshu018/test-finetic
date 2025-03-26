@@ -41,7 +41,74 @@ export default function IndexPage() {
 
   // Keep existing electron functions
   const handleCreateItem = async () => {
-    await window.electron.createItem('item2', "test", 3, 112233, 14);
+    // await window.electron.createItem('item3', "test", 3, 112233, 14);
+
+    await window.electron.createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase",     [
+      {
+          name: "KEYA ALPURPOSE SEAS BOTTLE",
+          quantity: 3,
+          price: 103.44,
+          sgst: 6,
+          cgst: 6,
+          igst: 0
+      },
+      {
+          name: "KEYA GARLIC POWDER BOTTLE",
+          quantity: 4,
+          price: 88.55,
+          sgst: 6,
+          cgst: 6,
+          igst: 0
+      },
+      {
+          name: "KEYA INSPASTA MACNCHESE AMERIC",
+          quantity: 3,
+          price: 82.5,
+          sgst: 0,
+          cgst: 0,
+          igst: 0
+      },
+      {
+          name: "KEYA LEMON JUICE 250ML",
+          quantity: 6,
+          price: 29.6,
+          sgst: 6,
+          cgst: 6,
+          igst: 0
+      },
+      {
+          name: "KEYA OREGANO BOTTLE",
+          quantity: 5,
+          price: 70.72,
+          sgst: 6,
+          cgst: 6,
+          igst: 0
+      },
+      {
+          name: "KEYA RED CHILI FLAKES BOTTLE",
+          quantity: 3,
+          price: 90.84,
+          sgst: 0,
+          cgst: 0,
+          igst: 0
+      },
+      {
+          name: "KEYA SACHET PIZZA OREGANO",
+          quantity: 3,
+          price: 78.58,
+          sgst: 2.5,
+          cgst: 2.5,
+          igst: 0
+      },
+      {
+          name: "KEYA SAUCE DARK SOYA",
+          quantity: 40,
+          price: 7.59,
+          sgst: 6,
+          cgst: 6,
+          igst: 0
+      }
+  ], false);
   }
 
   const handleCreateIgst = async () => {
@@ -79,8 +146,79 @@ export default function IndexPage() {
 
   const handleCheckUnit = async () => {
     const units = [
-      { Name: "testing", conversionRate: 3 }
-    ];
+      {
+          Name: "PCS",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      },
+      {
+          Name: "G",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      },
+      {
+          Name: "KG",
+          conversionRate: 3
+      },
+      {
+          Name: "KG",
+          conversionRate: 3
+      },
+      {
+          Name: "G",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      },
+      {
+          Name: "GM",
+          conversionRate: 3
+      }
+  ];
     const response = await window.electron.exportUnit(units);
     console.log(response, "here is ");
   };
@@ -300,11 +438,11 @@ export default function IndexPage() {
         </div> */}
       </div>
 
-      <div>
-        <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create item</button>
-        {/* <button className="text-black bg-blue-400 p-4" onClick={handleCreateItem}>Create item</button> */}
+      {/* <div> */}
+      {/* <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create item</button> */}
+      <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create item</button>
 
-      </div>
+      {/* </div> */}
 
       {/* Footer - professional touch */}
       <footer className="bg-white absolute bottom-0 left-0 w-full border-t border-gray-200 py-4 mt-auto">

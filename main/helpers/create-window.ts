@@ -630,31 +630,116 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   }
 
 
+  // async function createPurchaseEntry(
+  //   invoiceNumber: string,
+  //   date: string,
+  //   partyName: string,
+  //   purchaseLedger: string,
+  //   items: { name: string, quantity: number, price: number }[],
+  //   isWithinState: boolean,
+  //   cgst: number,
+  //   sgst: number,
+  //   igst: number
+  // ): Promise<void> {
+  //   try {
+  //     // Format the date as dd-MM-yyyy (for example, 02-11-2024)
+  //     const dateObj = new Date(date);
+  //     const day = String(dateObj.getDate()).padStart(2, '0');
+  //     const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  //     const year = dateObj.getFullYear();
+  //     const formattedDate = `${day}-${month}-${year}`;
+
+  //     // Build the keys array
+  //     const keys = [
+  //       'v',
+  //       '{F9}',
+  //       '{F2}',
+  //       date,
+  //       '{ENTER}',
+  //       invoiceNumber,
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       partyName,
+  //       '{ENTER}',
+  //       '^a',
+  //       '^a',
+  //       purchaseLedger,
+  //       '{ENTER}',
+  //     ];
+
+  //     // Loop through items and add each item entry
+  //     for (const item of items) {
+  //       keys.push(
+  //         item.name, '{ENTER}',
+  //         item.quantity.toString(), '{ENTER}',
+  //         item.price.toString(), '{ENTER}',
+  //         '{ENTER}',
+  //         '{ENTER}' // Move to next row
+  //       );
+  //     }
+
+  //     // Append keys based on whether it's within the state or not
+  //     if (isWithinState) {
+  //       // If within state, add CGST and SGST entries
+  //       keys.push('{ENTER}', `Cgst${cgst}`, '{ENTER}', '{ENTER}', `Sgst${sgst}`, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}',
+  //         '{ENTER}', '{ENTER}',
+  //         '{ENTER}', '{ENTER}'
+  //       );
+  //     } else {
+  //       // Else add IGST entry
+  //       keys.push('{ENTER}', `Igst${igst}%`, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}',
+  //         '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}',
+  //         '{ENTER}'
+  //       );
+  //     }
+
+  //     await bringTallyToForegroundAndSendKeys(keys);
+  //   } catch (error) {
+  //     console.error('Error creating purchase ledger:', error);
+  //     throw error;
+  //   }
+  // }
+
+
   async function createPurchaseEntry(
     invoiceNumber: string,
     date: string,
     partyName: string,
     purchaseLedger: string,
-    items: { name: string, quantity: number, price: number }[],
-    isWithinState: boolean,
-    cgst: number,
-    sgst: number,
-    igst: number
+    items: {
+      name: string;
+      quantity: number;
+      price: number;
+      cgst: number;
+      sgst: number;
+      igst: number;
+    }[],
+    isWithinState: boolean
   ): Promise<void> {
     try {
-      // Format the date as dd-MM-yyyy (for example, 02-11-2024)
-      const dateObj = new Date(date);
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
-      const year = dateObj.getFullYear();
-      const formattedDate = `${day}-${month}-${year}`;
+      // Format the date as dd-MM-yyyy (e.g., 02-11-2024)
+      function formatDate(date: string | Date): string {
+        // If the date is a string, check if it's already formatted as dd-mm-yyyy.
+        if (typeof date === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(date)) {
+          return date;
+        }
 
-      // Build the keys array
+        // Convert input to a Date object if it isn't already.
+        const dateObj = date instanceof Date ? date : new Date(date);
+
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+        const year = dateObj.getFullYear();
+
+        return `${day}-${month}-${year}`;
+      }
+
+      // Build the initial keys array for invoice header details
       const keys = [
         'v',
         '{F9}',
         '{F2}',
-        date,
+        formatDate(date),
         '{ENTER}',
         invoiceNumber,
         '{ENTER}',
@@ -667,38 +752,46 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         '{ENTER}',
       ];
 
-      // Loop through items and add each item entry
+      // // Loop through items and add each item entry along with its tax details
       for (const item of items) {
+        // Add item details: name, quantity, price
         keys.push(
           item.name, '{ENTER}',
           item.quantity.toString(), '{ENTER}',
-          item.price.toString(), '{ENTER}',
-          '{ENTER}',
-          '{ENTER}' // Move to next row
+          item.price.toString(), '{ENTER}', '{ENTER}', '{ENTER}',
         );
-      }
 
-      // Append keys based on whether it's within the state or not
-      if (isWithinState) {
-        // If within state, add CGST and SGST entries
-        keys.push('{ENTER}', `Cgst${cgst}`, '{ENTER}', '{ENTER}', `Sgst${sgst}`, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}',
-          '{ENTER}', '{ENTER}',
-          '{ENTER}', '{ENTER}'
-        );
-      } else {
-        // Else add IGST entry
-        keys.push('{ENTER}', `Igst${igst}%`, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}',
-          '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}',
-          '{ENTER}'
-        );
-      }
 
+        // keys.push('{ENTER}')
+
+        // // Insert tax details for the current item
+        // if (isWithinState) {
+        //   // For within-state purchases, add CGST and SGST details for this item
+        //   keys.push(
+        //     // `Cgst${item.cgst}`, 
+        //     // '{ENTER}', '{ENTER}',
+        //     // `Sgst${item.sgst}`, '{ENTER}', '{ENTER}'
+        //   );
+        // } else {
+        //   // For out-of-state purchases, add IGST detail for this item
+        //   keys.push(
+
+        //     // `Igst${item.igst}%`, '{ENTER}', '{ENTER}'
+        //   );
+        // }
+
+        // Add keys to finalize this item's entry and move to the next row
+      }
+      keys.push('{ENTER}', '{ENTER}','{ENTER}', '{ENTER}','{ENTER}', '{ENTER}','{ENTER}', '{ENTER}','{ENTER}','{ENTER}', '{ENTER}');
+
+      // Send the entire keys array to Tally
       await bringTallyToForegroundAndSendKeys(keys);
     } catch (error) {
       console.error('Error creating purchase ledger:', error);
       throw error;
     }
   }
+
 
 
   async function createIgstLedger(name: string): Promise<void> {
@@ -740,11 +833,13 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
   async function createItem(name: string, symbol: string, decimal: number, hsn: number, gst: number): Promise<void> {
     try {
+      console.log("working")
       // Step 1: Bring Tally to foreground and send keys for item creation
       await bringTallyToForegroundAndSendKeys([
         'c', 'i', 't', 'e', 'm', '{ENTER}',  // Open item creation
         name,
-        '{ENTER}', '{ENTER}', '{ENTER}', symbol, '{ENTER}',     // Enter item name and confirm
+        '{ENTER}', '{ENTER}', 
+        '{ENTER}', symbol, '{ENTER}',     // Enter item name and confirm
         '{ENTER}', "specify details", '{ENTER}', hsn, '{ENTER}', '{ENTER}', "specify details", '{ENTER}', '{ENTER}', gst, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', 'prompt here', 'y', '{ESC}', '{ESC}',
         'prompt here', 'y', '{ESC}'  // Create and exit
       ]);
@@ -821,9 +916,21 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   });
 
-  ipcMain.handle('create-purchase-entry', async (_, invoiceNumber: string, date: string, partyName: string, purchaseLedger: string, items: { name: string, quantity: number, price: number }[], isWitinState: boolean, cgst: number, sgst: number, igst: number) => {
+  ipcMain.handle('create-purchase-entry', async (_, invoiceNumber: string,
+    date: string,
+    partyName: string,
+    purchaseLedger: string,
+    items: {
+      name: string;
+      quantity: number;
+      price: number;
+      cgst: number;
+      sgst: number;
+      igst: number;
+    }[],
+    isWithinState: boolean) => {
     try {
-      await createPurchaseEntry(invoiceNumber, date, partyName, purchaseLedger, items, isWitinState, cgst, sgst, igst);
+      await createPurchaseEntry(invoiceNumber, date, partyName, purchaseLedger, items, isWithinState);
       return { success: true };
     } catch (error) {
       console.error('Error creating purchase entry:', error);
