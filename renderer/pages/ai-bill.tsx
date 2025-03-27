@@ -705,7 +705,7 @@ export default function BillWorkflow() {
     return `${dd}-${mm}-${yyyy}`;
   }
 
-  function transformItems(rawItems) {
+  function transformPurchaseItems(rawItems) {
     // Comprehensive list of known units (extend or modify as needed)
     const knownUnits = [
       "MILLILITER", "MILLILITERS", "ML",
@@ -763,6 +763,71 @@ export default function BillWorkflow() {
           unit: unit, // Return the unit only.
           quantity: item.QTY,
           price: item.RATE,
+        };
+      });
+  }
+
+  function transformItems(rawItems) {
+    // Comprehensive list of known units (extend or modify as needed)
+    const knownUnits = [
+      "MILLILITER", "MILLILITERS", "ML",
+      "LITER", "LITERS", "L", "LTR",
+      "GRAM", "GRAMS", "G","GM",
+      "KILOGRAM", "KILOGRAMS", "KG",
+      "CENTIMETER", "CENTIMETERS", "CM",
+      "METER", "METERS", "M",
+      "MILLIGRAM", "MILLIGRAMS", "MG",
+      "PIECE", "PIECES", "PCS",
+      "DOZEN",
+      "BOTTLE",
+      "PACK",
+      "BOX",
+      "SHEET",
+      "ROLL",
+      "GALLON",
+      "OUNCE", "OZ",
+      "POUND", "LB"
+    ];
+  
+    // Sort knownUnits by descending length to match longer strings first
+    knownUnits.sort((a, b) => b.length - a.length);
+  
+    // Utility to extract a known unit from a text (case-insensitive)
+    function extractUnit(text) {
+      if (!text) return "";
+      for (const unit of knownUnits) {
+        // The regex allows an optional number and whitespace before the unit,
+        // and requires a word boundary at the end.
+        const regex = new RegExp(`\\d*\\s*(${unit})\\b`, "i");
+        const match = text.match(regex);
+        if (match && match[1]) {
+          return match[1].toUpperCase();
+        }
+      }
+      return "";
+    }
+  
+    return rawItems
+      .filter(item => item.Product && item.Product.toLowerCase() !== "null")
+      .map(item => {
+        // First, try to extract the unit from the QTY field.
+        let unit = extractUnit(item.QTY);
+        // If not found in QTY, try to extract the unit from the Product field.
+        if (!unit) {
+          unit = extractUnit(item.Product);
+        }
+        // If still not found, default to "PCS".
+        if (!unit) {
+          unit = "PCS";
+        }
+        return {
+          Product: item.Product,
+          HSN:item.HSN,
+          symbol: unit, // Return the unit only.
+          decimal:3,
+          SGST:item.SGST,
+          CGST:item.CGST,
+          gst:item.IGST
         };
       });
   }
@@ -845,85 +910,13 @@ export default function BillWorkflow() {
     const invoiceNumber = billData?.[0]?.invoiceNumber
     // const allLedgerResponse = await window.electron.exportLedger(ledgerNames, false)
     // const purchaserLedgerResponse = await window.electron.exportLedger(purchaserName, isPurchaser)
-    const unitResponse = await window.electron.exportUnit(updatedUnits);
-    // const itemResponse = await window.electron.exportItem(updatedItems);
+    // const unitResponse = await window.electron.exportUnit(updatedUnits);
+    const itemResponse = await window.electron.exportItem(updatedItems);
     // console.log("allLedgerResponse:", allLedgerResponse, "purchaserLedgerResponse:", purchaserLedgerResponse, "itemResponse:", itemResponse, "unitResponse:", unitResponse)
     // const respone = await window.electron.createPurchaseEntry(billData?.invoiceNumber,"02-11-2024",purchaserName,)
 
     console.log(invoiceNumber, date, purchaserName, purchaserName, updatedItems, true,updatedUnits)
     
-
-    // PT001657 25-12-2024 null null
-
-  //   [
-  //     {
-  //         "name": "KEYA ALPURPOSE SEAS BOTTLE",
-  //         "quantity": 3,
-  //         "price": 103.44,
-  //         "sgst": 6,
-  //         "cgst": 6,
-  //         "igst": 0
-  //     },
-  //     {
-  //         "name": "KEYA GARLIC POWDER BOTTLE",
-  //         "quantity": 4,
-  //         "price": 88.55,
-  //         "sgst": 6,
-  //         "cgst": 6,
-  //         "igst": 0
-  //     },
-  //     {
-  //         "name": "KEYA INSPASTA MACNCHESE AMERIC",
-  //         "quantity": 3,
-  //         "price": 82.5,
-  //         "sgst": 0,
-  //         "cgst": 0,
-  //         "igst": 0
-  //     },
-  //     {
-  //         "name": "KEYA LEMON JUICE 250ML",
-  //         "quantity": 6,
-  //         "price": 29.6,
-  //         "sgst": 6,
-  //         "cgst": 6,
-  //         "igst": 0
-  //     },
-  //     {
-  //         "name": "KEYA OREGANO BOTTLE",
-  //         "quantity": 5,
-  //         "price": 70.72,
-  //         "sgst": 6,
-  //         "cgst": 6,
-  //         "igst": 0
-  //     },
-  //     {
-  //         "name": "KEYA RED CHILI FLAKES BOTTLE",
-  //         "quantity": 3,
-  //         "price": 90.84,
-  //         "sgst": 0,
-  //         "cgst": 0,
-  //         "igst": 0
-  //     },
-  //     {
-  //         "name": "KEYA SACHET PIZZA OREGANO",
-  //         "quantity": 3,
-  //         "price": 78.58,
-  //         "sgst": 2.5,
-  //         "cgst": 2.5,
-  //         "igst": 0
-  //     },
-  //     {
-  //         "name": "KEYA SAUCE DARK SOYA",
-  //         "quantity": 40,
-  //         "price": 7.59,
-  //         "sgst": 6,
-  //         "cgst": 6,
-  //         "igst": 0
-  //     }
-  // ]
-
-// true
-
     // await window.electron.createPurchaseEntry(invoiceNumber, "02-11-2024", purchaserName, purchaserName, updatedItems, true);
   };
 

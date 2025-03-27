@@ -43,72 +43,72 @@ export default function IndexPage() {
   const handleCreateItem = async () => {
     // await window.electron.createItem('item3', "test", 3, 112233, 14);
 
-    await window.electron.createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase",     [
+    await window.electron.createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase", [
       {
-          name: "KEYA ALPURPOSE SEAS BOTTLE",
-          quantity: 3,
-          price: 103.44,
-          sgst: 6,
-          cgst: 6,
-          igst: 0
+        name: "KEYA ALPURPOSE SEAS BOTTLE",
+        quantity: 3,
+        price: 103.44,
+        sgst: 6,
+        cgst: 6,
+        igst: 0
       },
       {
-          name: "KEYA GARLIC POWDER BOTTLE",
-          quantity: 4,
-          price: 88.55,
-          sgst: 6,
-          cgst: 6,
-          igst: 0
+        name: "KEYA GARLIC POWDER BOTTLE",
+        quantity: 4,
+        price: 88.55,
+        sgst: 6,
+        cgst: 6,
+        igst: 0
       },
       {
-          name: "KEYA INSPASTA MACNCHESE AMERIC",
-          quantity: 3,
-          price: 82.5,
-          sgst: 0,
-          cgst: 0,
-          igst: 0
+        name: "KEYA INSPASTA MACNCHESE AMERIC",
+        quantity: 3,
+        price: 82.5,
+        sgst: 0,
+        cgst: 0,
+        igst: 0
       },
       {
-          name: "KEYA LEMON JUICE 250ML",
-          quantity: 6,
-          price: 29.6,
-          sgst: 6,
-          cgst: 6,
-          igst: 0
+        name: "KEYA LEMON JUICE 250ML",
+        quantity: 6,
+        price: 29.6,
+        sgst: 6,
+        cgst: 6,
+        igst: 0
       },
       {
-          name: "KEYA OREGANO BOTTLE",
-          quantity: 5,
-          price: 70.72,
-          sgst: 6,
-          cgst: 6,
-          igst: 0
+        name: "KEYA OREGANO BOTTLE",
+        quantity: 5,
+        price: 70.72,
+        sgst: 6,
+        cgst: 6,
+        igst: 0
       },
       {
-          name: "KEYA RED CHILI FLAKES BOTTLE",
-          quantity: 3,
-          price: 90.84,
-          sgst: 0,
-          cgst: 0,
-          igst: 0
+        name: "KEYA RED CHILI FLAKES BOTTLE",
+        quantity: 3,
+        price: 90.84,
+        sgst: 0,
+        cgst: 0,
+        igst: 0
       },
       {
-          name: "KEYA SACHET PIZZA OREGANO",
-          quantity: 3,
-          price: 78.58,
-          sgst: 2.5,
-          cgst: 2.5,
-          igst: 0
+        name: "KEYA SACHET PIZZA OREGANO",
+        quantity: 3,
+        price: 78.58,
+        sgst: 2.5,
+        cgst: 2.5,
+        igst: 0
       },
       {
-          name: "KEYA SAUCE DARK SOYA",
-          quantity: 40,
-          price: 7.59,
-          sgst: 6,
-          cgst: 6,
-          igst: 0
+        name: "KEYA SAUCE DARK SOYA",
+        quantity: 40,
+        price: 7.59,
+        sgst: 6,
+        cgst: 6,
+        igst: 0
       }
-  ], false);
+    ], false);
   }
 
   const handleCreateIgst = async () => {
@@ -136,10 +136,143 @@ export default function IndexPage() {
 
   const handleExportItems = async () => {
     const items = [
-      { Product: "item2", HSN: "654321", symbol: "box", decimal: 0, SGST: "9", CGST: "9" },
-      { Product: "item1", HSN: "123456", symbol: "pcs", decimal: 2, gst: 18 },
-      // Add as many items as needed
-    ];
+      {
+        Product: "VEBA BLISS CRAMEL230GM",
+        HSN: "21039030",
+        symbol: "GM",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA MAYONNAISE MINT",
+        HSN: "21039030",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA MAYONNAISE OLIVE OIL",
+        HSN: "21039090",
+        symbol: "L",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA PASTA N PIZZA HERBY TOMATO",
+        HSN: "21032000",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA PASTA N PIZZA HERBY TOMATO",
+        HSN: "21039090",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA PASTA N PIZZA HERBY TOMATO",
+        HSN: "21039090",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA PASTA CHESSY SAUCES ALFRDO",
+        HSN: "21032000",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA DIP SALSA",
+        HSN: "21039030",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA SANDWICH SPREAD CRT N CUCMBR",
+        HSN: "21039030",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA HOT SAUCES SRIRCHA CHILLI",
+        HSN: "21039090",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA SWEET SAUCES ONION",
+        HSN: "21039020",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA THAI-STYLE SWEET CHILLI",
+        HSN: "21032000",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VESBA KETCHUP TOMATO NON GARLIC",
+        HSN: "21032000",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA KETCHUP TOMATO CHEFS SPL",
+        HSN: "21032000",
+        symbol: "L",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA KETCHUP TOMATO NO AD SUGR",
+        HSN: "21039030",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA MAYONNAISE TANDOORI",
+        HSN: "21039090",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA WHOLE GRAIN MUSTRD",
+        HSN: "21039090",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      }
+    ]
     const response = await window.electron.exportItem(items);
     console.log(response);
   };
@@ -147,78 +280,74 @@ export default function IndexPage() {
   const handleCheckUnit = async () => {
     const units = [
       {
-          Name: "PCS",
-          conversionRate: 3
+        Name: "GM",
+        conversionRate: 3
       },
       {
-          Name: "GM",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "GM",
-          conversionRate: 3
+        Name: "L",
+        conversionRate: 3
       },
       {
-          Name: "GM",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "GM",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "GM",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "GM",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "G",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "GM",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "GM",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "GM",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "GM",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "KG",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "KG",
-          conversionRate: 3
+        Name: "L",
+        conversionRate: 3
       },
       {
-          Name: "G",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "GM",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       },
       {
-          Name: "GM",
-          conversionRate: 3
-      },
-      {
-          Name: "GM",
-          conversionRate: 3
+        Name: "PCS",
+        conversionRate: 3
       }
-  ];
+    ]
     const response = await window.electron.exportUnit(units);
     console.log(response, "here is ");
   };
@@ -440,7 +569,7 @@ export default function IndexPage() {
 
       {/* <div> */}
       {/* <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create item</button> */}
-      <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create item</button>
+      <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
 
       {/* </div> */}
 
