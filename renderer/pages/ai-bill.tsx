@@ -710,7 +710,7 @@ export default function BillWorkflow() {
     const knownUnits = [
       "MILLILITER", "MILLILITERS", "ML",
       "LITER", "LITERS", "L", "LTR",
-      "GRAM", "GRAMS", "G","GM",
+      "GRAM", "GRAMS", "G", "GM",
       "KILOGRAM", "KILOGRAMS", "KG",
       "CENTIMETER", "CENTIMETERS", "CM",
       "METER", "METERS", "M",
@@ -726,10 +726,10 @@ export default function BillWorkflow() {
       "OUNCE", "OZ",
       "POUND", "LB"
     ];
-  
+
     // Sort knownUnits by descending length to match longer strings first
     knownUnits.sort((a, b) => b.length - a.length);
-  
+
     // Utility to extract a known unit from a text (case-insensitive)
     function extractUnit(text) {
       if (!text) return "";
@@ -744,8 +744,29 @@ export default function BillWorkflow() {
       }
       return "";
     }
-  
-    return rawItems
+
+    // Utility to clean the product name by removing any numeric data and unit markers.
+    // Also, if the cleaned product name is a single word, return an empty string.
+    function cleanProductName(productName) {
+      let cleaned = productName;
+      // Remove any occurrences of digits immediately followed by a known unit
+      for (const unit of knownUnits) {
+        const regex = new RegExp(`\\d+\\s*${unit}\\b`, "gi");
+        cleaned = cleaned.replace(regex, "");
+      }
+      // Remove any remaining digits (if present)
+      cleaned = cleaned.replace(/\d+/g, "");
+      // Clean up extra spaces
+      cleaned = cleaned.replace(/\s\s+/g, " ").trim();
+      // If the cleaned name is just a single word, return an empty string.
+      if (!cleaned.includes(" ")) {
+        return "";
+      }
+      return cleaned;
+    }
+
+    // Filter, map, and clean the raw items
+    let transformed = rawItems
       .filter(item => item.Product && item.Product.toLowerCase() !== "null")
       .map(item => {
         // First, try to extract the unit from the QTY field.
@@ -759,20 +780,40 @@ export default function BillWorkflow() {
           unit = "PCS";
         }
         return {
-          name: item.Product,
-          unit: unit, // Return the unit only.
-          quantity: item.QTY,
+          name: cleanProductName(item.Product),
+          unit: unit,
           price: item.RATE,
+          quantity: item.QTY
         };
-      });
+      })
+      // Remove items with an empty name (i.e. single-word names)
+      .filter(item => item.name !== "")
+      // Sort the results in ascending order based on the length of the cleaned product name.
+      .sort((a, b) => a.name.length - b.name.length);
+
+    // Append a unique number to duplicate product names
+    const productCount = {};
+    transformed = transformed.map(item => {
+      const name = item.name;
+      if (productCount[name]) {
+        productCount[name]++;
+        item.name = `${name}${productCount[name]}`;
+      } else {
+        productCount[name] = 1;
+      }
+      return item;
+    });
+
+    return transformed;
   }
+
 
   function transformItems(rawItems) {
     // Comprehensive list of known units (extend or modify as needed)
     const knownUnits = [
       "MILLILITER", "MILLILITERS", "ML",
       "LITER", "LITERS", "L", "LTR",
-      "GRAM", "GRAMS", "G","GM",
+      "GRAM", "GRAMS", "G", "GM",
       "KILOGRAM", "KILOGRAMS", "KG",
       "CENTIMETER", "CENTIMETERS", "CM",
       "METER", "METERS", "M",
@@ -788,10 +829,10 @@ export default function BillWorkflow() {
       "OUNCE", "OZ",
       "POUND", "LB"
     ];
-  
+
     // Sort knownUnits by descending length to match longer strings first
     knownUnits.sort((a, b) => b.length - a.length);
-  
+
     // Utility to extract a known unit from a text (case-insensitive)
     function extractUnit(text) {
       if (!text) return "";
@@ -806,8 +847,26 @@ export default function BillWorkflow() {
       }
       return "";
     }
-  
-    return rawItems
+
+    // Utility to clean the product name by removing trailing digits + unit.
+    // Also, if the cleaned product name is a single word (i.e. no spaces),
+    // we return an empty string so it can be filtered out later.
+    function cleanProductName(productName) {
+      let cleaned = productName;
+      for (const unit of knownUnits) {
+        // Create regex to match one or more digits followed by optional whitespace and the unit at the end of the string
+        const regex = new RegExp(`\\d+\\s*${unit}$`, "i");
+        cleaned = cleaned.replace(regex, "").trim();
+      }
+      // If the cleaned name is just a single word, return an empty string.
+      if (!cleaned.includes(" ")) {
+        return "";
+      }
+      return cleaned;
+    }
+
+    // Map and filter out items whose cleaned Product is empty (i.e. a single word)
+    let transformed = rawItems
       .filter(item => item.Product && item.Product.toLowerCase() !== "null")
       .map(item => {
         // First, try to extract the unit from the QTY field.
@@ -821,24 +880,44 @@ export default function BillWorkflow() {
           unit = "PCS";
         }
         return {
-          Product: item.Product,
-          HSN:item.HSN,
+          Product: cleanProductName(item.Product),
+          HSN: item.HSN,
           symbol: unit, // Return the unit only.
-          decimal:3,
-          SGST:item.SGST,
-          CGST:item.CGST,
-          gst:item.IGST
+          decimal: 3,
+          SGST: item.SGST,
+          CGST: item.CGST,
+          gst: item.IGST
         };
-      });
+      })
+      // Remove any item with an empty Product name (i.e. single-word names were removed)
+      .filter(item => item.Product !== "")
+      // Sort the results in ascending order based on the length of the product name.
+      .sort((a, b) => a.Product.length - b.Product.length);
+
+    // Append a unique number to duplicate product names
+    const productCount = {};
+    transformed = transformed.map(item => {
+      const name = item.Product;
+      if (productCount[name]) {
+        productCount[name]++;
+        // Append the count (starting with 2 for the first duplicate)
+        item.Product = `${name}${productCount[name]}`;
+      } else {
+        productCount[name] = 1;
+      }
+      return item;
+    });
+
+    return transformed;
   }
-  
+
 
   function extractUnitsFromItems(rawItems: any[]): { name: string; unit: string; conversionRate: number }[] {
     // Comprehensive list of known units (extend as needed)
     const knownUnits = [
       "MILLILITER", "MILLILITERS", "ML",
       "LITER", "LITERS", "L", "LTR",
-      "GRAM", "GRAMS", "G","GM",
+      "GRAM", "GRAMS", "G", "GM",
       "KILOGRAM", "KILOGRAMS", "KG",
       "CENTIMETER", "CENTIMETERS", "CM",
       "METER", "METERS", "M",
@@ -854,10 +933,10 @@ export default function BillWorkflow() {
       "OUNCE", "OZ",
       "POUND", "LB"
     ];
-  
+
     // Sort knownUnits by descending length to ensure longer, more specific units match first
     knownUnits.sort((a, b) => b.length - a.length);
-  
+
     // Utility function to extract a unit from text using the known units list
     function extractUnit(text: string): string {
       if (!text) return "";
@@ -871,7 +950,7 @@ export default function BillWorkflow() {
       }
       return "";
     }
-  
+
     return rawItems
       .filter(item => item.Product && item.Product.toLowerCase() !== "null")
       .map(item => {
@@ -891,7 +970,7 @@ export default function BillWorkflow() {
         };
       });
   }
-  
+
 
   const handleExport = async () => {
     console.log(role);
@@ -905,19 +984,19 @@ export default function BillWorkflow() {
     const items = billData?.[0]?.items
     const isPurchaser = role === "Purchaser"
     const date = formatDateToDDMMYYYY(billData?.[0]?.billDate)
-    const updatedItems = transformItems(items)
+    const updatedItemsForExport = transformItems(items)
     const updatedUnits = extractUnitsFromItems(items)
+    const updatedPurchaseEntryItem = transformPurchaseItems(items)
     const invoiceNumber = billData?.[0]?.invoiceNumber
     // const allLedgerResponse = await window.electron.exportLedger(ledgerNames, false)
     // const purchaserLedgerResponse = await window.electron.exportLedger(purchaserName, isPurchaser)
     // const unitResponse = await window.electron.exportUnit(updatedUnits);
-    const itemResponse = await window.electron.exportItem(updatedItems);
+    // const itemResponse = await window.electron.exportItem(updatedItemsForExport);
     // console.log("allLedgerResponse:", allLedgerResponse, "purchaserLedgerResponse:", purchaserLedgerResponse, "itemResponse:", itemResponse, "unitResponse:", unitResponse)
-    // const respone = await window.electron.createPurchaseEntry(billData?.invoiceNumber,"02-11-2024",purchaserName,)
 
-    console.log(invoiceNumber, date, purchaserName, purchaserName, updatedItems, true,updatedUnits)
-    
-    // await window.electron.createPurchaseEntry(invoiceNumber, "02-11-2024", purchaserName, purchaserName, updatedItems, true);
+    console.log(invoiceNumber, date, purchaserName, updatedItemsForExport, purchaserName, updatedPurchaseEntryItem, true, updatedUnits)
+
+    // const response = await window.electron.createPurchaseEntry(invoiceNumber, "02-11-2024", "Priyanshu", "Purchase", updatedPurchaseEntryItem, true);
   };
 
   const fixRowCalculation = (billIndex: number, itemIndex: number) => {

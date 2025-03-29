@@ -135,9 +135,164 @@ export default function IndexPage() {
   }
 
   const handleExportItems = async () => {
+    // const items = [
+    //   {
+    //     Product: "Z30GM",
+    //     HSN: "21069040",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 9,
+    //     CGST: 9
+    //   },
+    //   {
+    //     Product: "VEBA BLISS CRAMEL230GM",
+    //     HSN: "21039030",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA MAYONNAISE MINT",
+    //     HSN: "21039030",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA MAYONNAISE OLIVE OIL",
+    //     HSN: "21039090",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA PSTA N PIZZA HRBY TOMATO",
+    //     HSN: "21032000",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA PSTAN PIZZA HRBY TOMATO",
+    //     HSN: "21039090",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA PSTA N PIZZA HRBY TOMATO",
+    //     HSN: "21039090",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA PSTA CHESSY SAUCES ALFRDO",
+    //     HSN: "21032000",
+    //     symbol: "G",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA DIP SALSA",
+    //     HSN: "21039030",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA SNDWCH SPRD CRT N CUCMBR",
+    //     HSN: "21039030",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA HOT SAUCES SRIRCHA CHILLI",
+    //     HSN: "21039090",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA SWEET SAUCES OINION",
+    //     HSN: "21039020",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA THAI-STYLE SWEET CHILLI",
+    //     HSN: "21032000",
+    //     symbol: "KG",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VESA KETCHUP TOMATO NONGARLIC",
+    //     HSN: "21032000",
+    //     symbol: "KG",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA KETCHUP TOMATO CHEFS SPL",
+    //     HSN: "21032000",
+    //     symbol: "G",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA KETCHUP TOMATO NO AD SUGR",
+    //     HSN: "21039030",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA MAYONNAISE TANDOORI",
+    //     HSN: "21039090",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   },
+    //   {
+    //     Product: "VEBA WHOLE GRAIN MUSTRD",
+    //     HSN: "21039090",
+    //     symbol: "GM",
+    //     decimal: 3,
+    //     SGST: 6,
+    //     CGST: 6
+    //   }
+    // ]
+
     const items = [
       {
-        Product: "VEBA BLISS CRAMEL230GM",
+        Product: "VEBA DIP SALSA",
+        HSN: "21039030",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA BLISS CRAMEL",
         HSN: "21039030",
         symbol: "GM",
         decimal: 3,
@@ -153,70 +308,6 @@ export default function IndexPage() {
         CGST: 6
       },
       {
-        Product: "VEBA MAYONNAISE OLIVE OIL",
-        HSN: "21039090",
-        symbol: "L",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA PASTA N PIZZA HERBY TOMATO",
-        HSN: "21032000",
-        symbol: "PCS",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA PASTA N PIZZA HERBY TOMATO",
-        HSN: "21039090",
-        symbol: "PCS",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA PASTA N PIZZA HERBY TOMATO",
-        HSN: "21039090",
-        symbol: "PCS",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA PASTA CHESSY SAUCES ALFRDO",
-        HSN: "21032000",
-        symbol: "PCS",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA DIP SALSA",
-        HSN: "21039030",
-        symbol: "PCS",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA SANDWICH SPREAD CRT N CUCMBR",
-        HSN: "21039030",
-        symbol: "PCS",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA HOT SAUCES SRIRCHA CHILLI",
-        HSN: "21039090",
-        symbol: "PCS",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
         Product: "VEBA SWEET SAUCES ONION",
         HSN: "21039020",
         symbol: "PCS",
@@ -225,32 +316,8 @@ export default function IndexPage() {
         CGST: 6
       },
       {
-        Product: "VEBA THAI-STYLE SWEET CHILLI",
-        HSN: "21032000",
-        symbol: "PCS",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VESBA KETCHUP TOMATO NON GARLIC",
-        HSN: "21032000",
-        symbol: "PCS",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA KETCHUP TOMATO CHEFS SPL",
-        HSN: "21032000",
-        symbol: "L",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA KETCHUP TOMATO NO AD SUGR",
-        HSN: "21039030",
+        Product: "VEBA WHOLE GRAIN MUSTRD",
+        HSN: "21039090",
         symbol: "PCS",
         decimal: 3,
         SGST: 6,
@@ -265,8 +332,88 @@ export default function IndexPage() {
         CGST: 6
       },
       {
-        Product: "VEBA WHOLE GRAIN MUSTRD",
+        Product: "VEBA MAYONNAISE OLIVE OIL",
         HSN: "21039090",
+        symbol: "L",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA THAI-STYLE SWEET CHILLI",
+        HSN: "21032000",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VESAKETCHUP TOMATO NONGARLIC",
+        HSN: "21032000",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA SNDWCH SPRD CRT N CUCMBR",
+        HSN: "21039030",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA KETCHUP TOMATO CHEFS SPL",
+        HSN: "21032000",
+        symbol: "L",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA PASTA N PIZZA HRBY TOMATO",
+        HSN: "21032000",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA PASTA N PIZZA HRBY TOMATO2",
+        HSN: "21039090",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA PASTA N PIZZA HRBY TOMATO3",
+        HSN: "21039090",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA HOT SAUCES SRIRCHA CHILLI",
+        HSN: "21039090",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA KETCHUP TOMATO NO AD SUGR",
+        HSN: "21039030",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA PASTA CHESSY SAUCES ALFRDO",
+        HSN: "21032000",
         symbol: "PCS",
         decimal: 3,
         SGST: 6,
@@ -278,6 +425,81 @@ export default function IndexPage() {
   };
 
   const handleCheckUnit = async () => {
+    // const units = [
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "G",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "KG",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "KG",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "G",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   },
+    //   {
+    //     Name: "GM",
+    //     conversionRate: 3
+    //   }
+    // ]
+
     const units = [
       {
         Name: "GM",
@@ -354,9 +576,109 @@ export default function IndexPage() {
 
   const handlePurchaseEntry = async () => {
     await window.electron.createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase", [
-      { name: "Item", quantity: 2, price: 100 },
-      { name: "Item Name", quantity: 1, price: 50 }
-    ], false, 0, 14, 12);
+      {
+        name: "VEBA DIP SALSA",
+        unit: "PCS",
+        price: 77.9,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA BLISS CRAMEL",
+        unit: "GM",
+        price: 135,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA MAYONNAISE MINT",
+        unit: "PCS",
+        price: 156.45,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA SWEET SAUCES ONION",
+        unit: "PCS",
+        price: 90.82,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA WHOLE GRAIN MUSTRD",
+        unit: "PCS",
+        price: 142.15,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA MAYONNAISE TANDOORI",
+        unit: "PCS",
+        price: 135,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA MAYONNAISE OLIVE OIL",
+        unit: "L",
+        price: 32.15,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA THAI-STYLE SWEET CHILLI",
+        unit: "PCS",
+        price: 92.86,
+        quantity: "3.00"
+      },
+      {
+        name: "VESAKETCHUP TOMATO NONGARLIC",
+        unit: "PCS",
+        price: 120.75,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA SNDWCH SPRD CRT N CUCMBR",
+        unit: "PCS",
+        price: 125,
+        quantity: "2.00"
+      },
+      {
+        name: "VEBA KETCHUP TOMATO CHEFS SPL",
+        unit: "L",
+        price: 135,
+        quantity: "2.00"
+      },
+      {
+        name: "VEBA PASTA N PIZZA HRBY TOMATO",
+        unit: "PCS",
+        price: 70.75,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA PASTA N PIZZA HRBY TOMATO2",
+        unit: "PCS",
+        price: 120.75,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA PASTA N PIZZA HRBY TOMATO3",
+        unit: "PCS",
+        price: 92.15,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA HOT SAUCES SRIRCHA CHILLI",
+        unit: "PCS",
+        price: 120.75,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA KETCHUP TOMATO NO AD SUGR",
+        unit: "PCS",
+        price: 77.9,
+        quantity: "3.00"
+      },
+      {
+        name: "VEBA PASTA CHESSY SAUCES ALFRDO",
+        unit: "PCS",
+        price: 117.15,
+        quantity: "2.00"
+      }
+    ], false);
   }
 
   return (
@@ -569,7 +891,9 @@ export default function IndexPage() {
 
       {/* <div> */}
       {/* <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create item</button> */}
+      <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create unit</button>
       <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
+      <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create purchase</button>
 
       {/* </div> */}
 

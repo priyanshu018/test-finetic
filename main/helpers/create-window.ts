@@ -170,7 +170,10 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     return null;
   }
 
-
+  function getLastWord(str: string): string {
+    return str.trim().split(/\s+/).pop() || '';
+  }
+  
   function bringTallyToForegroundAndSendKeys(keys, delayBeforeY = 2000) {
     return new Promise((resolve, reject) => {
       // Check if the keys array contains "prompt here"
@@ -248,7 +251,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   function removeBOM(content: string): string {
     const buffer = Buffer.from(content, 'utf-8');
     if (buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf) {
-      content = buffer.slice(3).toString('utf-8');
+      content = buffer?.slice(3)?.toString('utf-8');
     }
 
     // Remove ∩┐╜ characters and invisible Unicode characters
@@ -596,6 +599,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         '{ENTER}',
         '^a',
         '^a',
+        '^a',
         purchaseLedger,
         '{ENTER}',
       ];
@@ -605,8 +609,8 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         // Add item details: name, quantity, price
         keys.push(
           item.name, '{ENTER}',
-          item.quantity.toString(), '{ENTER}',
-          item.price.toString(), '{ENTER}', '{ENTER}', '{ENTER}',
+          item.quantity?.toString(), '{ENTER}',
+          item.price?.toString(), '{ENTER}', '{ENTER}', '{ENTER}',
         );
 
 
@@ -688,7 +692,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         name,
         '{ENTER}', '{ENTER}',
         '{ENTER}',
-         symbol, '{ENTER}',     // Enter item name and confirm
+        symbol, '{ENTER}',     // Enter item name and confirm
         '{ENTER}', "specify details", '{ENTER}', hsn, '{ENTER}', '{ENTER}', "specify details", '{ENTER}', '{ENTER}', gst, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', 'prompt here', 'y', '{ESC}', '{ESC}',
         'prompt here', 'y', '{ESC}'  // Create and exit
       ]);
