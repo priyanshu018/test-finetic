@@ -174,42 +174,102 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     return str.trim().split(/\s+/).pop() || '';
   }
   
+  // function bringTallyToForegroundAndSendKeys(keys, delayBeforeY = 2000) {
+  //   return new Promise((resolve, reject) => {
+  //     // Check if the keys array contains "prompt here"
+  //     const promptIndex = keys.findIndex(key => key === "prompt here");
+  //     const percentageIndex = keys.findIndex(key => key === "percentage here");
+
+  //     // Build the PowerShell command:
+  //     let command = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; `;
+  //     // Use Select-Object -First 1 to ensure a single process is returned
+  //     command += `$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; `;
+  //     command += `if ($tallyProcess) { `;
+  //     command += `(New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `;
+
+  //     if (promptIndex === -1) {
+  //       // No "prompt here": join all keys as before.
+  //       const keysString = keys.join('');
+  //       command += `[System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `;
+  //       command += `Start-Sleep -Milliseconds ${delayBeforeY}; `;
+  //     } else {
+  //       // "prompt here" exists: iterate through keys individually.
+  //       keys.forEach(key => {
+  //         if (key === "prompt here") {
+  //           // Wait for 500 milliseconds before proceeding.
+  //           command += `Start-Sleep -Milliseconds 500; `;
+  //         } else if (key === "percentage here") {
+  //           command += `[System.Windows.Forms.SendKeys]::SendWait('%'); `;
+  //         } else {
+  //           command += `[System.Windows.Forms.SendKeys]::SendWait('${key}'); `;
+  //         }
+  //       });
+  //     }
+
+  //     command += `} else { `;
+  //     command += `throw 'No Tally process found'; `;
+  //     command += `}"`;
+
+  //     exec(command, (error, stdout, stderr) => {
+  //       if (error) {
+  //         reject(`Error: ${error.message}`);
+  //         return;
+  //       }
+  //       if (stderr) {
+  //         reject(`PowerShell error: ${stderr}`);
+  //         return;
+  //       }
+  //       resolve();
+  //     });
+  //   });
+  // }
+
   function bringTallyToForegroundAndSendKeys(keys, delayBeforeY = 2000) {
     return new Promise((resolve, reject) => {
-      // Check if the keys array contains "prompt here"
+      // Check for special keys.
       const promptIndex = keys.findIndex(key => key === "prompt here");
+      const openTallyIndex = keys.findIndex(key => key === "open tally");
       const percentageIndex = keys.findIndex(key => key === "percentage here");
-
+  
       // Build the PowerShell command:
       let command = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; `;
-      // Use Select-Object -First 1 to ensure a single process is returned
       command += `$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; `;
+  
+      // If "open tally" is specified, open Tally if not already running.
+      if (openTallyIndex !== -1) {
+        command += `if (-not $tallyProcess) { Start-Process Tally.exe; Start-Sleep -Seconds 3; $tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; } `;
+      }
+  
+      // Proceed if Tally process is found.
       command += `if ($tallyProcess) { `;
       command += `(New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `;
-
+  
       if (promptIndex === -1) {
-        // No "prompt here": join all keys as before.
-        const keysString = keys.join('');
+        // No "prompt here": join all keys as before, but filter out "open tally".
+        const filteredKeys = keys.filter(key => key !== "open tally");
+        const keysString = filteredKeys.join('');
         command += `[System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `;
         command += `Start-Sleep -Milliseconds ${delayBeforeY}; `;
       } else {
         // "prompt here" exists: iterate through keys individually.
         keys.forEach(key => {
           if (key === "prompt here") {
-            // Wait for 500 milliseconds before proceeding.
             command += `Start-Sleep -Milliseconds 500; `;
           } else if (key === "percentage here") {
             command += `[System.Windows.Forms.SendKeys]::SendWait('%'); `;
+          } else if (key === "open tally") {
+            // Already handled above; skip sending this key.
+            // (No command needed here.)
           } else {
             command += `[System.Windows.Forms.SendKeys]::SendWait('${key}'); `;
           }
         });
       }
-
+  
       command += `} else { `;
       command += `throw 'No Tally process found'; `;
       command += `}"`;
-
+  
       exec(command, (error, stdout, stderr) => {
         if (error) {
           reject(`Error: ${error.message}`);
@@ -223,7 +283,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       });
     });
   }
-
+  
 
   function getTallyInstallPath(): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -361,7 +421,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
       // Step 2: Trigger Tally export for stock items
       const keys = [
-        'prompt here', '%e', 'm', 'c', 'type of master', '{ENTER}',
+        'open tally', '%e', 'm', 'c', 'type of master', '{ENTER}',
         'stock items', '{ENTER}', '{ESC}', '{ESC}', 'e',
         'prompt here', 'y'
       ];
@@ -453,7 +513,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       // Step 2: Trigger Tally export for units
       // Adjust the keys to match your Tally sequence for exporting UNIT masters
       const keys = [
-        '%e', 'm', 'c', 'type of master', '{ENTER}', 'units', '{ENTER}', '{ESC}', '{ESC}', 'e',
+        'open tally','%e', 'm', 'c', 'type of master', '{ENTER}', 'units', '{ENTER}', '{ESC}', '{ESC}', 'e',
         'prompt here', 'y'
       ];
       await bringTallyToForegroundAndSendKeys(keys, 1000);
@@ -522,7 +582,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       // Bring Tally to the foreground and send keys for unit creation.
       // The key sequence below is an example; adjust it to match your Tally workflow.
       await bringTallyToForegroundAndSendKeys([
-        'c',
+      'open tally',  'c',
         'u', 'n', 'i', 't',
         '{ENTER}', // Open unit creation window
         name, '{ENTER}', '{ENTER}', '{ENTER}',                    // Enter unit name
@@ -542,7 +602,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     try {
 
       // Step 1: Press "c"
-      await bringTallyToForegroundAndSendKeys(['prompt here', 'c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}', ledgerName, '{ENTER}', '{ENTER}', 'p', 'u', 'r', 'c', 'h', 'a', 's', 'e', ' ', 'a', 'c', 'c', 'o', 'u', 'n', 't',
+      await bringTallyToForegroundAndSendKeys(['open tally', 'c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}', ledgerName, '{ENTER}', '{ENTER}', 'p', 'u', 'r', 'c', 'h', 'a', 's', 'e', ' ', 'a', 'c', 'c', 'o', 'u', 'n', 't',
         '{ENTER}', '{ENTER}', 'g', 's', 't', '{ENTER}', 'g', 'o', 'o', 'd', 's', ' ', 'a', 'n', 'd', ' ', 's', 'e', 'r', 'v', 'i', 'c', 'e', 's',
         '{ENTER}', '^a', '{ESC}', 'prompt here', 'y', '{ESC}']);
 
@@ -688,7 +748,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       console.log("working")
       // await bringTallyToForegroundAndSendKeys(['prompt here'])
       await bringTallyToForegroundAndSendKeys([
-        'c', 'i', 't', 'e', 'm', '{ENTER}',  // Open item creation
+       'open tally', 'c', 'i', 't', 'e', 'm', '{ENTER}',  // Open item creation
         name,
         '{ENTER}', '{ENTER}',
         '{ENTER}',

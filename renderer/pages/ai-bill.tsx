@@ -726,10 +726,10 @@ export default function BillWorkflow() {
       "OUNCE", "OZ",
       "POUND", "LB"
     ];
-
+  
     // Sort knownUnits by descending length to match longer strings first
     knownUnits.sort((a, b) => b.length - a.length);
-
+  
     // Utility to extract a known unit from a text (case-insensitive)
     function extractUnit(text) {
       if (!text) return "";
@@ -744,7 +744,7 @@ export default function BillWorkflow() {
       }
       return "";
     }
-
+  
     // Utility to clean the product name by removing any numeric data and unit markers.
     // Also, if the cleaned product name is a single word, return an empty string.
     function cleanProductName(productName) {
@@ -764,7 +764,7 @@ export default function BillWorkflow() {
       }
       return cleaned;
     }
-
+  
     // Filter, map, and clean the raw items
     let transformed = rawItems
       .filter(item => item.Product && item.Product.toLowerCase() !== "null")
@@ -790,7 +790,7 @@ export default function BillWorkflow() {
       .filter(item => item.name !== "")
       // Sort the results in ascending order based on the length of the cleaned product name.
       .sort((a, b) => a.name.length - b.name.length);
-
+  
     // Append a unique number to duplicate product names
     const productCount = {};
     transformed = transformed.map(item => {
@@ -803,10 +803,34 @@ export default function BillWorkflow() {
       }
       return item;
     });
-
+  
+    // Additional logic: Append a serial number based on duplicate last words.
+    // First, count the frequency of each last word (after removing any trailing digits)
+    const lastWordFrequency = {};
+    transformed.forEach(item => {
+      const words = item.name.trim().split(/\s+/);
+      const lastWord = words[words.length - 1].replace(/\d+$/, "").toUpperCase();
+      lastWordFrequency[lastWord] = (lastWordFrequency[lastWord] || 0) + 1;
+    });
+  
+    // Then, append a serial number for duplicate occurrences of the last word (starting from 2)
+    const lastWordCount = {};
+    transformed = transformed.map(item => {
+      const words = item.name.trim().split(/\s+/);
+      let lastWord = words[words.length - 1].replace(/\d+$/, "").toUpperCase();
+      if (lastWordFrequency[lastWord] > 1) {
+        lastWordCount[lastWord] = (lastWordCount[lastWord] || 0) + 1;
+        // Append serial number if it's not the first occurrence
+        if (lastWordCount[lastWord] > 1) {
+          item.name = item.name + lastWordCount[lastWord];
+        }
+      }
+      return item;
+    });
+  
     return transformed;
   }
-
+  
 
   function transformItems(rawItems) {
     // Comprehensive list of known units (extend or modify as needed)
@@ -829,10 +853,10 @@ export default function BillWorkflow() {
       "OUNCE", "OZ",
       "POUND", "LB"
     ];
-
+  
     // Sort knownUnits by descending length to match longer strings first
     knownUnits.sort((a, b) => b.length - a.length);
-
+  
     // Utility to extract a known unit from a text (case-insensitive)
     function extractUnit(text) {
       if (!text) return "";
@@ -847,7 +871,7 @@ export default function BillWorkflow() {
       }
       return "";
     }
-
+  
     // Utility to clean the product name by removing trailing digits + unit.
     // Also, if the cleaned product name is a single word (i.e. no spaces),
     // we return an empty string so it can be filtered out later.
@@ -864,8 +888,8 @@ export default function BillWorkflow() {
       }
       return cleaned;
     }
-
-    // Map and filter out items whose cleaned Product is empty (i.e. a single word)
+  
+    // Map and filter out items whose cleaned Product is empty (i.e. a single-word names were removed)
     let transformed = rawItems
       .filter(item => item.Product && item.Product.toLowerCase() !== "null")
       .map(item => {
@@ -893,8 +917,8 @@ export default function BillWorkflow() {
       .filter(item => item.Product !== "")
       // Sort the results in ascending order based on the length of the product name.
       .sort((a, b) => a.Product.length - b.Product.length);
-
-    // Append a unique number to duplicate product names
+  
+    // Existing duplicate check: Append a unique number to duplicate product names.
     const productCount = {};
     transformed = transformed.map(item => {
       const name = item.Product;
@@ -907,9 +931,37 @@ export default function BillWorkflow() {
       }
       return item;
     });
-
+  
+    // New condition:
+    // Check if the last word (after stripping any trailing digits) appears in multiple items.
+    // If yes, append a serial number (starting from 2) to the product name.
+    const lastWordFrequency = {};
+    // First pass: count frequency of each last word (normalize to uppercase)
+    transformed.forEach(item => {
+      const words = item.Product.trim().split(/\s+/);
+      // Remove any trailing digits from the last word
+      const lastWord = words[words.length - 1].replace(/\d+$/, "").toUpperCase();
+      lastWordFrequency[lastWord] = (lastWordFrequency[lastWord] || 0) + 1;
+    });
+  
+    // Second pass: append serial numbers for duplicate last words.
+    const lastWordCount = {};
+    transformed = transformed.map(item => {
+      const words = item.Product.trim().split(/\s+/);
+      let lastWord = words[words.length - 1].replace(/\d+$/, "").toUpperCase();
+      if (lastWordFrequency[lastWord] > 1) {
+        lastWordCount[lastWord] = (lastWordCount[lastWord] || 0) + 1;
+        // Only append a number if this is not the first occurrence.
+        if (lastWordCount[lastWord] > 1) {
+          item.Product = item.Product + lastWordCount[lastWord];
+        }
+      }
+      return item;
+    });
+  
     return transformed;
   }
+  
 
 
   function extractUnitsFromItems(rawItems: any[]): { name: string; unit: string; conversionRate: number }[] {
@@ -990,13 +1042,26 @@ export default function BillWorkflow() {
     const invoiceNumber = billData?.[0]?.invoiceNumber
     // const allLedgerResponse = await window.electron.exportLedger(ledgerNames, false)
     // const purchaserLedgerResponse = await window.electron.exportLedger(purchaserName, isPurchaser)
-    // const unitResponse = await window.electron.exportUnit(updatedUnits);
-    // const itemResponse = await window.electron.exportItem(updatedItemsForExport);
-    // console.log("allLedgerResponse:", allLedgerResponse, "purchaserLedgerResponse:", purchaserLedgerResponse, "itemResponse:", itemResponse, "unitResponse:", unitResponse)
+  
+    const unitResponse = await window.electron.exportUnit(updatedUnits);
+    if (unitResponse?.success) {
+      const itemResponse = await window.electron.exportItem(updatedItemsForExport);
+      if (itemResponse?.success) {
+        const response = await window.electron.createPurchaseEntry(invoiceNumber, "02-11-2024", "Priyanshu", "Purchase", updatedPurchaseEntryItem, true);
+        if (response?.success) {
+          alert("Purchase Entry Create")
+        } else {
+          alert("Error: while create purchaser entry")
+        }
+      } else {
+        alert("Error: while creating item")
+      }
+    } else {
+      alert("Error: while creating unit ")
+    }
 
     console.log(invoiceNumber, date, purchaserName, updatedItemsForExport, purchaserName, updatedPurchaseEntryItem, true, updatedUnits)
 
-    // const response = await window.electron.createPurchaseEntry(invoiceNumber, "02-11-2024", "Priyanshu", "Purchase", updatedPurchaseEntryItem, true);
   };
 
   const fixRowCalculation = (billIndex: number, itemIndex: number) => {
@@ -1112,7 +1177,7 @@ export default function BillWorkflow() {
       <LoadingScreen isLoading={isLoading} />
 
       <header className="py-6 px-8 border-b border-gray-200 bg-white shadow-sm sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className=" mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6">
             <button
               onClick={() => window.history.back()}
@@ -1507,7 +1572,7 @@ export default function BillWorkflow() {
                               className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </td>
-                          <td className="px-3 py-2 w-20">
+                          <td className="px-3 py-2 w-28">
                             <input
                               type="number"
                               value={item.MRP || ""}
@@ -1515,7 +1580,7 @@ export default function BillWorkflow() {
                               className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 py-2 w-28">
                             <input
                               type="number"
                               value={item.RATE || ""}
@@ -1523,7 +1588,7 @@ export default function BillWorkflow() {
                               className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 py-2 w-24">
                             <input
                               type="text"
                               value={item.DIS || ""}
@@ -1531,7 +1596,7 @@ export default function BillWorkflow() {
                               className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 py-2 w-28">
                             <input
                               type="number"
                               value={item["G AMT"] || ""}
@@ -1539,7 +1604,7 @@ export default function BillWorkflow() {
                               className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 py-2 w-16">
                             <input
                               type="text"
                               value={item.SGST || ""}
@@ -1547,15 +1612,15 @@ export default function BillWorkflow() {
                               className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 py-2 w-16">
                             <input
                               type="text"
                               value={item.CGST || ""}
                               onChange={(e) => handleItemChange(currentBillIndex, idx, "CGST", e.target.value)}
                               className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
-                          </td>
-                          <td className="px-3 py-2">
+                          </td> 
+                          <td className="px-3 py-2 w-28">
                             <input
                               type="number"
                               value={item["NET AMT"] || ""}
