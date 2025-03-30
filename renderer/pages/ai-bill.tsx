@@ -726,14 +726,31 @@ export default function BillWorkflow() {
       "OUNCE", "OZ",
       "POUND", "LB"
     ];
-  
+
     // Sort knownUnits by descending length to match longer strings first
     knownUnits.sort((a, b) => b.length - a.length);
-  
-    // Utility to extract a known unit from a text (case-insensitive)
+
+    // // Utility to extract a known unit from a text (case-insensitive)
+    // function extractUnit(text) {
+    //   if (!text) return "";
+    //   for (const unit of knownUnits) {
+    //     // The regex allows an optional number and whitespace before the unit,
+    //     // and requires a word boundary at the end.
+    //     const regex = new RegExp(`\\d*\\s*(${unit})\\b`, "i");
+    //     const match = text.match(regex);
+    //     if (match && match[1]) {
+    //       return match[1].toUpperCase();
+    //     }
+    //   }
+    //   return "";
+    // }
+
+
     function extractUnit(text) {
-      if (!text) return "";
+      if (text === null || text === undefined) return "";
+      text = text.toString(); // Ensure text is a string
       for (const unit of knownUnits) {
+
         // The regex allows an optional number and whitespace before the unit,
         // and requires a word boundary at the end.
         const regex = new RegExp(`\\d*\\s*(${unit})\\b`, "i");
@@ -744,7 +761,7 @@ export default function BillWorkflow() {
       }
       return "";
     }
-  
+
     // Utility to clean the product name by removing any numeric data and unit markers.
     // Also, if the cleaned product name is a single word, return an empty string.
     function cleanProductName(productName) {
@@ -764,7 +781,7 @@ export default function BillWorkflow() {
       }
       return cleaned;
     }
-  
+
     // Filter, map, and clean the raw items
     let transformed = rawItems
       .filter(item => item.Product && item.Product.toLowerCase() !== "null")
@@ -790,7 +807,7 @@ export default function BillWorkflow() {
       .filter(item => item.name !== "")
       // Sort the results in ascending order based on the length of the cleaned product name.
       .sort((a, b) => a.name.length - b.name.length);
-  
+
     // Append a unique number to duplicate product names
     const productCount = {};
     transformed = transformed.map(item => {
@@ -803,7 +820,7 @@ export default function BillWorkflow() {
       }
       return item;
     });
-  
+
     // Additional logic: Append a serial number based on duplicate last words.
     // First, count the frequency of each last word (after removing any trailing digits)
     const lastWordFrequency = {};
@@ -812,7 +829,7 @@ export default function BillWorkflow() {
       const lastWord = words[words.length - 1].replace(/\d+$/, "").toUpperCase();
       lastWordFrequency[lastWord] = (lastWordFrequency[lastWord] || 0) + 1;
     });
-  
+
     // Then, append a serial number for duplicate occurrences of the last word (starting from 2)
     const lastWordCount = {};
     transformed = transformed.map(item => {
@@ -827,10 +844,10 @@ export default function BillWorkflow() {
       }
       return item;
     });
-  
+
     return transformed;
   }
-  
+
 
   function transformItems(rawItems) {
     // Comprehensive list of known units (extend or modify as needed)
@@ -853,12 +870,14 @@ export default function BillWorkflow() {
       "OUNCE", "OZ",
       "POUND", "LB"
     ];
-  
+
     // Sort knownUnits by descending length to match longer strings first
     knownUnits.sort((a, b) => b.length - a.length);
-  
+
     // Utility to extract a known unit from a text (case-insensitive)
     function extractUnit(text) {
+      text = text?.toString()
+
       if (!text) return "";
       for (const unit of knownUnits) {
         // The regex allows an optional number and whitespace before the unit,
@@ -871,7 +890,7 @@ export default function BillWorkflow() {
       }
       return "";
     }
-  
+
     // Utility to clean the product name by removing trailing digits + unit.
     // Also, if the cleaned product name is a single word (i.e. no spaces),
     // we return an empty string so it can be filtered out later.
@@ -888,7 +907,7 @@ export default function BillWorkflow() {
       }
       return cleaned;
     }
-  
+
     // Map and filter out items whose cleaned Product is empty (i.e. a single-word names were removed)
     let transformed = rawItems
       .filter(item => item.Product && item.Product.toLowerCase() !== "null")
@@ -917,7 +936,7 @@ export default function BillWorkflow() {
       .filter(item => item.Product !== "")
       // Sort the results in ascending order based on the length of the product name.
       .sort((a, b) => a.Product.length - b.Product.length);
-  
+
     // Existing duplicate check: Append a unique number to duplicate product names.
     const productCount = {};
     transformed = transformed.map(item => {
@@ -931,7 +950,7 @@ export default function BillWorkflow() {
       }
       return item;
     });
-  
+
     // New condition:
     // Check if the last word (after stripping any trailing digits) appears in multiple items.
     // If yes, append a serial number (starting from 2) to the product name.
@@ -943,7 +962,7 @@ export default function BillWorkflow() {
       const lastWord = words[words.length - 1].replace(/\d+$/, "").toUpperCase();
       lastWordFrequency[lastWord] = (lastWordFrequency[lastWord] || 0) + 1;
     });
-  
+
     // Second pass: append serial numbers for duplicate last words.
     const lastWordCount = {};
     transformed = transformed.map(item => {
@@ -958,10 +977,10 @@ export default function BillWorkflow() {
       }
       return item;
     });
-  
+
     return transformed;
   }
-  
+
 
 
   function extractUnitsFromItems(rawItems: any[]): { name: string; unit: string; conversionRate: number }[] {
@@ -991,6 +1010,7 @@ export default function BillWorkflow() {
 
     // Utility function to extract a unit from text using the known units list
     function extractUnit(text: string): string {
+      text = text.toString(); // Ensure text is a string
       if (!text) return "";
       for (const unit of knownUnits) {
         // Allow an optional number and whitespace before the unit, followed by a word boundary
@@ -1042,7 +1062,7 @@ export default function BillWorkflow() {
     const invoiceNumber = billData?.[0]?.invoiceNumber
     // const allLedgerResponse = await window.electron.exportLedger(ledgerNames, false)
     // const purchaserLedgerResponse = await window.electron.exportLedger(purchaserName, isPurchaser)
-  
+
     const unitResponse = await window.electron.exportUnit(updatedUnits);
     if (unitResponse?.success) {
       const itemResponse = await window.electron.exportItem(updatedItemsForExport);
@@ -1060,6 +1080,7 @@ export default function BillWorkflow() {
       alert("Error: while creating unit ")
     }
 
+    
     console.log(invoiceNumber, date, purchaserName, updatedItemsForExport, purchaserName, updatedPurchaseEntryItem, true, updatedUnits)
 
   };
@@ -1619,7 +1640,7 @@ export default function BillWorkflow() {
                               onChange={(e) => handleItemChange(currentBillIndex, idx, "CGST", e.target.value)}
                               className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
-                          </td> 
+                          </td>
                           <td className="px-3 py-2 w-28">
                             <input
                               type="number"

@@ -357,108 +357,114 @@ export default function IndexPage() {
   const handlePurchaseEntry = async () => {
     await window.electron.createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase",
       [
-        {
-          name: "VEBA DIP SALSA",
-          unit: "GM",
-          price: 77.9,
-          quantity: "250GM"
-        },
+        // {
+        //   name: "VEBA DIP SALSA",
+        //   unit: "PCS",
+        //   price: 77.9,
+        //   quantity: 3
+        // },
         {
           name: "VEBA BLISS CRAMEL",
           unit: "GM",
           price: 135,
-          quantity: "3.00"
+          quantity: 0
         },
         {
           name: "VEBA MAYONNAISE MINT",
-          unit: "GM",
+          unit: "PCS",
           price: 156.45,
-          quantity: "300GM"
+          quantity: 2
         },
-        {
-          name: "VEBA WHOLE GRAIN MUSTRD",
-          unit: "GM",
-          price: 142.15,
-          quantity: "350GM"
-        },
-        {
-          name: "VEBA SWEET SAUCES OINION",
-          unit: "GM",
-          price: 90.82,
-          quantity: "260GM"
-        },
-        {
-          name: "VEBA MAYONNAISE TANDOORI",
-          unit: "GM",
-          price: 135,
-          quantity: "250GM"
-        },
-        {
-          name: "VEBA MAYONNAISE OLIVE OIL",
-          unit: "GM",
-          price: 32.15,
-          quantity: "100GM"
-        },
-        {
-          name: "VEBA PSTAN PIZZA HRBY TOMATO",
-          unit: "GM",
-          price: 120.75,
-          quantity: "525GM"
-        },
-        {
-          name: "VEBA THAI-STYLE SWEET CHILLI",
-          unit: "KG",
-          price: 92.86,
-          quantity: "1KG"
-        },
-        {
-          name: "VEBA PSTA N PIZZA HRBY TOMATO2",
-          unit: "GM",
-          price: 70.75,
-          quantity: "280GM"
-        },
-        {
-          name: "VEBA PSTA N PIZZA HRBY TOMATO23",
-          unit: "GM",
-          price: 92.15,
-          quantity: "250GM"
-        },
-        {
-          name: "VEBA SNDWCH SPRD CRT N CUCMBR",
-          unit: "GM",
-          price: 125,
-          quantity: "350GM"
-        },
-        {
-          name: "VESA KETCHUP TOMATO NONGARLIC",
-          unit: "KG",
-          price: 120.75,
-          quantity: "1KG"
-        },
-        {
-          name: "VEBA KETCHUP TOMATO CHEFS SPL",
-          unit: "G",
-          price: 135,
-          quantity: "460G"
-        },
-        {
-          name: "VEBA PSTA CHESSY SAUCES ALFRDO",
-          unit: "G",
-          price: 117.15,
-          quantity: "360G"
-        },
-        {
-          name: "VEBA HOT SAUCES SRIRCHA CHILLI2",
-          unit: "GM",
-          price: 120.75,
-          quantity: "350GM"
-        },
-        {
-          name: "VEBA KETCHUP TOMATO NO AD SUGR",
-          unit: "GM",
-          price: 77.9,
-          quantity: "250GM"
-        }
+        // {
+        //   name: "VEBA WHOLE GRAIN MUSTRD",
+        //   unit: "PCS",
+        //   price: 142.15,
+        //   quantity: 3
+        // },
+        // {
+        //   name: "VEBA SWEET SAUCES OINION",
+        //   unit: "PCS",
+        //   price: 90.82,
+        //   quantity: 3
+        // },
+        // {
+        //   name: "VEBA MAYONNAISE TANDOORI",
+        //   unit: "PCS",
+        //   price: 135,
+        //   quantity: 3
+        // },
+        // {
+        //   name: "VEBA MAYONNAISE OLIVE OIL",
+        //   unit: "GM",
+        //   price: 32.15,
+        //   quantity: 12
+        // },
+        // {
+        //   name: "VEBA SALAD SAUCE TOKYO STYL",
+        //   unit: "L",
+        //   price: 0,
+        //   quantity: 0
+        // },
+        // {
+        //   name: "VEBA PSTAN PIZZA HRBY TOMATO",
+        //   unit: "PCS",
+        //   price: 120.75,
+        //   quantity: 3
+        // },
+        // {
+        //   name: "VEBA PSTA N PIZZA HRBY TOMATO2",
+        //   unit: "PCS",
+        //   price: 70.75,
+        //   quantity: 3
+        // },
+        // {
+        //   name: "VEBA PSTA N PIZZA HRBY TOMATO23",
+        //   unit: "PCS",
+        //   price: 9215,
+        //   quantity: 3
+        // },
+        // {
+        //   name: "VEBA SNDWCH SPRD CRT N CUCMBR",
+        //   unit: "PCS",
+        //   price: 125,
+        //   quantity: 2
+        // },
+        // {
+        //   name: "VESA KETCHUP TOMATO NONGARLIC",
+        //   unit: "PCS",
+        //   price: 120.75,
+        //   quantity: 3
+        // },
+        // {
+        //   name: "VEBA KETCHUP TOMATO CHEFS SPL",
+        //   unit: "L",
+        //   price: 135,
+        //   quantity: 2
+        // },
+        // {
+        //   name: "VEBA PSTA CHESSY SAUCES ALFRDO",
+        //   unit: "PCS",
+        //   price: 117.15,
+        //   quantity: 2
+        // },
+        // {
+        //   name: "VEBA HOT SAUCES SRIRCHA CHILLI",
+        //   unit: "PCS",
+        //   price: 120.75,
+        //   quantity: 3
+        // },
+        // {
+        //   name: "VEBA KETCHUP TOMATO NO AD SUGR",
+        //   unit: "PCS",
+        //   price: 77.9,
+        //   quantity: 3
+        // },
+        // {
+        //   name: "VEBA THAI-STYLE SWEET CHILLI IKG",
+        //   unit: "KG",
+        //   price: 92.86,
+        //   quantity: 3
+        // }
       ]
       , false);
   }
