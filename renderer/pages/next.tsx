@@ -281,26 +281,7 @@ export default function IndexPage() {
   const handleCheckUnit = async () => {
 
     const units = [
-      {
-        Name: "GM",
-        conversionRate: 3
-      },
-      {
-        Name: "GM",
-        conversionRate: 3
-      },
-      {
-        Name: "GM",
-        conversionRate: 3
-      },
-      {
-        Name: "GM",
-        conversionRate: 3
-      },
-      {
-        Name: "GM",
-        conversionRate: 3
-      },
+  
       {
         Name: "GM",
         conversionRate: 3
@@ -310,43 +291,7 @@ export default function IndexPage() {
         conversionRate: 3
       },
       {
-        Name: "GM",
-        conversionRate: 3
-      },
-      {
-        Name: "GM",
-        conversionRate: 3
-      },
-      {
-        Name: "GM",
-        conversionRate: 3
-      },
-      {
-        Name: "GM",
-        conversionRate: 3
-      },
-      {
         Name: "KG",
-        conversionRate: 3
-      },
-      {
-        Name: "KG",
-        conversionRate: 3
-      },
-      {
-        Name: "G",
-        conversionRate: 3
-      },
-      {
-        Name: "GM",
-        conversionRate: 3
-      },
-      {
-        Name: "GM",
-        conversionRate: 3
-      },
-      {
-        Name: "GM",
         conversionRate: 3
       }
     ]

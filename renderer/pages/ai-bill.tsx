@@ -983,7 +983,68 @@ export default function BillWorkflow() {
 
 
 
-  function extractUnitsFromItems(rawItems: any[]): { name: string; unit: string; conversionRate: number }[] {
+  // function extractUnitsFromItems(rawItems: any[]): { name: string; unit: string; conversionRate: number }[] {
+  //   // Comprehensive list of known units (extend as needed)
+  //   const knownUnits = [
+  //     "MILLILITER", "MILLILITERS", "ML",
+  //     "LITER", "LITERS", "L", "LTR",
+  //     "GRAM", "GRAMS", "G", "GM",
+  //     "KILOGRAM", "KILOGRAMS", "KG",
+  //     "CENTIMETER", "CENTIMETERS", "CM",
+  //     "METER", "METERS", "M",
+  //     "MILLIGRAM", "MILLIGRAMS", "MG",
+  //     "PIECE", "PIECES", "PCS",
+  //     "DOZEN",
+  //     "BOTTLE",
+  //     "PACK",
+  //     "BOX",
+  //     "SHEET",
+  //     "ROLL",
+  //     "GALLON",
+  //     "OUNCE", "OZ",
+  //     "POUND", "LB"
+  //   ];
+
+  //   // Sort knownUnits by descending length to ensure longer, more specific units match first
+  //   knownUnits.sort((a, b) => b.length - a.length);
+
+  //   // Utility function to extract a unit from text using the known units list
+  //   function extractUnit(text: string): string {
+  //     text = text.toString(); // Ensure text is a string
+  //     if (!text) return "";
+  //     for (const unit of knownUnits) {
+  //       // Allow an optional number and whitespace before the unit, followed by a word boundary
+  //       const regex = new RegExp(`\\d*\\s*(${unit})\\b`, "i");
+  //       const match = text.match(regex);
+  //       if (match && match[1]) {
+  //         return match[1].toUpperCase();
+  //       }
+  //     }
+  //     return "";
+  //   }
+
+  //   return rawItems
+  //     .filter(item => item.Product && item.Product.toLowerCase() !== "null")
+  //     .map(item => {
+  //       // Attempt to extract the unit from the QTY field first
+  //       let unit = extractUnit(item.QTY);
+  //       // If no unit found in QTY, try to extract from the Product field
+  //       if (!unit) {
+  //         unit = extractUnit(item.Product);
+  //       }
+  //       // Default to "PCS" if still not found
+  //       if (!unit) {
+  //         unit = "PCS";
+  //       }
+  //       return {
+  //         Name: unit,
+  //         conversionRate: 3
+  //       };
+  //     });
+  // }
+
+
+  function extractUnitsFromItems(rawItems: any[]): { Name: string; conversionRate: number }[] {
     // Comprehensive list of known units (extend as needed)
     const knownUnits = [
       "MILLILITER", "MILLILITERS", "ML",
@@ -1004,10 +1065,10 @@ export default function BillWorkflow() {
       "OUNCE", "OZ",
       "POUND", "LB"
     ];
-
+  
     // Sort knownUnits by descending length to ensure longer, more specific units match first
     knownUnits.sort((a, b) => b.length - a.length);
-
+  
     // Utility function to extract a unit from text using the known units list
     function extractUnit(text: string): string {
       text = text.toString(); // Ensure text is a string
@@ -1022,8 +1083,9 @@ export default function BillWorkflow() {
       }
       return "";
     }
-
-    return rawItems
+  
+    // Map over the items to extract the units
+    const units = rawItems
       .filter(item => item.Product && item.Product.toLowerCase() !== "null")
       .map(item => {
         // Attempt to extract the unit from the QTY field first
@@ -1041,9 +1103,19 @@ export default function BillWorkflow() {
           conversionRate: 3
         };
       });
+  
+    // Remove duplicate units based on the Name property using a Map
+    const uniqueUnitsMap = new Map<string, { Name: string; conversionRate: number }>();
+    for (const unitObj of units) {
+      if (!uniqueUnitsMap.has(unitObj.Name)) {
+        uniqueUnitsMap.set(unitObj.Name, unitObj);
+      }
+    }
+    
+    return Array.from(uniqueUnitsMap.values());
   }
 
-
+  
   const handleExport = async () => {
     console.log(role);
     console.log(billData);
@@ -1063,22 +1135,22 @@ export default function BillWorkflow() {
     // const allLedgerResponse = await window.electron.exportLedger(ledgerNames, false)
     // const purchaserLedgerResponse = await window.electron.exportLedger(purchaserName, isPurchaser)
 
-    const unitResponse = await window.electron.exportUnit(updatedUnits);
-    if (unitResponse?.success) {
-      const itemResponse = await window.electron.exportItem(updatedItemsForExport);
-      if (itemResponse?.success) {
-        const response = await window.electron.createPurchaseEntry(invoiceNumber, "02-11-2024", "Priyanshu", "Purchase", updatedPurchaseEntryItem, true);
-        if (response?.success) {
-          alert("Purchase Entry Create")
-        } else {
-          alert("Error: while create purchaser entry")
-        }
-      } else {
-        alert("Error: while creating item")
-      }
-    } else {
-      alert("Error: while creating unit ")
-    }
+    // const unitResponse = await window.electron.exportUnit(updatedUnits);
+    // if (unitResponse?.success) {
+    //   const itemResponse = await window.electron.exportItem(updatedItemsForExport);
+    //   if (itemResponse?.success) {
+    //     const response = await window.electron.createPurchaseEntry(invoiceNumber, "02-11-2024", "Priyanshu", "Purchase", updatedPurchaseEntryItem, true);
+    //     if (response?.success) {
+    //       alert("Purchase Entry Create")
+    //     } else {
+    //       alert("Error: while create purchaser entry")
+    //     }
+    //   } else {
+    //     alert("Error: while creating item")
+    //   }
+    // } else {
+    //   alert("Error: while creating unit ")
+    // }
 
     
     console.log(invoiceNumber, date, purchaserName, updatedItemsForExport, purchaserName, updatedPurchaseEntryItem, true, updatedUnits)
