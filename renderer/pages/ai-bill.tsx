@@ -31,8 +31,12 @@ declare global {
       createCgstLedger: (ledgerName: string) => Promise<{ success: boolean; ledgerName?: string; error?: string }>;
     };
     electron: {
-      exportItem: (items: any) => Promise<any>;
+      exportAndCreatePartyNameEntry: (purchaserName: string, gst: string) => Promise<{ success: boolean; partyName: string }>
       exportLedger: (ledgerNames: string[] | string, ledgerType: string) => Promise<any>;
+      exportAndCreateLedger: (ledgerName: string | string[], ledgerType: string) => Promise<{ success: boolean; ledgerName: string }>
+      exportUnit: (unit: any) => Promise<any>;
+      exportItem: (items: any) => Promise<any>;
+      createPurchaseEntry: (invoiceNumber: string, date: string, purchaserName: string, purchaseName: string, updatedPurchaseEntryItem: any, isWithinState: boolean) => Promise<any>
     };
   }
 }
@@ -773,67 +777,6 @@ export default function BillWorkflow() {
     });
   }
 
-
-  // function extractUnitsFromItems(rawItems: any[]): { name: string; unit: string; conversionRate: number }[] {
-  //   // Comprehensive list of known units (extend as needed)
-  //   const knownUnits = [
-  //     "MILLILITER", "MILLILITERS", "ML",
-  //     "LITER", "LITERS", "L", "LTR",
-  //     "GRAM", "GRAMS", "G", "GM",
-  //     "KILOGRAM", "KILOGRAMS", "KG",
-  //     "CENTIMETER", "CENTIMETERS", "CM",
-  //     "METER", "METERS", "M",
-  //     "MILLIGRAM", "MILLIGRAMS", "MG",
-  //     "PIECE", "PIECES", "PCS",
-  //     "DOZEN",
-  //     "BOTTLE",
-  //     "PACK",
-  //     "BOX",
-  //     "SHEET",
-  //     "ROLL",
-  //     "GALLON",
-  //     "OUNCE", "OZ",
-  //     "POUND", "LB"
-  //   ];
-
-  //   // Sort knownUnits by descending length to ensure longer, more specific units match first
-  //   knownUnits.sort((a, b) => b.length - a.length);
-
-  //   // Utility function to extract a unit from text using the known units list
-  //   function extractUnit(text: string): string {
-  //     text = text.toString(); // Ensure text is a string
-  //     if (!text) return "";
-  //     for (const unit of knownUnits) {
-  //       // Allow an optional number and whitespace before the unit, followed by a word boundary
-  //       const regex = new RegExp(`\\d*\\s*(${unit})\\b`, "i");
-  //       const match = text.match(regex);
-  //       if (match && match[1]) {
-  //         return match[1].toUpperCase();
-  //       }
-  //     }
-  //     return "";
-  //   }
-
-  //   return rawItems
-  //     .filter(item => item.Product && item.Product.toLowerCase() !== "null")
-  //     .map(item => {
-  //       // Attempt to extract the unit from the QTY field first
-  //       let unit = extractUnit(item.QTY);
-  //       // If no unit found in QTY, try to extract from the Product field
-  //       if (!unit) {
-  //         unit = extractUnit(item.Product);
-  //       }
-  //       // Default to "PCS" if still not found
-  //       if (!unit) {
-  //         unit = "PCS";
-  //       }
-  //       return {
-  //         Name: unit,
-  //         conversionRate: 3
-  //       };
-  //     });
-  // }
-
   function extractUnitsFromItems(rawItems) {
     const uniqueUnits = [];
     rawItems.forEach(item => {
@@ -865,34 +808,33 @@ export default function BillWorkflow() {
     const updatedPurchaseEntryItem = extractPurchaserEntries(items)
     const invoiceNumber = billData?.[0]?.invoiceNumber
 
-    // const responsePartyName = await window.electron.exportAndCreatePartyEntry(purchaserName, gst)
-    // if (responsePartyName.success) {
-    //   const purchaserLedgerResponse = await window.electron.exportLedger("Purchase", "purchase accounts")
-    //   if (purchaserLedgerResponse?.success) {
-    //     const allLedgerResponse = await window.electron.exportLedger(ledgerNames, "ledger")
-    //     if (allLedgerResponse?.success) {
-    //       const unitResponse = await window.electron.exportUnit(updatedUnits);
-    //       if (unitResponse?.success) {
-    //         const itemResponse = await window.electron.exportItem(updatedItemsForExport);
-    //         console.log(itemResponse, "here is item response")
-    //         if (itemResponse?.success) {
-    //           const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, purchaserName, updatedPurchaseEntryItem, true);
-    //           console.log(response, "response for purchaser")
-    //           if (response?.success) {
-    //             alert("Purchase Entry Create")
-    //           } else {
-    //             alert("Error: while create purchaser entry")
-    //           }
-    //         } else {
-    //           alert("Error: while creating item")
-    //         }
-    //       } else {
-    //         alert("Error: while creating unit ")
-
-    //       }
-    //     }
-    //   }
-    // }
+    const responsePartyName = await window.electron.exportAndCreatePartyNameEntry(purchaserName, gst)
+    if (responsePartyName.success) {
+      const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
+      if (purchaserLedgerResponse?.success) {
+        const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
+        if (allLedgerResponse?.success) {
+          const unitResponse = await window.electron.exportUnit(updatedUnits);
+          if (unitResponse?.success) {
+            const itemResponse = await window.electron.exportItem(updatedItemsForExport);
+            console.log(itemResponse, "here is item response")
+            if (itemResponse?.success) {
+              const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, "Purchase", updatedPurchaseEntryItem, true);
+              console.log(response, "response for purchaser")
+              if (response?.success) {
+                alert("Purchase Entry Create")
+              } else {
+                alert("Error: while create purchaser entry")
+              }
+            } else {
+              alert("Error: while creating item")
+            }
+          } else {
+            alert("Error: while creating unit ")
+          }
+        }
+      }
+    }
 
     console.log(invoiceNumber, date, purchaserName, updatedItemsForExport, purchaserName, updatedPurchaseEntryItem, true, updatedUnits)
 

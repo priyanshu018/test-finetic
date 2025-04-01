@@ -41,13 +41,13 @@ export default function IndexPage() {
 
   // Keep existing electron functions
   const handleCreatePartyLedger = async () => {
-    const purchaserLedgerResponse = await window.electron.exportAndCreatePartyEntry("EVERYDAY STORE-WAVE", "03AALFE5567F1ZF")
+    const purchaserLedgerResponse = await window.electron.exportAndCreatePartyNameEntry("EVERYDAY STORE-WAVE", "03AALFE5567F1ZF")
     console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
   }
 
 
   const handleCreatePurchaseLedger = async () => {
-    const purchaserLedgerResponse = await window.electron.exportLedger("Purchase", "purchase accounts")
+    const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
     console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
   }
 
@@ -59,7 +59,7 @@ export default function IndexPage() {
       'Ut/Sgst0', 'Ut/Sgst2.5', 'Ut/Sgst6', 'Ut/Sgst9', 'Ut/Sgst14'
     ];
 
-    const allLedgerResponse = await window.electron.exportLedger(ledgerNames, "ledger")
+    const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
 
     console.log(allLedgerResponse)
   }
@@ -587,12 +587,12 @@ export default function IndexPage() {
       </div>
 
       {/* <div> */}
-      <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
+      {/* <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
       <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
       <button className="text-black bg-blue-400 p-4" onClick={handleCreateCgstIgstSgstLedger}>Create IGST/CGST/SGST ledger</button>
       <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create unit</button>
       <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
-      <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create purchase</button>
+      <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create purchase</button> */}
 
       {/* </div> */}
 
