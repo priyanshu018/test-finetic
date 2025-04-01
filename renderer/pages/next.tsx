@@ -40,98 +40,28 @@ export default function IndexPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Keep existing electron functions
-  const handleCreateItem = async () => {
-    // await window.electron.createItem('item3', "test", 3, 112233, 14);
-
-    await window.electron.createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase", [
-      {
-        name: "KEYA ALPURPOSE SEAS BOTTLE",
-        quantity: 3,
-        price: 103.44,
-        sgst: 6,
-        cgst: 6,
-        igst: 0
-      },
-      {
-        name: "KEYA GARLIC POWDER BOTTLE",
-        quantity: 4,
-        price: 88.55,
-        sgst: 6,
-        cgst: 6,
-        igst: 0
-      },
-      {
-        name: "KEYA INSPASTA MACNCHESE AMERIC",
-        quantity: 3,
-        price: 82.5,
-        sgst: 0,
-        cgst: 0,
-        igst: 0
-      },
-      {
-        name: "KEYA LEMON JUICE 250ML",
-        quantity: 6,
-        price: 29.6,
-        sgst: 6,
-        cgst: 6,
-        igst: 0
-      },
-      {
-        name: "KEYA OREGANO BOTTLE",
-        quantity: 5,
-        price: 70.72,
-        sgst: 6,
-        cgst: 6,
-        igst: 0
-      },
-      {
-        name: "KEYA RED CHILI FLAKES BOTTLE",
-        quantity: 3,
-        price: 90.84,
-        sgst: 0,
-        cgst: 0,
-        igst: 0
-      },
-      {
-        name: "KEYA SACHET PIZZA OREGANO",
-        quantity: 3,
-        price: 78.58,
-        sgst: 2.5,
-        cgst: 2.5,
-        igst: 0
-      },
-      {
-        name: "KEYA SAUCE DARK SOYA",
-        quantity: 40,
-        price: 7.59,
-        sgst: 6,
-        cgst: 6,
-        igst: 0
-      }
-    ], false);
+  const handleCreatePartyLedger = async() =>{
+    const purchaserLedgerResponse = await window.electron.exportAndCreatePartyEntry("EVERYDAY STORE-WAVE", "03AALFE5567F1ZF")
+    console.log(purchaserLedgerResponse,"purchaserLedgerResponse")
   }
 
-  const handleCreateIgst = async () => {
-    await window.electron.createIgstLedger("igstcreating");
+  
+  const handleCreatePurchaseLedger = async() =>{
+    const purchaserLedgerResponse = await window.electron.exportLedger("Purchase","purchase accounts")
+    console.log(purchaserLedgerResponse,"purchaserLedgerResponse")
   }
 
-  const handleCreateCgst = async () => {
-    await window.electron.createCgstLedger('cgstcreating');
-  }
+  
+  const handleCreateCgstIgstSgstLedger = async()=> {
+    const ledgerNames = [
+      'Cgst0', 'Cgst2.5', 'Cgst6', 'Cgst9', 'Cgst14',
+      'Igst0', 'Igst5', 'Igst12', 'Igst18', 'Igst28',
+      'Ut/Sgst0', 'Ut/Sgst2.5', 'Ut/Sgst6', 'Ut/Sgst9', 'Ut/Sgst14'
+    ];
 
-  const handleCreateUgst = async () => {
-    await window.electron.createCgstLedger('ugstcreating');
-  }
+    const allLedgerResponse = await window.electron.exportLedger(ledgerNames, "ledger")
 
-  const handleCreatePurchase = async () => {
-    await window.electron.createPurchaseEntry(123456, "02-11-2024", "Priyanshu", "Purchase", [
-      { name: "Item", quantity: 2, price: 100 }
-    ], true, 14, 0, 0);
-  }
-
-  const handleCheckLedger = async () => {
-    const response = await window.electron.exportLedger('igstcreating');
-    alert(response.success);
+    console.log(allLedgerResponse)
   }
 
   const handleExportItems = async () => {
@@ -463,16 +393,6 @@ export default function IndexPage() {
       , false);
   }
 
-  const handleCreatePartyLedger = async() =>{
-    const purchaserLedgerResponse = await window.electron.exportAndCreatePartyEntry("EVERYDAY STORE-WAVE", "03AALFE5567F1ZF")
-    console.log(purchaserLedgerResponse,"purchaserLedgerResponse")
-  }
-
-  
-  const handleCreatePurchaseLedger = async() =>{
-    const purchaserLedgerResponse = await window.electron.exportLedger("Purchase","purchase accounts")
-    console.log(purchaserLedgerResponse,"purchaserLedgerResponse")
-  }
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -684,7 +604,8 @@ export default function IndexPage() {
 
       {/* <div> */}
       <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
-      <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create party name ledger</button>
+      <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
+      <button className="text-black bg-blue-400 p-4" onClick={handleCreateCgstIgstSgstLedger}>Create IGST/CGST/SGST ledger</button>
       <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create unit</button>
       <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
       <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create purchase</button>

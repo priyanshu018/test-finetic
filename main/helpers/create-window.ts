@@ -336,14 +336,11 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         console.log(`Ledger exists: ${ledgerExists}`);
 
         if (!ledgerExists) {
-          console.log(`Creating ledger "${ledgerNames}"...`);
-
-          if (ledgerType === "purchase accounts") {
-            await createPurchaseLedger(ledgerNames);
-          }
+          await createPurchaseLedger(ledgerNames);
         }
 
       } else {
+        console.log("-------------------- yesy ------------")
         for (const ledgerName of ledgerNamesArray) {
           // Append "%" for the existence check
           const targetLedgerName = ledgerType === "purchase accounts" ? ledgerName : `${ledgerName}%`;
@@ -357,19 +354,15 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
             const newLedgerName = ledgerType === "purchase accounts" ? ledgerName : `${ledgerName}+5`;
             console.log(`Creating ledger "${newLedgerName}"...`);
 
-            if (ledgerType === "purchase accounts") {
-
-              await createPurchaseLedger(newLedgerName);
+            const lowerName = ledgerName.toLowerCase();
+            if (lowerName.includes("igst")) {
+              await createIgstLedger(newLedgerName);
+            } else if (lowerName.includes("cgst") || lowerName.includes("ut/sgst")) {
+              await createCgstLedger(newLedgerName);
             } else {
-              const lowerName = ledgerName.toLowerCase();
-              if (lowerName.includes("igst")) {
-                await createIgstLedger(newLedgerName);
-              } else if (lowerName.includes("cgst") || lowerName.includes("ut/sgst")) {
-                await createCgstLedger(newLedgerName);
-              } else {
-                console.warn(`No creation function defined for ledger type: ${ledgerName}`);
-              }
+              console.warn(`No creation function defined for ledger type: ${ledgerName}`);
             }
+
           }
         }
       }
