@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FiSettings,
@@ -11,6 +11,7 @@ import {
   FiClock,
   FiShield
 } from "react-icons/fi";
+import { useRouter } from "next/navigation";
 
 declare global {
   interface Window {
@@ -38,13 +39,18 @@ declare global {
 
 export default function IndexPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
+  const [email, setEmail] = useState("")
+  const router = useRouter()
   // Keep existing electron functions
   const handleCreatePartyLedger = async () => {
     const purchaserLedgerResponse = await window.electron.exportAndCreatePartyNameEntry("EVERYDAY STORE-WAVE", "03AALFE5567F1ZF")
     console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
   }
 
+  useEffect(() => {
+    const email = localStorage.getItem("email")
+    setEmail(email)
+  }, [])
 
   const handleCreatePurchaseLedger = async () => {
     const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
@@ -445,7 +451,7 @@ export default function IndexPage() {
                 <div className="absolute right-0 top-full mt-1 w-56 bg-white shadow-lg rounded-lg border border-gray-200 overflow-hidden z-10">
                   <div className="p-3 border-b border-gray-100">
                     <div className="font-medium text-gray-900">User Account</div>
-                    <div className="text-xs text-gray-500">user@company.com</div>
+                    <div className="text-xs text-gray-500">{email}</div>
                   </div>
                   <div className="divide-y divide-gray-100">
                     {/* Profile */}
@@ -478,6 +484,7 @@ export default function IndexPage() {
                     {/* Logout */}
                     <button
                       className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all duration-150"
+                      onClick={() => { localStorage.clear(); window.location.href = '/home'; }}
                     >
                       <svg className="w-4 h-4 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

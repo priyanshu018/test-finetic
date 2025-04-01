@@ -13,8 +13,11 @@ export default function HeroSection({ setIsAuth }) {
   useEffect(() => {
     // Uncomment when ready to implement auth redirection
     supabase.auth.onAuthStateChange((e, session) => {
+      console.log(session?.user)
       if (session?.user) {
         setCurrentPage("next"); // Default redirect inside the app
+      }else{
+        setCurrentPage("home")
       }
     });
   }, []);

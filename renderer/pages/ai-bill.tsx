@@ -790,55 +790,185 @@ export default function BillWorkflow() {
 
 
 
+  // const handleExport = async () => {
+  //   console.log(role);
+  //   console.log(billData);
+  //   const purchaserName = role === "Purchaser" ? billData?.[0]?.receiverDetails?.name : billData?.[0]?.senderDetails?.name;
+  //   const gst = role === "Purchaser" ? billData?.[0]?.receiverDetails?.gst : billData?.[0]?.senderDetails?.gst;
+  //   const ledgerNames = [
+  //     'Cgst0', 'Cgst2.5', 'Cgst6', 'Cgst9', 'Cgst14',
+  //     'Igst0', 'Igst5', 'Igst12', 'Igst18', 'Igst28',
+  //     'Ut/Sgst0', 'Ut/Sgst2.5', 'Ut/Sgst6', 'Ut/Sgst9', 'Ut/Sgst14'
+  //   ];
+  //   const items = billData?.[0]?.items
+  //   const isPurchaser = role === "Purchaser"
+  //   const date = formatDateToDDMMYYYY(billData?.[0]?.billDate)
+  //   const updatedItemsForExport = extractGSTData(items)
+  //   const updatedUnits = extractUnitsFromItems(items)
+  //   const updatedPurchaseEntryItem = extractPurchaserEntries(items)
+  //   const invoiceNumber = billData?.[0]?.invoiceNumber
+
+  //   // const responsePartyName = await window.electron.exportAndCreatePartyNameEntry(purchaserName, gst)
+  //   // if (responsePartyName.success) {
+  //   //   const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
+  //   //   if (purchaserLedgerResponse?.success) {
+  //   //     const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
+  //   //     if (allLedgerResponse?.success) {
+  //   //       const unitResponse = await window.electron.exportUnit(updatedUnits);
+  //   //       if (unitResponse?.success) {
+  //   //         const itemResponse = await window.electron.exportItem(updatedItemsForExport);
+  //   //         console.log(itemResponse, "here is item response")
+  //   //         if (itemResponse?.success) {
+  //   //           const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, "Purchase", updatedPurchaseEntryItem, true);
+  //   //           console.log(response, "response for purchaser")
+  //   //           if (response?.success) {
+  //   //             alert("Purchase Entry Create")
+  //   //           } else {
+  //   //             alert("Error: while create purchaser entry")
+  //   //           }
+  //   //         } else {
+  //   //           alert("Error: while creating item")
+  //   //         }
+  //   //       } else {
+  //   //         alert("Error: while creating unit ")
+  //   //       }
+  //   //     }
+  //   //   }
+  //   // }
+
+  //   console.log(invoiceNumber, date, purchaserName, updatedItemsForExport, purchaserName, updatedPurchaseEntryItem, true, updatedUnits)
+
+  // };
+
+
   const handleExport = async () => {
     console.log(role);
     console.log(billData);
-    const purchaserName = role === "Purchaser" ? billData?.[0]?.receiverDetails?.name : billData?.[0]?.senderDetails?.name;
-    const gst = role === "Purchaser" ? billData?.[0]?.receiverDetails?.gst : billData?.[0]?.senderDetails?.gst;
+
+    // Ledger names remain the same for every bill
     const ledgerNames = [
       'Cgst0', 'Cgst2.5', 'Cgst6', 'Cgst9', 'Cgst14',
       'Igst0', 'Igst5', 'Igst12', 'Igst18', 'Igst28',
       'Ut/Sgst0', 'Ut/Sgst2.5', 'Ut/Sgst6', 'Ut/Sgst9', 'Ut/Sgst14'
     ];
-    const items = billData?.[0]?.items
-    const isPurchaser = role === "Purchaser"
-    const date = formatDateToDDMMYYYY(billData?.[0]?.billDate)
-    const updatedItemsForExport = extractGSTData(items)
-    const updatedUnits = extractUnitsFromItems(items)
-    const updatedPurchaseEntryItem = extractPurchaserEntries(items)
-    const invoiceNumber = billData?.[0]?.invoiceNumber
 
-    const responsePartyName = await window.electron.exportAndCreatePartyNameEntry(purchaserName, gst)
-    if (responsePartyName.success) {
-      const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
-      if (purchaserLedgerResponse?.success) {
-        const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
-        if (allLedgerResponse?.success) {
-          const unitResponse = await window.electron.exportUnit(updatedUnits);
-          if (unitResponse?.success) {
-            const itemResponse = await window.electron.exportItem(updatedItemsForExport);
-            console.log(itemResponse, "here is item response")
-            if (itemResponse?.success) {
-              const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, "Purchase", updatedPurchaseEntryItem, true);
-              console.log(response, "response for purchaser")
-              if (response?.success) {
-                alert("Purchase Entry Create")
+    if (billData && billData.length > 1) {
+      // If there are multiple bills, loop through each one
+      for (let bill of billData) {
+        // Use conditional extraction based on role for each bill
+        const purchaserName =
+          role === "Purchaser"
+            ? bill.receiverDetails?.name
+            : bill.senderDetails?.name;
+        const gst =
+          role === "Purchaser"
+            ? bill.receiverDetails?.gst
+            : bill.senderDetails?.gst;
+        const items = bill.items;
+        const date = formatDateToDDMMYYYY(bill.billDate);
+        const updatedItemsForExport = extractGSTData(items);
+        const updatedUnits = extractUnitsFromItems(items);
+        const updatedPurchaseEntryItem = extractPurchaserEntries(items);
+        const invoiceNumber = bill.invoiceNumber;
+
+        // Log the details for this bill
+        console.log(
+          invoiceNumber,
+          date,
+          purchaserName,
+          updatedItemsForExport,
+          updatedPurchaseEntryItem,
+          updatedUnits
+        );
+
+        const responsePartyName = await window.electron.exportAndCreatePartyNameEntry(purchaserName, gst)
+        if (responsePartyName.success) {
+          const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
+          if (purchaserLedgerResponse?.success) {
+            const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
+            if (allLedgerResponse?.success) {
+              const unitResponse = await window.electron.exportUnit(updatedUnits);
+              if (unitResponse?.success) {
+                const itemResponse = await window.electron.exportItem(updatedItemsForExport);
+                console.log(itemResponse, "here is item response")
+                if (itemResponse?.success) {
+                  const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, "Purchase", updatedPurchaseEntryItem, true);
+                  console.log(response, "response for purchaser")
+                  if (response?.success) {
+                    alert("Purchase Entry Create")
+                  } else {
+                    alert("Error: while create purchaser entry")
+                  }
+                } else {
+                  alert("Error: while creating item")
+                }
               } else {
-                alert("Error: while create purchaser entry")
+                alert("Error: while creating unit ")
               }
-            } else {
-              alert("Error: while creating item")
             }
-          } else {
-            alert("Error: while creating unit ")
           }
         }
       }
+    } else if (billData && billData.length === 1) {
+      // If there is only one bill, process it using the existing approach
+      const bill = billData[0];
+      const purchaserName =
+        role === "Purchaser"
+          ? bill.receiverDetails?.name
+          : bill.senderDetails?.name;
+      const gst =
+        role === "Purchaser"
+          ? bill.receiverDetails?.gst
+          : bill.senderDetails?.gst;
+      const items = bill.items;
+      const date = formatDateToDDMMYYYY(bill.billDate);
+      const updatedItemsForExport = extractGSTData(items);
+      const updatedUnits = extractUnitsFromItems(items);
+      const updatedPurchaseEntryItem = extractPurchaserEntries(items);
+      const invoiceNumber = bill.invoiceNumber;
+
+      console.log(
+        invoiceNumber,
+        date,
+        purchaserName,
+        updatedItemsForExport,
+        updatedPurchaseEntryItem,
+        updatedUnits
+      );
+
+      const responsePartyName = await window.electron.exportAndCreatePartyNameEntry(purchaserName, gst)
+      if (responsePartyName.success) {
+        const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
+        if (purchaserLedgerResponse?.success) {
+          const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
+          if (allLedgerResponse?.success) {
+            const unitResponse = await window.electron.exportUnit(updatedUnits);
+            if (unitResponse?.success) {
+              const itemResponse = await window.electron.exportItem(updatedItemsForExport);
+              console.log(itemResponse, "here is item response")
+              if (itemResponse?.success) {
+                const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, "Purchase", updatedPurchaseEntryItem, true);
+                console.log(response, "response for purchaser")
+                if (response?.success) {
+                  alert("Purchase Entry Create")
+                } else {
+                  alert("Error: while create purchaser entry")
+                }
+              } else {
+                alert("Error: while creating item")
+              }
+            } else {
+              alert("Error: while creating unit ")
+            }
+          }
+        }
+      }
+    } else {
+      console.log("No bill data found");
     }
-
-    console.log(invoiceNumber, date, purchaserName, updatedItemsForExport, purchaserName, updatedPurchaseEntryItem, true, updatedUnits)
-
   };
+
+
 
   const fixRowCalculation = (billIndex: number, itemIndex: number) => {
     const newData = [...billData];

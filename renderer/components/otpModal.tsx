@@ -65,6 +65,7 @@ export function EmailOtpModal() {
             if (error) throw error;
             setSuccess('Successfully verified!');
             localStorage.setItem("email", email)
+            localStorage.setItem("userData", JSON.stringify(data?.user))
             setTimeout(() => {
                 // push('/next')
                 setIsOpen(false)
