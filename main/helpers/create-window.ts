@@ -174,6 +174,67 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     return str.trim().split(/\s+/).pop() || '';
   }
 
+  // function bringTallyToForegroundAndSendKeys(keys, delayBeforeY = 2000) {
+  //   return new Promise((resolve, reject) => {
+  //     // Check for special keys.
+  //     const promptIndex = keys.findIndex(key => key === "prompt here");
+  //     const openTallyIndex = keys.findIndex(key => key === "open tally");
+  //     const percentageIndex = keys.findIndex(key => key === "percentage here");
+
+  //     // Build the PowerShell command:
+  //     let command = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; `;
+  //     command += `$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; `;
+
+  //     // If "open tally" is specified, open Tally if not already running.
+  //     if (openTallyIndex !== -1) {
+  //       command += `if (-not $tallyProcess) { Start-Process Tally.exe; Start-Sleep -Seconds 3; $tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; } `;
+  //     }
+
+  //     // Proceed if Tally process is found.
+  //     command += `if ($tallyProcess) { `;
+  //     command += `(New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `;
+
+  //     if (promptIndex === -1) {
+  //       // No "prompt here": join all keys as before, but filter out "open tally".
+  //       const filteredKeys = keys.filter(key => key !== "open tally");
+  //       const keysString = filteredKeys.join('');
+  //       command += `[System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `;
+  //       command += `Start-Sleep -Milliseconds ${delayBeforeY}; `;
+  //     } else {
+  //       // "prompt here" exists: iterate through keys individually.
+  //       keys.forEach(key => {
+  //         if (key === "prompt here") {
+  //           command += `Start-Sleep -Milliseconds 500; `;
+  //         } else if (key === "percentage here") {
+  //           command += `[System.Windows.Forms.SendKeys]::SendWait('%'); `;
+  //         } else if (key === "open tally") {
+  //           // Already handled above; skip sending this key.
+  //           // (No command needed here.)
+  //         } else {
+  //           command += `[System.Windows.Forms.SendKeys]::SendWait('${key}'); `;
+  //         }
+  //       });
+  //     }
+
+  //     command += `} else { `;
+  //     command += `throw 'No Tally process found'; `;
+  //     command += `}"`;
+
+  //     exec(command, (error, stdout, stderr) => {
+  //       if (error) {
+  //         reject(`Error: ${error.message}`);
+  //         return;
+  //       }
+  //       if (stderr) {
+  //         reject(`PowerShell error: ${stderr}`);
+  //         return;
+  //       }
+  //       resolve();
+  //     });
+  //   });
+  // }
+
+
   function bringTallyToForegroundAndSendKeys(keys, delayBeforeY = 2000) {
     return new Promise((resolve, reject) => {
       // Check for special keys.
@@ -184,24 +245,24 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       // Build the PowerShell command:
       let command = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; `;
       command += `$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; `;
+      command += `if ($tallyProcess) { `;
 
-      // If "open tally" is specified, open Tally if not already running.
+      // If the "open tally" key exists, wait for 3 seconds before activating Tally.
       if (openTallyIndex !== -1) {
-        command += `if (-not $tallyProcess) { Start-Process Tally.exe; Start-Sleep -Seconds 3; $tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; } `;
+        command += `Start-Sleep -Seconds 3; `;
       }
 
-      // Proceed if Tally process is found.
-      command += `if ($tallyProcess) { `;
+      // Bring Tally to the foreground.
       command += `(New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `;
 
+      // Send keys: if there's no "prompt here", send all keys (except "open tally") as one string.
       if (promptIndex === -1) {
-        // No "prompt here": join all keys as before, but filter out "open tally".
         const filteredKeys = keys.filter(key => key !== "open tally");
         const keysString = filteredKeys.join('');
         command += `[System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `;
         command += `Start-Sleep -Milliseconds ${delayBeforeY}; `;
       } else {
-        // "prompt here" exists: iterate through keys individually.
+        // If "prompt here" exists, iterate through keys and handle them individually.
         keys.forEach(key => {
           if (key === "prompt here") {
             command += `Start-Sleep -Milliseconds 500; `;
@@ -209,7 +270,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
             command += `[System.Windows.Forms.SendKeys]::SendWait('%'); `;
           } else if (key === "open tally") {
             // Already handled above; skip sending this key.
-            // (No command needed here.)
           } else {
             command += `[System.Windows.Forms.SendKeys]::SendWait('${key}'); `;
           }
@@ -233,6 +293,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       });
     });
   }
+
 
   function getTallyInstallPath(): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -446,6 +507,8 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       }
     }
 
+    await bringTallyToForegroundAndSendKeys(['open tally'])
+
     // If there are missing items, create them
     if (missingItems.length > 0) {
       console.log(`Missing items: ${missingItems.map(i => i.Product).join(', ')}`);
@@ -547,6 +610,8 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       }
     }
 
+    await bringTallyToForegroundAndSendKeys(['open tally'])
+
     // If there are missing units, create them all.
     if (missingUnits.length > 0) {
       console.log(`Missing units: ${missingUnits.map(u => u.Name).join(', ')}`);
@@ -574,7 +639,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       // Bring Tally to the foreground and send keys for unit creation.
       // The key sequence below is an example; adjust it to match your Tally workflow.
       await bringTallyToForegroundAndSendKeys([
-        'open tally', 'c',
+        'c',
         'u', 'n', 'i', 't',
         '{ENTER}', // Open unit creation window
         name, '{ENTER}', '{ENTER}', '{ENTER}',                  // Enter unit name
@@ -796,7 +861,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         '{ENTER}',
         '^a',
         '^a',
-        '^a',
+        // '^a',
         purchaseLedger,
         '{ENTER}',
       ];
@@ -807,27 +872,28 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         keys.push(
           item.name, '{ENTER}',
           item.quantity?.toString(), '{ENTER}',
-          item.price?.toString(), '{ENTER}', '{ENTER}', '{ENTER}',
+          item.price?.toString(), '{ENTER}', 
+          '{ENTER}', '{ENTER}',
         );
 
 
         // keys.push('{ENTER}')
 
-        // // Insert tax details for the current item
-        // if (isWithinState) {
-        //   // For within-state purchases, add CGST and SGST details for this item
-        //   keys.push(
-        //     // `Cgst${item.cgst}`, 
-        //     // '{ENTER}', '{ENTER}',
-        //     // `Sgst${item.sgst}`, '{ENTER}', '{ENTER}'
-        //   );
-        // } else {
-        //   // For out-of-state purchases, add IGST detail for this item
-        //   keys.push(
+        // Insert tax details for the current item
+        if (isWithinState) {
+          // For within-state purchases, add CGST and SGST details for this item
+          keys.push(
+            // `Cgst${item.cgst}`, 
+            // '{ENTER}', '{ENTER}',
+            // `Sgst${item.sgst}`, '{ENTER}', '{ENTER}'
+          );
+        } else {
+          // For out-of-state purchases, add IGST detail for this item
+          keys.push(
 
-        //     // `Igst${item.igst}%`, '{ENTER}', '{ENTER}'
-        //   );
-        // }
+            // `Igst${item.igst}%`, '{ENTER}', '{ENTER}'
+          );
+        }
 
         // Add keys to finalize this item's entry and move to the next row
       }
@@ -882,7 +948,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       console.log("working")
       // await bringTallyToForegroundAndSendKeys(['prompt here'])
       await bringTallyToForegroundAndSendKeys([
-        'open tally', 'c', 'i', 't', 'e', 'm', '{ENTER}',  // Open item creation
+        'c', 'i', 't', 'e', 'm', '{ENTER}',  // Open item creation
         name,
         '{ENTER}', '{ENTER}',
         '{ENTER}',

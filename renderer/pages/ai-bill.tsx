@@ -50,6 +50,7 @@ interface Product {
   SGST: number;
   CGST: number;
   "NET AMT": number;
+  UNIT: string
 }
 
 interface GSTData {
@@ -671,20 +672,6 @@ export default function BillWorkflow() {
     setBillData((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
-  const handleCheckAllGstLedger = async (isPurchaser) => {
-
-
-    try {
-      setIsLoading(true);
-      const response2 = await window.electron.exportItem(billData?.[0]?.items);
-      setIsLoading(false);
-      toast.success("Data exported successfully!");
-    } catch (error) {
-      console.error("Error while processing ledgers:", error);
-      toast.error("Error while processing ledgers. Check console for details.");
-      setIsLoading(false);
-    }
-  };
 
   function formatDateToDDMMYYYY(dateInput: Date | string): string {
     let date: Date;
@@ -737,310 +724,6 @@ export default function BillWorkflow() {
     return `${dd}-${mm}-${yyyy}`;
   }
 
-  // function transformPurchaseItems(rawItems) {
-  //   // Comprehensive list of known units (extend or modify as needed)
-  //   const knownUnits = [
-  //     "MILLILITER", "MILLILITERS", "ML",
-  //     "LITER", "LITERS", "L", "LTR",
-  //     "GRAM", "GRAMS", "G", "GM",
-  //     "KILOGRAM", "KILOGRAMS", "KG",
-  //     "CENTIMETER", "CENTIMETERS", "CM",
-  //     "METER", "METERS", "M",
-  //     "MILLIGRAM", "MILLIGRAMS", "MG",
-  //     "PIECE", "PIECES", "PCS",
-  //     "DOZEN",
-  //     "BOTTLE",
-  //     "PACK",
-  //     "BOX",
-  //     "SHEET",
-  //     "ROLL",
-  //     "GALLON",
-  //     "OUNCE", "OZ",
-  //     "POUND", "LB"
-  //   ];
-
-  //   // Sort knownUnits by descending length to match longer strings first
-  //   knownUnits.sort((a, b) => b.length - a.length);
-
-  //   // // Utility to extract a known unit from a text (case-insensitive)
-  //   // function extractUnit(text) {
-  //   //   if (!text) return "";
-  //   //   for (const unit of knownUnits) {
-  //   //     // The regex allows an optional number and whitespace before the unit,
-  //   //     // and requires a word boundary at the end.
-  //   //     const regex = new RegExp(`\\d*\\s*(${unit})\\b`, "i");
-  //   //     const match = text.match(regex);
-  //   //     if (match && match[1]) {
-  //   //       return match[1].toUpperCase();
-  //   //     }
-  //   //   }
-  //   //   return "";
-  //   // }
-
-
-  //   function extractUnit(text) {
-  //     if (text === null || text === undefined) return "";
-  //     text = text.toString(); // Ensure text is a string
-  //     for (const unit of knownUnits) {
-
-  //       // The regex allows an optional number and whitespace before the unit,
-  //       // and requires a word boundary at the end.
-  //       const regex = new RegExp(`\\d*\\s*(${unit})\\b`, "i");
-  //       const match = text.match(regex);
-  //       if (match && match[1]) {
-  //         return match[1].toUpperCase();
-  //       }
-  //     }
-  //     return "";
-  //   }
-
-  //   // Utility to clean the product name by removing any numeric data and unit markers.
-  //   // Also, if the cleaned product name is a single word, return an empty string.
-  //   function cleanProductName(productName) {
-  //     let cleaned = productName;
-  //     // Remove any occurrences of digits immediately followed by a known unit
-  //     for (const unit of knownUnits) {
-  //       const regex = new RegExp(`\\d+\\s*${unit}\\b`, "gi");
-  //       cleaned = cleaned.replace(regex, "");
-  //     }
-  //     // Remove any remaining digits (if present)
-  //     cleaned = cleaned.replace(/\d+/g, "");
-  //     // Clean up extra spaces
-  //     cleaned = cleaned.replace(/\s\s+/g, " ").trim();
-  //     // If the cleaned name is just a single word, return an empty string.
-  //     if (!cleaned.includes(" ")) {
-  //       return "";
-  //     }
-  //     return cleaned;
-  //   }
-
-  //   // Filter, map, and clean the raw items
-  //   let transformed = rawItems
-  //     .filter(item => item.Product && item.Product.toLowerCase() !== "null")
-  //     .map(item => {
-  //       // First, try to extract the unit from the QTY field.
-  //       let unit = extractUnit(item.QTY);
-  //       // If not found in QTY, try to extract the unit from the Product field.
-  //       if (!unit) {
-  //         unit = extractUnit(item.Product);
-  //       }
-  //       // If still not found, default to "PCS".
-  //       if (!unit) {
-  //         unit = "PCS";
-  //       }
-  //       return {
-  //         name: cleanProductName(item.Product),
-  //         unit: unit,
-  //         price: item.RATE,
-  //         quantity: item.QTY
-  //       };
-  //     })
-  //     // Remove items with an empty name (i.e. single-word names)
-  //     .filter(item => item.name !== "")
-  //     // Sort the results in ascending order based on the length of the cleaned product name.
-  //     .sort((a, b) => a.name.length - b.name.length);
-
-  //   // Append a unique number to duplicate product names
-  //   const productCount = {};
-  //   transformed = transformed.map(item => {
-  //     const name = item.name;
-  //     if (productCount[name]) {
-  //       productCount[name]++;
-  //       item.name = `${name}${productCount[name]}`;
-  //     } else {
-  //       productCount[name] = 1;
-  //     }
-  //     return item;
-  //   });
-
-  //   // Additional logic: Append a serial number based on duplicate last words.
-  //   // First, count the frequency of each last word (after removing any trailing digits)
-  //   const lastWordFrequency = {};
-  //   transformed.forEach(item => {
-  //     const words = item.name.trim().split(/\s+/);
-  //     const lastWord = words[words.length - 1].replace(/\d+$/, "").toUpperCase();
-  //     lastWordFrequency[lastWord] = (lastWordFrequency[lastWord] || 0) + 1;
-  //   });
-
-  //   // Then, append a serial number for duplicate occurrences of the last word (starting from 2)
-  //   const lastWordCount = {};
-  //   transformed = transformed.map(item => {
-  //     const words = item.name.trim().split(/\s+/);
-  //     let lastWord = words[words.length - 1].replace(/\d+$/, "").toUpperCase();
-  //     if (lastWordFrequency[lastWord] > 1) {
-  //       lastWordCount[lastWord] = (lastWordCount[lastWord] || 0) + 1;
-  //       // Append serial number if it's not the first occurrence
-  //       if (lastWordCount[lastWord] > 1) {
-  //         item.name = item.name + lastWordCount[lastWord];
-  //       }
-  //     }
-  //     return item;
-  //   });
-
-  //   return transformed;
-  // }
-
-
-  function transformItems(rawItems) {
-    // Comprehensive list of known units (extend or modify as needed)
-    const knownUnits = [
-      "MILLILITER", "MILLILITERS", "ML",
-      "LITER", "LITERS", "L", "LTR",
-      "GRAM", "GRAMS", "G", "GM",
-      "KILOGRAM", "KILOGRAMS", "KG",
-      "CENTIMETER", "CENTIMETERS", "CM",
-      "METER", "METERS", "M",
-      "MILLIGRAM", "MILLIGRAMS", "MG",
-      "PIECE", "PIECES", "PCS",
-      "DOZEN",
-      "BOTTLE",
-      "PACK",
-      "BOX",
-      "SHEET",
-      "ROLL",
-      "GALLON",
-      "OUNCE", "OZ",
-      "POUND", "LB"
-    ];
-
-    // Sort knownUnits by descending length to match longer strings first
-    knownUnits.sort((a, b) => b.length - a.length);
-
-    // Utility to extract a known unit from a text (case-insensitive)
-    function extractUnit(text) {
-      text = text?.toString()
-
-      if (!text) return "";
-      for (const unit of knownUnits) {
-        // The regex allows an optional number and whitespace before the unit,
-        // and requires a word boundary at the end.
-        const regex = new RegExp(`\\d*\\s*(${unit})\\b`, "i");
-        const match = text.match(regex);
-        if (match && match[1]) {
-          return match[1].toUpperCase();
-        }
-      }
-      return "";
-    }
-
-    // Utility to clean the product name by removing trailing digits + unit.
-    // Also, if the cleaned product name is a single word (i.e. no spaces),
-    // we return an empty string so it can be filtered out later.
-    function cleanProductName(productName) {
-      let cleaned = productName;
-      for (const unit of knownUnits) {
-        // Create regex to match one or more digits followed by optional whitespace and the unit at the end of the string
-        const regex = new RegExp(`\\d+\\s*${unit}$`, "i");
-        cleaned = cleaned.replace(regex, "").trim();
-      }
-      // If the cleaned name is just a single word, return an empty string.
-      if (!cleaned.includes(" ")) {
-        return "";
-      }
-      return cleaned;
-    }
-
-    // Map and filter out items whose cleaned Product is empty (i.e. a single-word names were removed)
-    let transformed = rawItems
-      .filter(item => item.Product && item.Product.toLowerCase() !== "null")
-      .map(item => {
-        // First, try to extract the unit from the QTY field.
-        let unit = extractUnit(item.QTY);
-        // If not found in QTY, try to extract the unit from the Product field.
-        if (!unit) {
-          unit = extractUnit(item.Product);
-        }
-        // If still not found, default to "PCS".
-        if (!unit) {
-          unit = "PCS";
-        }
-        return {
-          Product: cleanProductName(item.Product),
-          HSN: item.HSN,
-          symbol: unit, // Return the unit only.
-          decimal: 3,
-          SGST: item.SGST,
-          CGST: item.CGST,
-          gst: item.IGST
-        };
-      })
-      // Remove any item with an empty Product name (i.e. single-word names were removed)
-      .filter(item => item.Product !== "")
-      // Sort the results in ascending order based on the length of the product name.
-      .sort((a, b) => a.Product.length - b.Product.length);
-
-    // Existing duplicate check: Append a unique number to duplicate product names.
-    const productCount = {};
-    transformed = transformed.map(item => {
-      const name = item.Product;
-      if (productCount[name]) {
-        productCount[name]++;
-        // Append the count (starting with 2 for the first duplicate)
-        item.Product = `${name}${productCount[name]}`;
-      } else {
-        productCount[name] = 1;
-      }
-      return item;
-    });
-
-    // New condition:
-    // Check if the last word (after stripping any trailing digits) appears in multiple items.
-    // If yes, append a serial number (starting from 2) to the product name.
-    const lastWordFrequency = {};
-    // First pass: count frequency of each last word (normalize to uppercase)
-    transformed.forEach(item => {
-      const words = item.Product.trim().split(/\s+/);
-      // Remove any trailing digits from the last word
-      const lastWord = words[words.length - 1].replace(/\d+$/, "").toUpperCase();
-      lastWordFrequency[lastWord] = (lastWordFrequency[lastWord] || 0) + 1;
-    });
-
-    // Second pass: append serial numbers for duplicate last words.
-    const lastWordCount = {};
-    transformed = transformed.map(item => {
-      const words = item.Product.trim().split(/\s+/);
-      let lastWord = words[words.length - 1].replace(/\d+$/, "").toUpperCase();
-      if (lastWordFrequency[lastWord] > 1) {
-        lastWordCount[lastWord] = (lastWordCount[lastWord] || 0) + 1;
-        // Only append a number if this is not the first occurrence.
-        if (lastWordCount[lastWord] > 1) {
-          item.Product = item.Product + lastWordCount[lastWord];
-        }
-      }
-      return item;
-    });
-
-    return transformed;
-  }
-
-
-  // function extractGSTData(data: Product[]): GSTData[] {
-  //   const seenProducts = new Set<string>();
-  //   const result: GSTData[] = [];
-
-  //   for (const item of data) {
-  //     if (seenProducts.has(item.Product)) {
-  //       // Skip duplicate product names
-  //       continue;
-  //     }
-  //     seenProducts.add(item.Product);
-
-  //     const gstValue = item.SGST + item.CGST;
-
-  //     result.push({
-  //       Product: item.Product,
-  //       HSN: item.HSN,
-  //       SGST: item.SGST,
-  //       CGST: item.CGST,
-  //       gst: gstValue,
-  //       decimal: gstValue / 100,
-  //       symbol: '%'
-  //     });
-  //   }
-
-  //   return result;
-  // }
-
 
   function extractGSTData(data: Product[]): string[] {
     const seenProducts = new Set<string>();
@@ -1065,7 +748,7 @@ export default function BillWorkflow() {
         CGST: item.CGST,
         gst: gstValue,
         decimal: gstValue / 100,
-        symbol: '%'
+        symbol: item.UNIT
       });
     }
 
@@ -1151,77 +834,17 @@ export default function BillWorkflow() {
   //     });
   // }
 
-
-  function extractUnitsFromItems(rawItems: any[]): { Name: string; conversionRate: number }[] {
-    // Comprehensive list of known units (extend as needed)
-    const knownUnits = [
-      "MILLILITER", "MILLILITERS", "ML",
-      "LITER", "LITERS", "L", "LTR",
-      "GRAM", "GRAMS", "G", "GM",
-      "KILOGRAM", "KILOGRAMS", "KG",
-      "CENTIMETER", "CENTIMETERS", "CM",
-      "METER", "METERS", "M",
-      "MILLIGRAM", "MILLIGRAMS", "MG",
-      "PIECE", "PIECES", "PCS",
-      "DOZEN",
-      "BOTTLE",
-      "PACK",
-      "BOX",
-      "SHEET",
-      "ROLL",
-      "GALLON",
-      "OUNCE", "OZ",
-      "POUND", "LB"
-    ];
-
-    // Sort knownUnits by descending length to ensure longer, more specific units match first
-    knownUnits.sort((a, b) => b.length - a.length);
-
-    // Utility function to extract a unit from text using the known units list
-    function extractUnit(text: string): string {
-      text = text.toString(); // Ensure text is a string
-      if (!text) return "";
-      for (const unit of knownUnits) {
-        // Allow an optional number and whitespace before the unit, followed by a word boundary
-        const regex = new RegExp(`\\d*\\s*(${unit})\\b`, "i");
-        const match = text.match(regex);
-        if (match && match[1]) {
-          return match[1].toUpperCase();
-        }
+  function extractUnitsFromItems(rawItems) {
+    const uniqueUnits = [];
+    rawItems.forEach(item => {
+      const unit = item?.UNIT || "PCS";
+      if (!uniqueUnits.some(u => u.Name === unit)) {
+        uniqueUnits.push({ Name: unit, conversionRate: 3 });
       }
-      return "";
-    }
-
-    // Map over the items to extract the units
-    const units = rawItems
-      .filter(item => item.Product && item.Product.toLowerCase() !== "null")
-      .map(item => {
-        // Attempt to extract the unit from the QTY field first
-        let unit = extractUnit(item.QTY);
-        // If no unit found in QTY, try to extract from the Product field
-        if (!unit) {
-          unit = extractUnit(item.Product);
-        }
-        // Default to "PCS" if still not found
-        if (!unit) {
-          unit = "PCS";
-        }
-        return {
-          Name: unit,
-          conversionRate: 3
-        };
-      });
-
-    // Remove duplicate units based on the Name property using a Map
-    const uniqueUnitsMap = new Map<string, { Name: string; conversionRate: number }>();
-    for (const unitObj of units) {
-      if (!uniqueUnitsMap.has(unitObj.Name)) {
-        uniqueUnitsMap.set(unitObj.Name, unitObj);
-      }
-    }
-
-    return Array.from(uniqueUnitsMap.values());
+    });
+    return uniqueUnits;
   }
+
 
 
   const handleExport = async () => {
@@ -1242,34 +865,34 @@ export default function BillWorkflow() {
     const updatedPurchaseEntryItem = extractPurchaserEntries(items)
     const invoiceNumber = billData?.[0]?.invoiceNumber
 
-    const responsePartyName = await window.electron.exportAndCreatePartyEntry(purchaserName, gst)
-    if (responsePartyName.success) {
-      const allLedgerResponse = await window.electron.exportLedger(ledgerNames, false)
-      if (allLedgerResponse?.success) {
-        const purchaserLedgerResponse = await window.electron.exportLedger(purchaserName, isPurchaser)
-        if (purchaserLedgerResponse?.success) {
-          const unitResponse = await window.electron.exportUnit(updatedUnits);
-          if (unitResponse?.success) {
-            const itemResponse = await window.electron.exportItem(updatedItemsForExport);
-            console.log(itemResponse, "here is item response")
-            if (itemResponse?.success) {
-              const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, purchaserName, updatedPurchaseEntryItem, true);
-              console.log(response, "response for purchaser")
-              if (response?.success) {
-                alert("Purchase Entry Create")
-              } else {
-                alert("Error: while create purchaser entry")
-              }
-            } else {
-              alert("Error: while creating item")
-            }
-          } else {
-            alert("Error: while creating unit ")
-          }
-        }
-      }
-    }
+    // const responsePartyName = await window.electron.exportAndCreatePartyEntry(purchaserName, gst)
+    // if (responsePartyName.success) {
+    //   const purchaserLedgerResponse = await window.electron.exportLedger("Purchase", "purchase accounts")
+    //   if (purchaserLedgerResponse?.success) {
+    //     const allLedgerResponse = await window.electron.exportLedger(ledgerNames, "ledger")
+    //     if (allLedgerResponse?.success) {
+    //       const unitResponse = await window.electron.exportUnit(updatedUnits);
+    //       if (unitResponse?.success) {
+    //         const itemResponse = await window.electron.exportItem(updatedItemsForExport);
+    //         console.log(itemResponse, "here is item response")
+    //         if (itemResponse?.success) {
+    //           const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, purchaserName, updatedPurchaseEntryItem, true);
+    //           console.log(response, "response for purchaser")
+    //           if (response?.success) {
+    //             alert("Purchase Entry Create")
+    //           } else {
+    //             alert("Error: while create purchaser entry")
+    //           }
+    //         } else {
+    //           alert("Error: while creating item")
+    //         }
+    //       } else {
+    //         alert("Error: while creating unit ")
 
+    //       }
+    //     }
+    //   }
+    // }
 
     console.log(invoiceNumber, date, purchaserName, updatedItemsForExport, purchaserName, updatedPurchaseEntryItem, true, updatedUnits)
 
