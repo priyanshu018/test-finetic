@@ -40,8 +40,8 @@ contextBridge.exposeInMainWorld('electron', {
     isWithinState: boolean) =>
     ipcRenderer.invoke('create-purchase-entry', invoiceNumber, date, partyName, purchaseLedger, items, isWithinState),
 
-  exportLedger: (ledgerName: string, isPurchase: boolean) =>
-    ipcRenderer.invoke('export-ledger', ledgerName, isPurchase),
+  exportLedger: (ledgerName: string, ledgerType: string) =>
+    ipcRenderer.invoke('export-ledger', ledgerName, ledgerType),
 
   exportItem: (item: {
     Product: string;
@@ -54,14 +54,17 @@ contextBridge.exposeInMainWorld('electron', {
   }) =>
     ipcRenderer.invoke('export-item', item),
 
-    exportUnit: (unit: {
-      Name: string;
-      conversionRate?: number;
-    }) =>
-      ipcRenderer.invoke('export-unit', unit),
+  exportUnit: (unit: {
+    Name: string;
+    conversionRate?: number;
+  }) =>
+    ipcRenderer.invoke('export-unit', unit),
 
   createItem: (itemName: string, symbol: string, decimal: number, hsn: number, gst: number) =>
     ipcRenderer.invoke('create-item', itemName, symbol, decimal, hsn, gst),
+
+  exportAndCreatePartyEntry: (partyName: string, gst: string) =>
+    ipcRenderer.invoke('create-party-entry', partyName, gst),
 
 });
 

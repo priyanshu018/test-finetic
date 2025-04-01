@@ -174,56 +174,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     return str.trim().split(/\s+/).pop() || '';
   }
 
-  // function bringTallyToForegroundAndSendKeys(keys, delayBeforeY = 2000) {
-  //   return new Promise((resolve, reject) => {
-  //     // Check if the keys array contains "prompt here"
-  //     const promptIndex = keys.findIndex(key => key === "prompt here");
-  //     const percentageIndex = keys.findIndex(key => key === "percentage here");
-
-  //     // Build the PowerShell command:
-  //     let command = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; `;
-  //     // Use Select-Object -First 1 to ensure a single process is returned
-  //     command += `$tallyProcess = Get-Process | Where-Object { $_.ProcessName -like '*Tally*' } | Select-Object -First 1; `;
-  //     command += `if ($tallyProcess) { `;
-  //     command += `(New-Object -ComObject WScript.Shell).AppActivate($tallyProcess.Id); `;
-
-  //     if (promptIndex === -1) {
-  //       // No "prompt here": join all keys as before.
-  //       const keysString = keys.join('');
-  //       command += `[System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `;
-  //       command += `Start-Sleep -Milliseconds ${delayBeforeY}; `;
-  //     } else {
-  //       // "prompt here" exists: iterate through keys individually.
-  //       keys.forEach(key => {
-  //         if (key === "prompt here") {
-  //           // Wait for 500 milliseconds before proceeding.
-  //           command += `Start-Sleep -Milliseconds 500; `;
-  //         } else if (key === "percentage here") {
-  //           command += `[System.Windows.Forms.SendKeys]::SendWait('%'); `;
-  //         } else {
-  //           command += `[System.Windows.Forms.SendKeys]::SendWait('${key}'); `;
-  //         }
-  //       });
-  //     }
-
-  //     command += `} else { `;
-  //     command += `throw 'No Tally process found'; `;
-  //     command += `}"`;
-
-  //     exec(command, (error, stdout, stderr) => {
-  //       if (error) {
-  //         reject(`Error: ${error.message}`);
-  //         return;
-  //       }
-  //       if (stderr) {
-  //         reject(`PowerShell error: ${stderr}`);
-  //         return;
-  //       }
-  //       resolve();
-  //     });
-  //   });
-  // }
-
   function bringTallyToForegroundAndSendKeys(keys, delayBeforeY = 2000) {
     return new Promise((resolve, reject) => {
       // Check for special keys.
@@ -284,7 +234,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     });
   }
 
-
   function getTallyInstallPath(): Promise<string> {
     return new Promise((resolve, reject) => {
       // Check both 32-bit and 64-bit registry paths
@@ -307,7 +256,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     });
   }
 
-
   function removeBOM(content: string): string {
     const buffer = Buffer.from(content, 'utf-8');
     if (buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf) {
@@ -320,12 +268,10 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     return content;
   }
 
-
-  async function exportAndCheckLedger(ledgerNames: string | string[], isPurchase: boolean): Promise<void> {
+  async function exportAndCheckLedger(ledgerNames: string | string[], ledgerType: string): Promise<void> {
     try {
       // Convert ledgerNames to an array if it isn't already iterable.
-      const ledgerNamesArray = Array.isArray(ledgerNames) ? ledgerNames : [ledgerNames];
-
+      const ledgerNamesArray = Array.isArray(ledgerNames) ? ledgerNames : ledgerNames;
       // Step 1: Get Tally installation path and set file path
       const tallyInstallPath = await getTallyInstallPath();
       const exportedFilePath = `${tallyInstallPath}\\master.xml`;
@@ -333,7 +279,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       console.log(`Exporting file to: ${exportedFilePath}`);
 
       // Step 2: Trigger Tally export (single export for all ledgers)
-      const keys = ['%e', 'm', 'e', '{ENTER}', 'prompt here', 'y'];
+      const keys = ['open tally', '%e', 'm', 'e', '{ENTER}', 'prompt here', 'y'];
       await bringTallyToForegroundAndSendKeys(keys, 1000);
       // console.log('Tally export triggered successfully.');
 
@@ -369,30 +315,60 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       const ledgers = messagesArray.map((msg: any) => msg.LEDGER).filter(Boolean);
 
       // Step 9: Check each ledger and create if missing
-      for (const ledgerName of ledgerNamesArray) {
-        // Append "%" for the existence check
-        const targetLedgerName = isPurchase ? ledgerName : `${ledgerName}%`;
-        const ledgerExists = ledgers.some((ledger: any) =>
-          ledger.$?.NAME?.toLowerCase() === targetLedgerName.toLowerCase()
-        );
-        console.log(`Ledger "${targetLedgerName}" found: ${ledgerExists}`);
+      if (ledgerType === "purchase accounts") {
+
+        const targetLedgerName = ledgerNames;
+        const ledgerExists = ledgers.some((ledger) => {
+          const ledgerName = ledger.$?.NAME;
+          const parentElement = ledger.PARENT
+
+          const nameMatch = ledgerName?.toLowerCase() === targetLedgerName?.toLowerCase();
+          const parentMatch = parentElement?.toLowerCase() === "purchase accounts";
+
+          // Debug output for each ledger
+          console.log(`Checking ledger: ${ledgerName}`);
+          console.log(`Parent value: ${parentElement}`);
+          console.log(`Name match: ${nameMatch}, Parent match: ${parentMatch}`);
+
+          return nameMatch && parentMatch;
+        });
+
+        console.log(`Ledger exists: ${ledgerExists}`);
 
         if (!ledgerExists) {
-          // Append "+5" while creating the ledger
-          const newLedgerName = isPurchase ? ledgerName : `${ledgerName}+5`;
-          console.log(`Creating ledger "${newLedgerName}"...`);
+          console.log(`Creating ledger "${ledgerNames}"...`);
 
-          if (isPurchase) {
+          if (ledgerType === "purchase accounts") {
+            await createPurchaseLedger(ledgerNames);
+          }
+        }
 
-            await createPurchaseLedger(newLedgerName);
-          } else {
-            const lowerName = ledgerName.toLowerCase();
-            if (lowerName.includes("igst")) {
-              await createIgstLedger(newLedgerName);
-            } else if (lowerName.includes("cgst") || lowerName.includes("ut/sgst")) {
-              await createCgstLedger(newLedgerName);
+      } else {
+        for (const ledgerName of ledgerNamesArray) {
+          // Append "%" for the existence check
+          const targetLedgerName = ledgerType === "purchase accounts" ? ledgerName : `${ledgerName}%`;
+          const ledgerExists = ledgers.some((ledger: any) =>
+            ledger.$?.NAME?.toLowerCase() === targetLedgerName.toLowerCase()
+          );
+          console.log(`Ledger "${targetLedgerName}" found: ${ledgerExists}`);
+
+          if (!ledgerExists) {
+            // Append "+5" while creating the ledger
+            const newLedgerName = ledgerType === "purchase accounts" ? ledgerName : `${ledgerName}+5`;
+            console.log(`Creating ledger "${newLedgerName}"...`);
+
+            if (ledgerType === "purchase accounts") {
+
+              await createPurchaseLedger(newLedgerName);
             } else {
-              console.warn(`No creation function defined for ledger type: ${ledgerName}`);
+              const lowerName = ledgerName.toLowerCase();
+              if (lowerName.includes("igst")) {
+                await createIgstLedger(newLedgerName);
+              } else if (lowerName.includes("cgst") || lowerName.includes("ut/sgst")) {
+                await createCgstLedger(newLedgerName);
+              } else {
+                console.warn(`No creation function defined for ledger type: ${ledgerName}`);
+              }
             }
           }
         }
@@ -403,7 +379,56 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   }
 
-  async function exportAndCheckItem(item: {
+  // Helper function to export the XML file and extract STOCKITEMs
+  async function exportAndGetItems(): Promise<any[]> {
+    // Step 1: Get Tally installation path and set file path
+    const tallyInstallPath = await getTallyInstallPath();
+    const exportedFilePath = `${tallyInstallPath}\\master.xml`;
+    console.log(`Tally installation path: ${tallyInstallPath}`);
+    console.log(`Exporting file to: ${exportedFilePath}`);
+
+    // Step 2: Trigger Tally export for stock items
+    const keys = [
+      'open tally', '%e', 'm', 'c', 'type of master', '{ENTER}',
+      'stock items', '{ENTER}', '{ESC}', '{ESC}', 'e',
+      'prompt here', 'y'
+    ];
+    await bringTallyToForegroundAndSendKeys(keys, 1000);
+    console.log('Tally export triggered successfully.');
+
+    // Step 3: Wait to ensure file is fully exported
+    console.log('Waiting for the file to be exported...');
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Step 4: Ensure the exported file exists
+    if (!fs.existsSync(exportedFilePath)) {
+      throw new Error(`Exported file not found at ${exportedFilePath}.`);
+    }
+
+    // Step 5: Read and clean XML file
+    let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
+    xmlData = removeBOM(xmlData);
+
+    // Step 6: Validate XML content
+    if (!xmlData.trim().startsWith('<ENVELOPE>')) {
+      throw new Error('File content is not valid XML.');
+    }
+
+    // Step 7: Parse XML
+    const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
+
+    // Step 8: Extract STOCKITEM details
+    const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
+    if (!tallyMessages) {
+      return []; // No items found
+    }
+    const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
+    const items = messagesArray.map((msg: any) => msg.STOCKITEM).filter(Boolean);
+    return items;
+  }
+
+  // New function to check and create items if missing
+  async function exportAndCheckItems(itemsToCheck: Array<{
     Product: string;
     HSN: string;
     symbol?: string;
@@ -411,173 +436,58 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     gst?: string | number;
     SGST?: string;
     CGST?: string;
-  }): Promise<boolean> {
-    try {
-      // Step 1: Get Tally installation path and set file path
-      const tallyInstallPath = await getTallyInstallPath();
-      const exportedFilePath = `${tallyInstallPath}\\master.xml`;
-      console.log(`Tally installation path: ${tallyInstallPath}`);
-      console.log(`Exporting file to: ${exportedFilePath}`);
+  }>): Promise<{ results: Array<{ product: string; exists: boolean }> }> {
+    // First, export once and get the list of existing items
+    let existingItems = await exportAndGetItems();
+    const results: Array<{ product: string; exists: boolean }> = [];
+    const missingItems: Array<typeof itemsToCheck[0]> = [];
 
-      // Step 2: Trigger Tally export for stock items
-      const keys = [
-        'open tally', '%e', 'm', 'c', 'type of master', '{ENTER}',
-        'stock items', '{ENTER}', '{ESC}', '{ESC}', 'e',
-        'prompt here', 'y'
-      ];
-      await bringTallyToForegroundAndSendKeys(keys, 1000);
-      console.log('Tally export triggered successfully.');
-
-      // Step 3: Wait to ensure file is fully exported
-      console.log('Waiting for the file to be exported...');
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Step 4: Ensure the exported file exists
-      if (!fs.existsSync(exportedFilePath)) {
-        throw new Error(`Exported file not found at ${exportedFilePath}.`);
-      }
-
-      // Step 5: Read and clean XML file
-      let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
-      xmlData = removeBOM(xmlData);
-      // console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
-
-      console.log(item)
-      // Step 6: Validate XML content
-      if (!xmlData.trim().startsWith('<ENVELOPE>')) {
-        throw new Error('File content is not valid XML.');
-      }
-
-      // Step 7: Parse XML
-      const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
-      // console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
-
-      // Step 8: Extract STOCKITEM details
-      const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
-      if (!tallyMessages) {
-        throw new Error('No TALLYMESSAGE found in the XML file.');
-      }
-      const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
-      const items = messagesArray.map((msg: any) => msg.STOCKITEM).filter(Boolean);
-
-      // Check if the item exists by matching the STOCKITEM's NAME with the item's Product field
-      const itemExists = items.some((stockItem: any) =>
+    // Check each item against the exported items
+    for (const item of itemsToCheck) {
+      const exists = existingItems.some((stockItem: any) =>
         stockItem.$?.NAME?.toLowerCase() === item.Product?.toLowerCase()
       );
-      console.log(`Stock item "${item.Product}" found: ${itemExists}`);
+      results.push({ product: item.Product, exists });
+      if (!exists) {
+        missingItems.push(item);
+      }
+    }
 
-      // If the item does not exist, call createItem with dynamic parameters from the item props
-      if (!itemExists) {
+    // If there are missing items, create them
+    if (missingItems.length > 0) {
+      console.log(`Missing items: ${missingItems.map(i => i.Product).join(', ')}`);
+      for (const item of missingItems) {
         const name = item.Product;
-        // Use the provided symbol or derive one dynamically from the product name
         const symbol = item.symbol || "pcs";
-        // Use the provided decimal value (or assume dynamic input; no static default is provided)
         const decimal = item.decimal !== undefined ? Number(item.decimal) : 0;
-        // Use the provided HSN value converted to a number
         const hsn = item.HSN ? Number(item.HSN) : 0;
-        // For GST, use the provided value or, if not given, average SGST and CGST if available
         let gstValue: number;
         if (item.gst !== undefined) {
           gstValue = Number(item.gst);
         } else if (item.SGST !== undefined && item.CGST !== undefined) {
-          gstValue = (Number(item.SGST) + Number(item.CGST)) / 2;
+          gstValue = Number(item.SGST) + Number(item.CGST);
         } else {
           gstValue = 0;
         }
-
         console.log(
           `Item "${name}" does not exist. Creating item with symbol "${symbol}", decimal ${decimal}, HSN ${hsn}, and GST ${gstValue}...`
         );
         await createItem(name, symbol, decimal, hsn, gstValue);
       }
 
-      return itemExists;
-    } catch (error) {
-      console.error('Error in exportAndCheckItem:', error);
-      throw error;
+      // Re-export to verify that the missing items are now present
+      existingItems = await exportAndGetItems();
+      // Update the results based on the new export
+      for (const result of results) {
+        result.exists = existingItems.some((stockItem: any) =>
+          stockItem.$?.NAME?.toLowerCase() === result.product.toLowerCase()
+        );
+      }
     }
+
+    return { results };
   }
 
-  // // Function to export, check, and create a unit if missing
-  // async function exportAndCheckUnit(unit: {
-  //   Name: string;
-  //   conversionRate?: number;
-  // }): Promise<boolean> {
-  //   try {
-  //     // Step 1: Get Tally installation path and set file path
-  //     const tallyInstallPath = await getTallyInstallPath();
-  //     const exportedFilePath = `${tallyInstallPath}\\master.xml`;
-  //     console.log(`Tally installation path: ${tallyInstallPath}`);
-  //     console.log(`Exporting file to: ${exportedFilePath}`);
-
-  //     // Step 2: Trigger Tally export for units
-  //     // Adjust the keys to match your Tally sequence for exporting UNIT masters
-  //     const keys = [
-  //       'open tally', '%e', 'm', 'c', 'type of master', '{ENTER}', 'units', '{ENTER}', '{ESC}', '{ESC}', 'e',
-  //       'prompt here', 'y'
-  //     ];
-  //     await bringTallyToForegroundAndSendKeys(keys, 1000);
-  //     console.log('Tally export for units triggered successfully.');
-
-  //     // Step 3: Wait to ensure file is fully exported
-  //     console.log('Waiting for the unit file to be exported...');
-  //     await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  //     // Step 4: Ensure the exported file exists
-  //     if (!fs.existsSync(exportedFilePath)) {
-  //       throw new Error(`Exported file not found at ${exportedFilePath}.`);
-  //     }
-
-  //     // Step 5: Read and clean XML file
-  //     let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
-  //     xmlData = removeBOM(xmlData);
-  //     console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
-
-  //     // Step 6: Validate XML content
-  //     if (!xmlData.trim().startsWith('<ENVELOPE>')) {
-  //       throw new Error('File content is not valid XML.');
-  //     }
-
-  //     // Step 7: Parse XML
-  //     const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
-  //     console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
-
-  //     // Step 8: Extract UNIT details
-  //     const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
-  //     if (!tallyMessages) {
-  //       console.warn('No TALLYMESSAGE found in the XML file. Assuming no unit data exists.');
-  //       // Directly create the unit when no data is present
-  //       await createUnit(unit.Name, unit.conversionRate);
-  //       return false;
-  //     }
-  //     const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
-  //     // Assume each TALLYMESSAGE for units contains a UNIT element
-  //     const units = messagesArray.map((msg: any) => msg.UNIT).filter(Boolean);
-
-  //     // Step 9: Check if the unit exists by matching UNIT's NAME attribute
-  //     const unitExists = units.some((unitElem: any) =>
-  //       unitElem.$?.NAME?.toLowerCase() === unit?.Name?.toLowerCase()
-  //     );
-  //     console.log(`Unit "${unit.Name}" found: ${unitExists}`);
-
-  //     // Step 10: If the unit does not exist, create it dynamically
-  //     if (!unitExists) {
-  //       console.log(`Unit "${unit.Name}" does not exist. Creating unit...`);
-  //       await createUnit(
-  //         unit.Name,
-  //         unit.conversionRate // conversion rate provided dynamically
-  //       );
-  //     }
-
-  //     return unitExists;
-  //   } catch (error) {
-  //     console.error('Error in exportAndCheckUnit:', error);
-  //     throw error;
-  //   }
-  // }
-
-
-  // Helper function: Export XML and return the parsed UNIT elements
   async function exportAndGetUnits(): Promise<any[]> {
     // Step 1: Get Tally installation path and set file path
     const tallyInstallPath = await getTallyInstallPath();
@@ -662,7 +572,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     return { results };
   }
 
-
   // Example createUnit function using dynamic parameters
   async function createUnit(
     name: string,
@@ -687,7 +596,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   }
 
-
   async function createPurchaseLedger(ledgerName: string): Promise<void> {
     try {
 
@@ -701,6 +609,151 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       throw error;
     }
   }
+
+  async function exportAndGetPartyName(partyName: string, gst: string): Promise<any> {
+    try {
+
+      // Step 1: Get Tally installation path and set file path
+      const tallyInstallPath = await getTallyInstallPath();
+      const exportedFilePath = `${tallyInstallPath}\\master.xml`;
+      console.log(`Tally installation path: ${tallyInstallPath}`);
+      console.log(`Exporting file to: ${exportedFilePath}`);
+
+      // Step 2: Trigger Tally export (single export for all ledgers)
+      const keys = ['open tally', '%e', 'm', 'e', '{ENTER}', 'prompt here', 'y'];
+      await bringTallyToForegroundAndSendKeys(keys, 1000);
+      // console.log('Tally export triggered successfully.');
+
+      // Step 3: Wait to ensure file is fully exported
+      // console.log('Waiting for the file to be exported...');
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Step 4: Check if the exported file exists
+      if (!fs.existsSync(exportedFilePath)) {
+        throw new Error(`Exported file not found at ${exportedFilePath}.`);
+      }
+
+      // Step 5: Read and clean XML file
+      let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
+      xmlData = removeBOM(xmlData);
+      // console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
+
+      // Step 6: Validate XML content
+      if (!xmlData.trim().startsWith('<ENVELOPE>')) {
+        throw new Error('File content is not valid XML.');
+      }
+
+      // Step 7: Parse XML
+      const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
+      // console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
+
+      // Step 8: Extract LEDGER details
+      const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
+      if (!tallyMessages) {
+        throw new Error('No TALLYMESSAGE found in the XML file.');
+      }
+      const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
+      const ledgers = messagesArray.map((msg: any) => msg.LEDGER).filter(Boolean);
+
+      const targetLedgerName = partyName;
+      const ledgerExists = ledgers.some((ledger) => {
+        const ledgerName = ledger.$?.NAME;
+        const parentElement = ledger.PARENT
+
+        const nameMatch = ledgerName?.toLowerCase() === targetLedgerName?.toLowerCase();
+        const parentMatch = parentElement?.toLowerCase() === "sundry creditors";
+
+        // Debug output for each ledger
+        console.log(`Checking ledger: ${ledgerName}`);
+        console.log(`Parent value: ${parentElement}`);
+        console.log(`Name match: ${nameMatch}, Parent match: ${parentMatch}`);
+
+        return nameMatch && parentMatch;
+      });
+
+
+      console.log(`Ledger "${partyName}" found: ${ledgerExists}`);
+
+      if (!ledgerExists) {
+        await createPartyEntry(partyName, gst);
+      }
+
+    } catch (error) {
+      console.error('Error in exportAndCheckLedger:', error);
+      throw error;
+    }
+  }
+
+  async function createPartyEntry(
+    partyName: string,
+    gst: string,
+  ): Promise<void> {
+    try {
+
+      // Build the initial keys array for invoice header details
+      const keys = [
+        'open tally',
+        'c',
+        'l',
+        'e',
+        'd',
+        'g',
+        'e',
+        'r',
+        '{ENTER}',
+        partyName,
+        '{ENTER}',
+        '{ENTER}',
+        's',
+        'u',
+        'n',
+        'd',
+        'r',
+        'y',
+        ' ',
+        'c',
+        'r',
+        'e',
+        'd',
+        'i',
+        't',
+        'o',
+        'r',
+        's',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        gst,
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        '{ENTER}',
+        'prompt here',
+        'y',
+        '{ESC}',
+        'prompt here',
+        'y',
+        '{ESC}',
+      ];
+
+      await bringTallyToForegroundAndSendKeys(keys);
+    } catch (error) {
+      console.error('Error creating purchase ledger:', error);
+      throw error;
+    }
+  }
+
 
   async function createPurchaseEntry(
     invoiceNumber: string,
@@ -737,6 +790,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
       // Build the initial keys array for invoice header details
       const keys = [
+        'open tally',
         'v',
         '{F9}',
         '{F2}',
@@ -794,14 +848,12 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   }
 
-
-
   async function createIgstLedger(name: string): Promise<void> {
     try {
 
       // Step 1: Press "c"
       await bringTallyToForegroundAndSendKeys([
-        'c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}',
+        'open tally', 'c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}',
         name, '{ENTER}', '{ENTER}',
         'D', 'u', 't', 'i', 'e', 's', ' ', '&', ' ', 'T', 'a', 'x', 'e', 's', '{ENTER}',
         'G', 'S', 'T', '{ENTER}',
@@ -819,7 +871,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
       // Step 1: Press "c"
       await bringTallyToForegroundAndSendKeys([
-        'c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}',
+        'open tally', 'c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}',
         name, '{ENTER}', '{ENTER}',
         'D', 'u', 't', 'i', 'e', 's', ' ', '&', ' ', 'T', 'a', 'x', 'e', 's', '{ENTER}',
         'G', 'S', 'T', '{ENTER}',
@@ -831,7 +883,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       throw error;
     }
   }
-
 
   async function createItem(name: string, symbol: string, decimal: number, hsn: number, gst: number): Promise<void> {
     try {
@@ -852,40 +903,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   }
 
-
-  // Example usage
-  (async () => {
-    const ledgerName = 'harjaap';
-    try {
-      // await createPurchaseLedger(ledgerName);
-      // await createIgstLedger('Igst 0+5');
-      // await createIgstLedger('Igst 5+5');
-      // await createIgstLedger('Igst 12+5');
-      // await createIgstLedger('Igst 18+5');
-      // await createIgstLedger('Igst 28+5');
-      //  await createCgstLedger('Cgst 0+5');
-      //  await createCgstLedger('Cgst 2.5+5');
-      //  await createCgstLedger('Cgst 6+5');
-      //  await createCgstLedger('Cgst 9+5');
-      //  await createCgstLedger('Cgst 14+5');
-
-
-      // await createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase", [
-      //   { name: "Item", quantity: 2, price: 100 },
-      //   { name: "Item", quantity: 1, price: 50 }
-      // ], true, 0, 14, 12);
-
-
-      // if (ledgerExists) {
-      //   console.log(`Ledger "${ledgerName}" exists in the exported file.`);
-      // } else {
-      //   console.log(`Ledger "${ledgerName}" does not exist in the exported file.`);
-      // }
-    } catch (error) {
-      console.error('Failed to export or check ledger:', error);
-    }
-  })();
-
   // IPC handler to bring Tally to the foreground and send multiple keystrokes
   ipcMain.handle('bring-tally-to-foreground-and-send-keys', async (_, keys: string[]) => {
     try {
@@ -905,7 +922,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       return { success: false, error: error.message };
     }
   });
-
 
 
   ipcMain.handle('create-cgst-ledger', async (_, ledgerName: string) => {
@@ -941,9 +957,9 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   });
 
 
-  ipcMain.handle('export-ledger', async (_, ledgerName: string, isPurchase: boolean) => {
+  ipcMain.handle('export-ledger', async (_, ledgerName: string, ledgerType: string) => {
     try {
-      await exportAndCheckLedger(ledgerName, isPurchase);
+      await exportAndCheckLedger(ledgerName, ledgerType);
       return { success: true, ledgerName };
     } catch (error) {
       console.error('Error creating purchase entry:', error);
@@ -951,50 +967,18 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   });
 
-
+  // Updated IPC handler using the new function
   ipcMain.handle('export-item', async (_, items: any) => {
     try {
-      const responses: Array<{ product: string; exists: boolean }> = [];
-      // If items is an array, iterate; otherwise treat it as a single item.
+      // Ensure items is treated as an array
       const itemsArray = Array.isArray(items) ? items : [items];
-
-      for (const item of itemsArray) {
-        // Ensure the item object has a Product property.
-        if (!item || !item.Product) {
-          throw new Error("Invalid item object passed. 'Product' property is required.");
-        }
-        const exists = await exportAndCheckItem(item);
-        responses.push({ product: item.Product, exists });
-      }
-      return { success: true, responses };
+      const { results } = await exportAndCheckItems(itemsArray);
+      return { success: true, responses: results };
     } catch (error) {
       console.error('Error exporting item:', error);
       return { success: false, error: error.message };
     }
   });
-
-
-  // ipcMain.handle('export-unit', async (_, units: any) => {
-  //   try {
-  //     // Check if units is an array
-  //     if (Array.isArray(units)) {
-  //       const results = [];
-  //       // Loop through each unit in the array
-  //       for (const unit of units) {
-  //         const exists = await exportAndCheckUnit(unit);
-  //         results.push({ name: unit.Name, exists });
-  //       }
-  //       return { success: true, results };
-  //     } else {
-  //       // Fallback for single unit objects
-  //       const exists = await exportAndCheckUnit(units);
-  //       return { success: true, exists };
-  //     }
-  //   } catch (error) {
-  //     console.error('Error exporting unit:', error);
-  //     return { success: false, error: error.message };
-  //   }
-  // });
 
 
   // Updated IPC handler to use the new function
@@ -1018,6 +1002,16 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       return { success: true, itemName };
     } catch (error) {
       console.error('Error creating item:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('create-party-entry', async (_, partyName: string, gst: string) => {
+    try {
+      await exportAndGetPartyName(partyName, gst);
+      return { success: true, partyName };
+    } catch (error) {
+      console.error('Error creating party entry:', error);
       return { success: false, error: error.message };
     }
   });

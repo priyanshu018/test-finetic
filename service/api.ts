@@ -1,1 +1,1 @@
-export const BackendLink = "https://41b6-223-178-209-121.ngrok-free.app"
+export const BackendLink = "https://finetic-ai.primedepthlabs.com"

@@ -137,66 +137,66 @@ export default function IndexPage() {
   const handleExportItems = async () => {
 
     const items = [
-      {
-        Product: "VEBA DIP SALSA",
-        HSN: "21039030",
-        symbol: "GM",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA BLISS CRAMEL",
-        HSN: "21039030",
-        symbol: "GM",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA MAYONNAISE MINT",
-        HSN: "21039030",
-        symbol: "GM",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA WHOLE GRAIN MUSTRD",
-        HSN: "21039090",
-        symbol: "GM",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA SWEET SAUCES OINION",
-        HSN: "21039020",
-        symbol: "GM",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA MAYONNAISE TANDOORI",
-        HSN: "21039090",
-        symbol: "GM",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA MAYONNAISE OLIVE OIL",
-        HSN: "21039090",
-        symbol: "GM",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
+      // {
+      //   Product: "VEBA DIP SALSA",
+      //   HSN: "21039030",
+      //   symbol: "PCS",
+      //   decimal: 3,
+      //   SGST: 6,
+      //   CGST: 6
+      // },
+      // {
+      //   Product: "VEBA BLISS CRAMEL",
+      //   HSN: "21039030",
+      //   symbol: "GM",
+      //   decimal: 3,
+      //   SGST: 6,
+      //   CGST: 6
+      // },
+      // {
+      //   Product: "VEBA MAYONNAISE MINT",
+      //   HSN: "21039030",
+      //   symbol: "PCS",
+      //   decimal: 3,
+      //   SGST: 6,
+      //   CGST: 6
+      // },
+      // {
+      //   Product: "VEBA WHOLE GRAIN MUSTRD",
+      //   HSN: "21039090",
+      //   symbol: "PCS",
+      //   decimal: 3,
+      //   SGST: 6,
+      //   CGST: 6
+      // },
+      // {
+      //   Product: "VEBA SWEET SAUCES OINION",
+      //   HSN: "21039020",
+      //   symbol: "PCS",
+      //   decimal: 3,
+      //   SGST: 6,
+      //   CGST: 6
+      // },
+      // {
+      //   Product: "VEBA MAYONNAISE TANDOORI",
+      //   HSN: "21039090",
+      //   symbol: "PCS",
+      //   decimal: 3,
+      //   SGST: 6,
+      //   CGST: 6
+      // },
+      // {
+      //   Product: "VEBA MAYONNAISE OLIVE OIL",
+      //   HSN: "21039090",
+      //   symbol: "L",
+      //   decimal: 3,
+      //   SGST: 6,
+      //   CGST: 6
+      // },
       {
         Product: "VEBA PSTAN PIZZA HRBY TOMATO",
         HSN: "21039090",
-        symbol: "GM",
+        symbol: "PCS",
         decimal: 3,
         SGST: 6,
         CGST: 6
@@ -204,23 +204,23 @@ export default function IndexPage() {
       {
         Product: "VEBA THAI-STYLE SWEET CHILLI",
         HSN: "21032000",
-        symbol: "KG",
+        symbol: "PCS",
+        decimal: 3,
+        SGST: 6,
+        CGST: 6
+      },
+      {
+        Product: "VEBA PSTA N PIZZA HRBY TOMATO",
+        HSN: "21032000",
+        symbol: "PCS",
         decimal: 3,
         SGST: 6,
         CGST: 6
       },
       {
         Product: "VEBA PSTA N PIZZA HRBY TOMATO2",
-        HSN: "21032000",
-        symbol: "GM",
-        decimal: 3,
-        SGST: 6,
-        CGST: 6
-      },
-      {
-        Product: "VEBA PSTA N PIZZA HRBY TOMATO23",
         HSN: "21039090",
-        symbol: "GM",
+        symbol: "PCS",
         decimal: 3,
         SGST: 6,
         CGST: 6
@@ -228,7 +228,7 @@ export default function IndexPage() {
       {
         Product: "VEBA SNDWCH SPRD CRT N CUCMBR",
         HSN: "21039030",
-        symbol: "GM",
+        symbol: "PCS",
         decimal: 3,
         SGST: 6,
         CGST: 6
@@ -236,7 +236,7 @@ export default function IndexPage() {
       {
         Product: "VESA KETCHUP TOMATO NONGARLIC",
         HSN: "21032000",
-        symbol: "KG",
+        symbol: "PCS",
         decimal: 3,
         SGST: 6,
         CGST: 6
@@ -244,7 +244,7 @@ export default function IndexPage() {
       {
         Product: "VEBA KETCHUP TOMATO CHEFS SPL",
         HSN: "21032000",
-        symbol: "G",
+        symbol: "L",
         decimal: 3,
         SGST: 6,
         CGST: 6
@@ -252,15 +252,15 @@ export default function IndexPage() {
       {
         Product: "VEBA PSTA CHESSY SAUCES ALFRDO",
         HSN: "21032000",
-        symbol: "G",
+        symbol: "PCS",
         decimal: 3,
         SGST: 6,
         CGST: 6
       },
       {
-        Product: "VEBA HOT SAUCES SRIRCHA CHILLI2",
+        Product: "VEBA HOT SAUCES SRIRCHA CHILLI",
         HSN: "21039090",
-        symbol: "GM",
+        symbol: "PCS",
         decimal: 3,
         SGST: 6,
         CGST: 6
@@ -268,7 +268,7 @@ export default function IndexPage() {
       {
         Product: "VEBA KETCHUP TOMATO NO AD SUGR",
         HSN: "21039030",
-        symbol: "GM",
+        symbol: "PCS",
         decimal: 3,
         SGST: 6,
         CGST: 6
@@ -281,17 +281,72 @@ export default function IndexPage() {
   const handleCheckUnit = async () => {
 
     const units = [
-  
       {
         Name: "GM",
         conversionRate: 3
       },
       {
-        Name: "G",
+        Name: "PCS",
         conversionRate: 3
       },
       {
-        Name: "KG",
+        Name: "L",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
+        conversionRate: 3
+      },
+      {
+        Name: "L",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
+        conversionRate: 3
+      },
+      {
+        Name: "PCS",
         conversionRate: 3
       }
     ]
@@ -302,116 +357,121 @@ export default function IndexPage() {
   const handlePurchaseEntry = async () => {
     await window.electron.createPurchaseEntry("123456", "02-11-2024", "Priyanshu", "Purchase",
       [
-        // {
-        //   name: "VEBA DIP SALSA",
-        //   unit: "PCS",
-        //   price: 77.9,
-        //   quantity: 3
-        // },
+        {
+          name: "VEBA DIP SALSA",
+          unit: "PCS",
+          price: 77.9,
+          quantity: "3.00"
+        },
         {
           name: "VEBA BLISS CRAMEL",
           unit: "GM",
           price: 135,
-          quantity: 0
+          quantity: "3.00"
         },
         {
           name: "VEBA MAYONNAISE MINT",
           unit: "PCS",
           price: 156.45,
-          quantity: 2
+          quantity: "3.00"
         },
-        // {
-        //   name: "VEBA WHOLE GRAIN MUSTRD",
-        //   unit: "PCS",
-        //   price: 142.15,
-        //   quantity: 3
-        // },
-        // {
-        //   name: "VEBA SWEET SAUCES OINION",
-        //   unit: "PCS",
-        //   price: 90.82,
-        //   quantity: 3
-        // },
-        // {
-        //   name: "VEBA MAYONNAISE TANDOORI",
-        //   unit: "PCS",
-        //   price: 135,
-        //   quantity: 3
-        // },
-        // {
-        //   name: "VEBA MAYONNAISE OLIVE OIL",
-        //   unit: "GM",
-        //   price: 32.15,
-        //   quantity: 12
-        // },
-        // {
-        //   name: "VEBA SALAD SAUCE TOKYO STYL",
-        //   unit: "L",
-        //   price: 0,
-        //   quantity: 0
-        // },
-        // {
-        //   name: "VEBA PSTAN PIZZA HRBY TOMATO",
-        //   unit: "PCS",
-        //   price: 120.75,
-        //   quantity: 3
-        // },
-        // {
-        //   name: "VEBA PSTA N PIZZA HRBY TOMATO2",
-        //   unit: "PCS",
-        //   price: 70.75,
-        //   quantity: 3
-        // },
-        // {
-        //   name: "VEBA PSTA N PIZZA HRBY TOMATO23",
-        //   unit: "PCS",
-        //   price: 9215,
-        //   quantity: 3
-        // },
-        // {
-        //   name: "VEBA SNDWCH SPRD CRT N CUCMBR",
-        //   unit: "PCS",
-        //   price: 125,
-        //   quantity: 2
-        // },
-        // {
-        //   name: "VESA KETCHUP TOMATO NONGARLIC",
-        //   unit: "PCS",
-        //   price: 120.75,
-        //   quantity: 3
-        // },
-        // {
-        //   name: "VEBA KETCHUP TOMATO CHEFS SPL",
-        //   unit: "L",
-        //   price: 135,
-        //   quantity: 2
-        // },
-        // {
-        //   name: "VEBA PSTA CHESSY SAUCES ALFRDO",
-        //   unit: "PCS",
-        //   price: 117.15,
-        //   quantity: 2
-        // },
-        // {
-        //   name: "VEBA HOT SAUCES SRIRCHA CHILLI",
-        //   unit: "PCS",
-        //   price: 120.75,
-        //   quantity: 3
-        // },
-        // {
-        //   name: "VEBA KETCHUP TOMATO NO AD SUGR",
-        //   unit: "PCS",
-        //   price: 77.9,
-        //   quantity: 3
-        // },
-        // {
-        //   name: "VEBA THAI-STYLE SWEET CHILLI IKG",
-        //   unit: "KG",
-        //   price: 92.86,
-        //   quantity: 3
-        // }
+        {
+          name: "VEBA WHOLE GRAIN MUSTRD",
+          unit: "PCS",
+          price: 142.15,
+          quantity: "3.00"
+        },
+        {
+          name: "VEBA SWEET SAUCES OINION",
+          unit: "PCS",
+          price: 90.82,
+          quantity: "3.00"
+        },
+        {
+          name: "VEBA MAYONNAISE TANDOORI",
+          unit: "PCS",
+          price: 135,
+          quantity: "3.00"
+        },
+        {
+          name: "VEBA MAYONNAISE OLIVE OIL",
+          unit: "L",
+          price: 32.15,
+          quantity: "1.00"
+        },
+        {
+          name: "VEBA PSTAN PIZZA HRBY TOMATO",
+          unit: "PCS",
+          price: 120.75,
+          quantity: "3.00"
+        },
+        {
+          name: "VEBA THAI-STYLE SWEET CHILLI",
+          unit: "PCS",
+          price: 92.86,
+          quantity: "3.00"
+        },
+        {
+          name: "VEBA PSTA N PIZZA HRBY TOMATO",
+          unit: "PCS",
+          price: 70.75,
+          quantity: "3.00"
+        },
+        {
+          name: "VEBA PSTA N PIZZA HRBY TOMATO2",
+          unit: "PCS",
+          price: 92.15,
+          quantity: "3.00"
+        },
+        {
+          name: "VEBA SNDWCH SPRD CRT N CUCMBR",
+          unit: "PCS",
+          price: 125,
+          quantity: "2.00"
+        },
+        {
+          name: "VESA KETCHUP TOMATO NONGARLIC",
+          unit: "PCS",
+          price: 120.75,
+          quantity: "3.00"
+        },
+        {
+          name: "VEBA KETCHUP TOMATO CHEFS SPL",
+          unit: "L",
+          price: 135,
+          quantity: "2.00"
+        },
+        {
+          name: "VEBA PSTA CHESSY SAUCES ALFRDO",
+          unit: "PCS",
+          price: 117.15,
+          quantity: "2.00"
+        },
+        {
+          name: "VEBA HOT SAUCES SRIRCHA CHILLI",
+          unit: "PCS",
+          price: 120.75,
+          quantity: "3.00"
+        },
+        {
+          name: "VEBA KETCHUP TOMATO NO AD SUGR",
+          unit: "PCS",
+          price: 77.9,
+          quantity: "3.00"
+        }
       ]
       , false);
+  }
+
+  const handleCreatePartyLedger = async() =>{
+    const purchaserLedgerResponse = await window.electron.exportAndCreatePartyEntry("EVERYDAY STORE-WAVE", "03AALFE5567F1ZF")
+    console.log(purchaserLedgerResponse,"purchaserLedgerResponse")
+  }
+
+  
+  const handleCreatePurchaseLedger = async() =>{
+    const purchaserLedgerResponse = await window.electron.exportLedger("Purchase","purchase accounts")
+    console.log(purchaserLedgerResponse,"purchaserLedgerResponse")
   }
 
   return (
@@ -623,7 +683,8 @@ export default function IndexPage() {
       </div>
 
       {/* <div> */}
-      {/* <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create item</button> */}
+      <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
+      <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create party name ledger</button>
       <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create unit</button>
       <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
       <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create purchase</button>
