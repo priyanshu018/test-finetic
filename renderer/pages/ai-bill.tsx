@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { ZoomOut, RotateCcw, Move, Maximize, Minimize, Minus } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 declare global {
   interface Window {
@@ -573,12 +574,48 @@ export default function BillWorkflow() {
     processFiles(droppedFiles);
   };
 
+  const getUserDataByEmail = async (email: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      return null;
+    }
+  }
+
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      const email = session?.user?.user_metadata?.email;
+      console.log(email);
+      if (email) {
+        // Define an inner async function to fetch user data
+        const fetchUserData = async () => {
+          const userData = await getUserDataByEmail(email);
+          console.log("User data:", userData);
+          // You can set the user data in state here if needed
+        };
+        fetchUserData();
+      }
+    });
+  }, [])
+
   const handleNextStep = async () => {
     setIsLoading(true);
     try {
       const requests = files.map(async (fileObj) => {
         const formData = new FormData();
         formData.append("file", fileObj.file);
+        formData.append("user_id","2")
         const response = await axios.post(
           `${BackendLink}/extract-bill-details`,
           formData,
