@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from "react";
 import { EmailOtpModal } from "../components/otpModal";
 import { supabase } from "../lib/supabase";
@@ -301,9 +302,9 @@ export default function HeroSection({ setIsAuth }) {
                     </div>
                   </div>
                   <div className="flex space-x-6">
-                    <div className="text-xs text-slate-500">Terms</div>
+                    {/* <div className="text-xs text-slate-500">Terms</div>
                     <div className="text-xs text-slate-500">Privacy</div>
-                    <div className="text-xs text-slate-500">Contact</div>
+                    <div className="text-xs text-slate-500">Contact</div> */}
                   </div>
                 </div>
               </div>

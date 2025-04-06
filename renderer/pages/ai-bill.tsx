@@ -615,9 +615,9 @@ export default function BillWorkflow() {
       const requests = files.map(async (fileObj) => {
         const formData = new FormData();
         formData.append("file", fileObj.file);
-        formData.append("user_id","2")
+        formData.append("user_id", "2")
         const response = await axios.post(
-          `${BackendLink}/extract-bill-details`,
+          `${BackendLink}/extract-bill-details/`,
           formData,
           {
             headers: {
@@ -1037,7 +1037,7 @@ export default function BillWorkflow() {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
         <header className="py-6 px-8 border-b border-gray-200 bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto flex items-center">
+          <div className=" mx-auto flex items-center">
             <button
               onClick={() => window.history.back()}
               className="flex items-center text-gray-600 hover:text-blue-600 transition-colors"
@@ -1142,7 +1142,7 @@ export default function BillWorkflow() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <main className=" mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <Stepper
           steps={["Role Selection", "Upload Files", "Verify Data", "Confirm"]}
           currentStep={currentStep}
@@ -1258,148 +1258,158 @@ export default function BillWorkflow() {
         {currentStep === 2 && (
           <div className="space-y-6">
             <div className="bg-white p-6 shadow-lg rounded-xl mb-6">
-              <div className="flex flex-col lg:flex-row gap-6">
-                <div className="lg:w-1/2">
-                  <div
-                    className="bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center"
-                    style={{ height: "18rem" }}
-                  >
-                    {files[currentBillIndex]?.dataUrl?.includes("image/") ? (
-                      <ZoomableImage
-                        src={files[currentBillIndex].dataUrl}
-                        alt={`Bill ${currentBillIndex + 1}`}
-                        style={{ width: "100%", height: "100%" }}
-                      />
-                    ) : (
-                      <div className="text-center text-gray-500">
-                        <FileText className="w-16 h-16 mx-auto mb-4" />
-                        <p>PDF Preview Not Available</p>
-                      </div>
-                    )}
-                  </div>
+              <div className="gap-6">
 
-                  <div className="flex items-center justify-between mt-4">
-                    <button
-                      onClick={() => setCurrentBillIndex((prev) => Math.max(0, prev - 1))}
-                      disabled={currentBillIndex === 0}
-                      className={`flex items-center justify-center p-2 rounded-full ${currentBillIndex === 0
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                        } transition-colors`}
+                <div className="flex gap-6">
+                  {/* Column 1: Image Preview */}
+                  <div className="w-1/2">
+                    <div
+                      className="bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center"
+                      style={{ height: "30rem" }}
                     >
-                      <ArrowLeft className="w-5 h-5" />
-                    </button>
-
-                    <div className="flex items-center gap-2">
-                      {files.map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setCurrentBillIndex(idx)}
-                          className={`w-2.5 h-2.5 rounded-full transition-all ${currentBillIndex === idx
-                            ? "bg-blue-600 w-6"
-                            : "bg-gray-300 hover:bg-gray-400"
-                            }`}
-                          aria-label={`Go to bill ${idx + 1}`}
+                      {files[currentBillIndex]?.dataUrl?.includes("image/") ? (
+                        <ZoomableImage
+                          src={files[currentBillIndex].dataUrl}
+                          alt={`Bill ${currentBillIndex + 1}`}
+                          style={{ width: "100%", height: "100%" }}
                         />
-                      ))}
+                      ) : (
+                        <div className="text-center text-gray-500">
+                          <FileText className="w-16 h-16 mx-auto mb-4" />
+                          <p>PDF Preview Not Available</p>
+                        </div>
+                      )}
                     </div>
 
-                    <button
-                      onClick={() => {
-                        if (currentBillIndex === files.length - 1)
-                          setCurrentStep(3);
-                        else
-                          setCurrentBillIndex((prev) => prev + 1);
-                      }}
-                      className="flex items-center justify-center p-2 rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center justify-between mt-4">
+                      <button
+                        onClick={() => setCurrentBillIndex((prev) => Math.max(0, prev - 1))}
+                        disabled={currentBillIndex === 0}
+                        className={`flex items-center justify-center p-2 rounded-full ${currentBillIndex === 0
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                          } transition-colors`}
+                      >
+                        <ArrowLeft className="w-5 h-5" />
+                      </button>
+
+                      <div className="flex items-center gap-2">
+                        {files.map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setCurrentBillIndex(idx)}
+                            className={`w-2.5 h-2.5 rounded-full transition-all ${currentBillIndex === idx
+                              ? "bg-blue-600 w-6"
+                              : "bg-gray-300 hover:bg-gray-400"
+                              }`}
+                            aria-label={`Go to bill ${idx + 1}`}
+                          />
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (currentBillIndex === files.length - 1) setCurrentStep(3);
+                          else setCurrentBillIndex((prev) => prev + 1);
+                        }}
+                        className="flex items-center justify-center p-2 rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Column 2: Cross-check Table */}
+                  <div className="w-1/2">
+                    <div className=" space-y-6">
+                      <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <FileDigit className="w-5 h-5" />
+                        Bill Information
+                      </h3>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <TextField
+                          label="Invoice Number"
+                          value={billData[currentBillIndex]?.invoiceNumber || ""}
+                          onChange={(e) => handleDataChange("invoiceNumber", e.target.value)}
+                        />
+
+                        <div className="space-y-1.5">
+                          <label className="block text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4" />
+                            Bill Date
+                          </label>
+                          <input
+                            type="text"
+                            value={billData[currentBillIndex]?.billDate || ""}
+                            onChange={(e) => handleDataChange("billDate", e.target.value)}
+                            className="block w-full border border-gray-300 rounded-lg p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white hover:bg-gray-50 focus:bg-white"
+                            placeholder="DD/MM/YYYY"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
+                        <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                          <Building className="w-5 h-5" />
+                          {role === "Purchaser" ? "Receiver Details" : "Sender Details"}
+                        </h3>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <TextField
+                            label={role === "Purchaser" ? "Receiver Name" : "Sender Name"}
+                            value={
+                              role === "Purchaser"
+                                ? billData[currentBillIndex]?.receiverDetails?.name || ""
+                                : billData[currentBillIndex]?.senderDetails?.name || ""
+                            }
+                            onChange={(e) => {
+                              if (role === "Purchaser") {
+                                handleDataChange("receiverDetails", {
+                                  ...billData[currentBillIndex]?.receiverDetails,
+                                  name: e.target.value
+                                });
+                              } else {
+                                handleDataChange("senderDetails", {
+                                  ...billData[currentBillIndex]?.senderDetails,
+                                  name: e.target.value
+                                });
+                              }
+                            }}
+                          />
+
+                          <TextField
+                            label={role === "Purchaser" ? "Receiver GST" : "Sender GST"}
+                            value={
+                              role === "Purchaser"
+                                ? billData[currentBillIndex]?.receiverDetails?.gst || ""
+                                : billData[currentBillIndex]?.senderDetails?.gst || ""
+                            }
+                            onChange={(e) => {
+                              if (role === "Purchaser") {
+                                handleDataChange("receiverDetails", {
+                                  ...billData[currentBillIndex]?.receiverDetails,
+                                  gst: e.target.value
+                                });
+                              } else {
+                                handleDataChange("senderDetails", {
+                                  ...billData[currentBillIndex]?.senderDetails,
+                                  gst: e.target.value
+                                });
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="lg:w-1/2 space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <FileDigit className="w-5 h-5" />
-                    Bill Information
-                  </h3>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <TextField
-                      label="Invoice Number"
-                      value={billData[currentBillIndex]?.invoiceNumber || ""}
-                      onChange={(e) => handleDataChange("invoiceNumber", e.target.value)}
-                    />
+                {/* Column 3: Bill Information */}
 
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-medium text-gray-700 flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4" />
-                        Bill Date
-                      </label>
-                      <input
-                        type="text"
-                        value={billData[currentBillIndex]?.billDate || ""}
-                        onChange={(e) => handleDataChange("billDate", e.target.value)}
-                        className="block w-full border border-gray-300 rounded-lg p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white hover:bg-gray-50 focus:bg-white"
-                        placeholder="DD/MM/YYYY"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-2">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
-                      <Building className="w-5 h-5" />
-                      {role === "Purchaser" ? "Receiver Details" : "Sender Details"}
-                    </h3>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <TextField
-                        label={role === "Purchaser" ? "Receiver Name" : "Sender Name"}
-                        value={
-                          role === "Purchaser"
-                            ? billData[currentBillIndex]?.receiverDetails?.name || ""
-                            : billData[currentBillIndex]?.senderDetails?.name || ""
-                        }
-                        onChange={(e) => {
-                          if (role === "Purchaser") {
-                            handleDataChange("receiverDetails", {
-                              ...billData[currentBillIndex]?.receiverDetails,
-                              name: e.target.value
-                            });
-                          } else {
-                            handleDataChange("senderDetails", {
-                              ...billData[currentBillIndex]?.senderDetails,
-                              name: e.target.value
-                            });
-                          }
-                        }}
-                      />
-
-                      <TextField
-                        label={role === "Purchaser" ? "Receiver GST" : "Sender GST"}
-                        value={
-                          role === "Purchaser"
-                            ? billData[currentBillIndex]?.receiverDetails?.gst || ""
-                            : billData[currentBillIndex]?.senderDetails?.gst || ""
-                        }
-                        onChange={(e) => {
-                          if (role === "Purchaser") {
-                            handleDataChange("receiverDetails", {
-                              ...billData[currentBillIndex]?.receiverDetails,
-                              gst: e.target.value
-                            });
-                          } else {
-                            handleDataChange("senderDetails", {
-                              ...billData[currentBillIndex]?.senderDetails,
-                              gst: e.target.value
-                            });
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
+
             </div>
 
             {/* Items Section */}
@@ -1431,7 +1441,6 @@ export default function BillWorkflow() {
                         "MRP",
                         "RATE",
                         "DIS",
-                        "G AMT",
                         "SGST",
                         "CGST",
                         "NET AMT",
@@ -1470,129 +1479,152 @@ export default function BillWorkflow() {
                       const rowHasError = !grossValid || !netValid;
 
                       return (
-                        <tr
-                          key={idx}
-                          className={`hover:bg-gray-50 transition-colors ${rowHasError ? "bg-yellow-50" : ""}`}
-                        >
-                          <td
-                            className="px-3 py-2.5 w-72 relative"
-                            draggable
-                            onDragStart={(e) => handleProductDragStart(e, currentBillIndex, idx)}
-                            onDragOver={handleProductDragOver}
-                            onDrop={(e) => handleProductDrop(e, currentBillIndex, idx)}
+                        <>
+                          <tr
+                            key={idx}
+                            className={`hover:bg-gray-50 transition-colors ${rowHasError ? "bg-yellow-50" : ""}`}
                           >
-                            <div className="flex items-center group">
-                              <MoveHorizontal className="w-4 h-4 text-gray-400 mr-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+                            <td
+                              className="px-3 py-2.5 w-72 relative"
+                              draggable
+                              onDragStart={(e) => handleProductDragStart(e, currentBillIndex, idx)}
+                              onDragOver={handleProductDragOver}
+                              onDrop={(e) => handleProductDrop(e, currentBillIndex, idx)}
+                            >
+                              <div className="flex items-center group">
+                                <MoveHorizontal className="w-4 h-4 text-gray-400 mr-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+                                <input
+                                  type="text"
+                                  value={item.Product || ""}
+                                  onChange={(e) => handleItemChange(currentBillIndex, idx, "Product", e.target.value)}
+                                  className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 w-20">
                               <input
                                 type="text"
-                                value={item.Product || ""}
-                                onChange={(e) => handleItemChange(currentBillIndex, idx, "Product", e.target.value)}
+                                value={item.QTY || ""}
+                                onChange={(e) => handleItemChange(currentBillIndex, idx, "QTY", e.target.value)}
                                 className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
-                            </div>
-                          </td>
-                          <td className="px-3 py-2 w-20">
-                            <input
-                              type="text"
-                              value={item.QTY || ""}
-                              onChange={(e) => handleItemChange(currentBillIndex, idx, "QTY", e.target.value)}
-                              className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-3 py-2 w-20">
-                            <input
-                              type="text"
-                              value={item.FREE || ""}
-                              onChange={(e) => handleItemChange(currentBillIndex, idx, "FREE", e.target.value)}
-                              className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-3 py-2 w-28">
-                            <input
-                              type="text"
-                              value={item.HSN || ""}
-                              onChange={(e) => handleItemChange(currentBillIndex, idx, "HSN", e.target.value)}
-                              className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-3 py-2 w-28">
-                            <input
-                              type="number"
-                              value={item.MRP || ""}
-                              onChange={(e) => handleItemChange(currentBillIndex, idx, "MRP", e.target.value)}
-                              className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-3 py-2 w-28">
-                            <input
-                              type="number"
-                              value={item.RATE || ""}
-                              onChange={(e) => handleItemChange(currentBillIndex, idx, "RATE", e.target.value)}
-                              className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-3 py-2 w-24">
-                            <input
-                              type="text"
-                              value={item.DIS || ""}
-                              onChange={(e) => handleItemChange(currentBillIndex, idx, "DIS", e.target.value)}
-                              className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-3 py-2 w-28">
-                            <input
-                              type="number"
-                              value={item["G AMT"] || ""}
-                              onChange={(e) => handleItemChange(currentBillIndex, idx, "G AMT", e.target.value)}
-                              className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-3 py-2 w-16">
-                            <input
-                              type="text"
-                              value={item.SGST || ""}
-                              onChange={(e) => handleItemChange(currentBillIndex, idx, "SGST", e.target.value)}
-                              className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-3 py-2 w-16">
-                            <input
-                              type="text"
-                              value={item.CGST || ""}
-                              onChange={(e) => handleItemChange(currentBillIndex, idx, "CGST", e.target.value)}
-                              className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-3 py-2 w-28">
-                            <input
-                              type="number"
-                              value={item["NET AMT"] || ""}
-                              onChange={(e) => handleItemChange(currentBillIndex, idx, "NET AMT", e.target.value)}
-                              className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => removeItem(currentBillIndex, idx)}
-                                className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded transition-colors"
-                                title="Remove item"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-
-                              {(!grossValid || !netValid) && (
+                            </td>
+                            <td className="px-3 py-2 w-20">
+                              <input
+                                type="text"
+                                value={item.FREE || ""}
+                                onChange={(e) => handleItemChange(currentBillIndex, idx, "FREE", e.target.value)}
+                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-3 py-2 w-28">
+                              <input
+                                type="text"
+                                value={item.HSN || ""}
+                                onChange={(e) => handleItemChange(currentBillIndex, idx, "HSN", e.target.value)}
+                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-3 py-2 w-28">
+                              <input
+                                type="number"
+                                value={item.MRP || ""}
+                                onChange={(e) => handleItemChange(currentBillIndex, idx, "MRP", e.target.value)}
+                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-3 py-2 w-28">
+                              <input
+                                type="number"
+                                value={item.RATE || ""}
+                                onChange={(e) => handleItemChange(currentBillIndex, idx, "RATE", e.target.value)}
+                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-3 py-2 w-24">
+                              <input
+                                type="text"
+                                value={item.DIS || ""}
+                                onChange={(e) => handleItemChange(currentBillIndex, idx, "DIS", e.target.value)}
+                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-3 py-2 w-16">
+                              <input
+                                type="text"
+                                value={item.SGST || ""}
+                                onChange={(e) => handleItemChange(currentBillIndex, idx, "SGST", e.target.value)}
+                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-3 py-2 w-16">
+                              <input
+                                type="text"
+                                value={item.CGST || ""}
+                                onChange={(e) => handleItemChange(currentBillIndex, idx, "CGST", e.target.value)}
+                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-3 py-2 w-28">
+                              <input
+                                type="number"
+                                value={item["NET AMT"] || ""}
+                                onChange={(e) => handleItemChange(currentBillIndex, idx, "NET AMT", e.target.value)}
+                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-3 py-2 w-10">
+                              <div className="flex items-center space-x-2">
                                 <button
-                                  onClick={() => fixRowCalculation(currentBillIndex, idx)}
-                                  className="text-green-600 hover:text-green-800 p-1.5 hover:bg-green-50 rounded transition-colors"
-                                  title="Fix calculation"
+                                  onClick={() => removeItem(currentBillIndex, idx)}
+                                  className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded transition-colors"
+                                  title="Remove item"
                                 >
-                                  <Check className="w-4 h-4" />
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
+
+                                {(!grossValid || !netValid) && (
+                                  <button
+                                    onClick={() => fixRowCalculation(currentBillIndex, idx)}
+                                    className="text-green-600 hover:text-green-800 p-1.5 hover:bg-green-50 rounded transition-colors"
+                                    title="Fix calculation"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                          <tr >
+                            <td  className="px-3 py-2.5 text-center" colSpan={11}>
+                              <div className="gap-2 mx-auto w-[fit-content]">
+                                {billData[currentBillIndex].invoice_items_cropped_images.cell_images.filter((item, index) => index === 0 || index === idx + 1).map(
+                                  (row: any, rowIndex: number) => (
+                                    <div key={rowIndex} className="flex flex-wrap gap-2">
+                                      {row.map((img: string, colIndex: number) =>
+                                        img ? (
+                                          <img
+                                            key={colIndex}
+                                            src={`${img}`}
+                                            alt={`Invoice cell ${rowIndex}-${colIndex}`}
+                                            className="max-w-[100px] max-h-[100px] object-contain border"
+                                          />
+                                        ) : (
+                                          <div
+                                            key={colIndex}
+                                            className="w-[100px] h-[100px] border flex items-center justify-center text-xs text-gray-500"
+                                          >
+                                            No Image
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        </>
                       );
                     })}
 
@@ -1619,6 +1651,8 @@ export default function BillWorkflow() {
                 </table>
               </div>
             </div>
+
+
 
             {/* Totals Section */}
             <div className="bg-white rounded-xl shadow-lg p-6">

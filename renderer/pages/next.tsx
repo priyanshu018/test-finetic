@@ -454,24 +454,6 @@ export default function IndexPage() {
                     <div className="text-xs text-gray-500">{email}</div>
                   </div>
                   <div className="divide-y divide-gray-100">
-                    {/* Profile */}
-                    <Link
-                      href="/profile"
-                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all duration-150"
-                    >
-                      <FiUsers className="w-4 h-4 mr-3 text-gray-500" />
-                      Profile
-                    </Link>
-
-                    {/* Settings */}
-                    <Link
-                      href="/settings"
-                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all duration-150"
-                    >
-                      <FiSettings className="w-4 h-4 mr-3 text-gray-500" />
-                      Settings
-                    </Link>
-
                     {/* Billing */}
                     <Link
                       href="/billing"
@@ -609,9 +591,9 @@ export default function IndexPage() {
           <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
             <div>&copy; 2025 FineticAI. All rights reserved.</div>
             <div className="flex space-x-4 mt-3 md:mt-0">
-              <a href="#" className="hover:text-gray-700">Terms</a>
+              {/* <a href="#" className="hover:text-gray-700">Terms</a>
               <a href="#" className="hover:text-gray-700">Privacy</a>
-              <a href="#" className="hover:text-gray-700">Help</a>
+              <a href="#" className="hover:text-gray-700">Help</a> */}
             </div>
           </div>
         </div>
