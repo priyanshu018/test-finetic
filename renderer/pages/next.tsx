@@ -43,7 +43,7 @@ export default function IndexPage() {
   const router = useRouter()
   // Keep existing electron functions
   const handleCreatePartyLedger = async () => {
-    const purchaserLedgerResponse = await window.electron.exportAndCreatePartyNameEntry("EVERYDAY STORE-WAVE", "03AALFE5567F1ZF")
+    const purchaserLedgerResponse = await window.electron.exportAndCreatePartyNameEntry("Testing", "03AALFE5567F1ZF")
     console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
   }
 
@@ -60,9 +60,9 @@ export default function IndexPage() {
 
   const handleCreateCgstIgstSgstLedger = async () => {
     const ledgerNames = [
-      'Cgst0', 'Cgst2.5', 'Cgst6', 'Cgst9', 'Cgst14',
-      'Igst0', 'Igst5', 'Igst12', 'Igst18', 'Igst28',
-      'Ut/Sgst0', 'Ut/Sgst2.5', 'Ut/Sgst6', 'Ut/Sgst9', 'Ut/Sgst14'
+      'Cgst0%', 'Cgst2.5%', 'Cgst6%', 'Cgst9%', 'Cgst14%',
+      'Igst0%', 'Igst5%', 'Igst12%', 'Igst18%', 'Igst28%',
+      'Ut/Sgst0%', 'Ut/Sgst2.5%', 'Ut/Sgst6%', 'Ut/Sgst9%', 'Ut/Sgst14%'
     ];
 
     const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
@@ -79,7 +79,6 @@ export default function IndexPage() {
         SGST: 9,
         CGST: 9,
         gst: 18,
-        decimal: 0.18,
         symbol: "GM"
       },
       {
@@ -88,7 +87,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "GM"
       },
       {
@@ -97,7 +95,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "GM"
       },
       {
@@ -106,7 +103,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "GM"
       },
       {
@@ -115,7 +111,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "GM"
       },
       {
@@ -124,7 +119,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "GM"
       },
       {
@@ -133,7 +127,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "GM"
       },
       {
@@ -142,7 +135,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "PCS"
       },
       {
@@ -151,7 +143,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "GM"
       },
       {
@@ -160,7 +151,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "GM"
       },
       {
@@ -169,7 +159,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "M"
       },
       {
@@ -178,7 +167,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "GM"
       },
       {
@@ -187,7 +175,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "KG"
       },
       {
@@ -196,7 +183,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "KG"
       },
       {
@@ -205,7 +191,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "G"
       },
       {
@@ -214,7 +199,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "GM"
       },
       {
@@ -223,7 +207,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "GM"
       },
       {
@@ -232,7 +215,6 @@ export default function IndexPage() {
         SGST: 6,
         CGST: 6,
         gst: 12,
-        decimal: 0.12,
         symbol: "GM"
       }
     ]
@@ -244,24 +226,24 @@ export default function IndexPage() {
 
     const units = [
       {
-        Name: "GM",
-        conversionRate: 3
+        name: "GM",
+        decimal: 3
       },
       {
-        Name: "PCS",
-        conversionRate: 3
+        name: "PCS",
+        decimal: 3
       },
       {
-        Name: "M",
-        conversionRate: 3
+        name: "M",
+        decimal: 3
       },
       {
-        Name: "KG",
-        conversionRate: 3
+        name: "KG",
+        decimal: 3
       },
       {
-        Name: "G",
-        conversionRate: 3
+        name: "G",
+        decimal: 3
       }
     ]
     const response = await window.electron.exportUnit(units);
@@ -575,15 +557,14 @@ export default function IndexPage() {
         </div> */}
       </div>
 
-      {/* <div> */}
-      {/* <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
-      <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
-      <button className="text-black bg-blue-400 p-4" onClick={handleCreateCgstIgstSgstLedger}>Create IGST/CGST/SGST ledger</button>
-      <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create unit</button>
-      <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
-      <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create purchase</button> */}
-
-      {/* </div> */}
+      <div>
+        <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
+        <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
+        <button className="text-black bg-blue-400 p-4" onClick={handleCreateCgstIgstSgstLedger}>Create IGST/CGST/SGST ledger</button>
+        <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create unit</button>
+        <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
+        <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create purchase</button>
+      </div>
 
       {/* Footer - professional touch */}
       <footer className="bg-white absolute bottom-0 left-0 w-full border-t border-gray-200 py-4 mt-auto">

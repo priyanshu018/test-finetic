@@ -3,6 +3,7 @@ import { exec, execSync } from 'child_process';
 import Store from 'electron-store';
 import * as fs from 'fs';
 import { parseStringPromise } from 'xml2js';
+import { createPartyLedger, createPurchaserLedger, createStockItems, createTaxLedgers, createUnits } from '../../service/commonFunction';
 
 export const createWindow = (windowName: string, options: BrowserWindowConstructorOptions): BrowserWindow => {
   const key = 'window-state';
@@ -395,9 +396,14 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       console.log(`Ledger "${partyName}" found: ${ledgerExists}`);
 
       if (!ledgerExists) {
-        await bringTallyToForegroundAndSendKeys(['open tally'])
-        await createPartyNameEntry(partyName, gst);
+        // await bringTallyToForegroundAndSendKeys(['open tally'])
+        // await createPartyNameEntry(partyName, gst);
+        const response = createPartyLedger(partyName, gst)
+        return response
+
       }
+
+      return partyName
 
     } catch (error) {
       console.error('Error in exportAndCheckLedger:', error);
@@ -541,36 +547,53 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         console.log(`Ledger exists: ${ledgerExists}`);
 
         if (!ledgerExists) {
-          await bringTallyToForegroundAndSendKeys(['open tally'])
-          await createPurchaseLedger(ledgerNames);
+          // await bringTallyToForegroundAndSendKeys(['open tally'])
+          // await createPurchaseLedger(ledgerNames);
+          const response = createPurchaserLedger(ledgerNames)
+          return response
         }
 
+        return ledgerNames
+
       } else {
-        await bringTallyToForegroundAndSendKeys(['open tally'])
+
+        const result = []
+
+        // await bringTallyToForegroundAndSendKeys(['open tally'])
         for (const ledgerName of ledgerNamesArray) {
           // Append "%" for the existence check
-          const targetLedgerName = ledgerType === "purchase accounts" ? ledgerName : `${ledgerName}%`;
+          const targetLedgerName = ledgerType === "purchase accounts" ? ledgerName : ledgerName;
+
+           
           const ledgerExists = ledgers.some((ledger: any) =>
             ledger.$?.NAME?.toLowerCase() === targetLedgerName.toLowerCase()
           );
           console.log(`Ledger "${targetLedgerName}" found: ${ledgerExists}`);
 
-          if (!ledgerExists) {
-            // Append "+5" while creating the ledger
-            const newLedgerName = ledgerType === "purchase accounts" ? ledgerName : `${ledgerName}+5`;
-            console.log(`Creating ledger "${newLedgerName}"...`);
-
-            const lowerName = ledgerName.toLowerCase();
-            if (lowerName.includes("igst")) {
-              await createIgstLedger(newLedgerName);
-            } else if (lowerName.includes("cgst") || lowerName.includes("ut/sgst")) {
-              await createCgstLedger(newLedgerName);
-            } else {
-              console.warn(`No creation function defined for ledger type: ${ledgerName}`);
-            }
-
+          if(!ledgerExists){
+            result.push(targetLedgerName)
           }
+
+          
+          // if (!ledgerExists) {
+          //   // Append "+5" while creating the ledger
+          //   const newLedgerName = ledgerType === "purchase accounts" ? ledgerName : `${ledgerName}+5`;
+          //   console.log(`Creating ledger "${newLedgerName}"...`);
+
+          //   const lowerName = ledgerName.toLowerCase();
+          //   if (lowerName.includes("igst")) {
+          //     await createIgstLedger(newLedgerName);
+          //   } else if (lowerName.includes("cgst") || lowerName.includes("ut/sgst")) {
+          //     await createCgstLedger(newLedgerName);
+          //   } else {
+          //     console.warn(`No creation function defined for ledger type: ${ledgerName}`);
+          //   }
+
+          // }
         }
+
+        const response = createTaxLedgers(result)
+        return response
       }
     } catch (error) {
       console.error('Error in exportAndCheckLedger:', error);
@@ -675,37 +698,42 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   }
 
   // New function: Check and create units if missing
-  async function exportAndCheckUnits(unitsToCheck: Array<{ Name: string; conversionRate?: number }>): Promise<{ results: Array<{ name: string; exists: boolean }> }> {
+  async function exportAndCheckUnits(unitsToCheck: Array<{ name: string; decimal?: number }>): Promise<{ results: Array<{ name: string; exists: boolean }> }> {
     // First export once and get the current units.
     let existingUnits = await exportAndGetUnits();
 
     // Loop through provided units to see which ones already exist.
     const results: Array<{ name: string; exists: boolean }> = [];
-    const missingUnits: Array<{ Name: string; conversionRate?: number }> = [];
+    const missingUnits: Array<{ name: string; decimal?: number }> = [];
 
     for (const unit of unitsToCheck) {
-      const exists = existingUnits.some((unitElem: any) => unitElem.$?.NAME?.toLowerCase() === unit.Name.toLowerCase());
-      results.push({ name: unit.Name, exists });
+      const exists = existingUnits.some((unitElem: any) => unitElem.$?.NAME?.toLowerCase() === unit?.name?.toLowerCase());
+      results.push({ name: unit.name, exists });
       if (!exists) {
         missingUnits.push(unit);
       }
     }
 
-    await bringTallyToForegroundAndSendKeys(['open tally'])
+    // await bringTallyToForegroundAndSendKeys(['open tally'])
 
     // If there are missing units, create them all.
     if (missingUnits.length > 0) {
-      console.log(`Missing units: ${missingUnits.map(u => u.Name).join(', ')}`);
-      for (const unit of missingUnits) {
-        console.log(`Creating unit "${unit.Name}"...`);
-        await createUnit(unit.Name, unit.conversionRate);
-      }
+      console.log(`Missing units: ${missingUnits.map(u => u.name).join(', ')}`);
+
+      console.log(missingUnits,"missing units")
+
+      // for (const unit of missingUnits) {
+      //   console.log(`Creating unit "${unit.Name}"...`);
+      //   await create Unit(unit.Name, unit.conversionRate);
+      // }
+      const response = createUnits(missingUnits)
+      return response
       // After creation, re-export and verify that the missing units are now present.
-      existingUnits = await exportAndGetUnits();
+      // existingUnits = await exportAndGetUnits();
       // Update the results based on the new export.
-      for (const result of results) {
-        result.exists = existingUnits.some((unitElem: any) => unitElem.$?.NAME?.toLowerCase() === result.name.toLowerCase());
-      }
+      // for (const result of results) {
+      //   result.exists = existingUnits.some((unitElem: any) => unitElem.$?.NAME?.toLowerCase() === result.name.toLowerCase());
+      // }
     }
 
     return { results };
@@ -809,38 +837,42 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       }
     }
 
-    await bringTallyToForegroundAndSendKeys(['open tally'])
+    // await bringTallyToForegroundAndSendKeys(['open tally'])
 
     // If there are missing items, create them
     if (missingItems.length > 0) {
       console.log(`Missing items: ${missingItems.map(i => i.Product).join(', ')}`);
-      for (const item of missingItems) {
-        const name = item.Product;
-        const symbol = item.symbol || "pcs";
-        const decimal = item.decimal !== undefined ? Number(item.decimal) : 0;
-        const hsn = item.HSN ? Number(item.HSN) : 0;
-        let gstValue: number;
-        if (item.gst !== undefined) {
-          gstValue = Number(item.gst);
-        } else if (item.SGST !== undefined && item.CGST !== undefined) {
-          gstValue = Number(item.SGST) + Number(item.CGST);
-        } else {
-          gstValue = 0;
-        }
-        console.log(
-          `Item "${name}" does not exist. Creating item with symbol "${symbol}", decimal ${decimal}, HSN ${hsn}, and GST ${gstValue}...`
-        );
-        await createItem(name, symbol, decimal, hsn, gstValue);
-      }
+      // for (const item of missingItems) {
+      //   const name = item.Product;
+      //   const symbol = item.symbol || "pcs";
+      //   const decimal = item.decimal !== undefined ? Number(item.decimal) : 0;
+      //   const hsn = item.HSN ? Number(item.HSN) : 0;
+      //   let gstValue: number;
+      //   if (item.gst !== undefined) {
+      //     gstValue = Number(item.gst);
+      //   } else if (item.SGST !== undefined && item.CGST !== undefined) {
+      //     gstValue = Number(item.SGST) + Number(item.CGST);
+      //   } else {
+      //     gstValue = 0;
+      //   }
+      //   console.log(
+      //     `Item "${name}" does not exist. Creating item with symbol "${symbol}", decimal ${decimal}, HSN ${hsn}, and GST ${gstValue}...`
+      //   );
+      //   await createItem(name, symbol, decimal, hsn, gstValue);
+      // }
 
-      // Re-export to verify that the missing items are now present
-      existingItems = await exportAndGetItems();
-      // Update the results based on the new export
-      for (const result of results) {
-        result.exists = existingItems.some((stockItem: any) =>
-          stockItem.$?.NAME?.toLowerCase() === result.product.toLowerCase()
-        );
-      }
+      // // Re-export to verify that the missing items are now present
+      // existingItems = await exportAndGetItems();
+      // // Update the results based on the new export
+      // for (const result of results) {
+      //   result.exists = existingItems.some((stockItem: any) =>
+      //     stockItem.$?.NAME?.toLowerCase() === result.product.toLowerCase()
+      //   );
+      // }
+
+      const response = createStockItems(missingItems)
+      return response
+
     }
 
     return { results };
@@ -974,8 +1006,9 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
   ipcMain.handle('create-party-name-entry', async (_, partyName: string, gst: string) => {
     try {
-      await exportAndGetPartyName(partyName, gst);
-      return { success: true, partyName };
+      const response = await exportAndGetPartyName(partyName, gst);
+      console.log(response)
+      return { success: true, response };
     } catch (error) {
       console.error('Error creating party entry:', error);
       return { success: false, error: error.message };
@@ -984,8 +1017,9 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
   ipcMain.handle('export-ledger', async (_, ledgerName: string, ledgerType: string) => {
     try {
-      await exportAndCheckLedger(ledgerName, ledgerType);
-      return { success: true, ledgerName };
+      const response = await exportAndCheckLedger(ledgerName, ledgerType);
+      console.log(response)
+      return { success: true, response };
     } catch (error) {
       console.error('Error creating purchase entry:', error);
       return { success: false, error: error.message };
@@ -1016,10 +1050,14 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   ipcMain.handle('export-unit', async (_, units: any) => {
     try {
       // If units is an array, check all; otherwise, wrap it in an array.
-      const unitsArray = Array.isArray(units) ? units : [units];
-      const { results } = await exportAndCheckUnits(unitsArray);
-      // If a single unit was passed, return its existence directly.
-      return Array.isArray(units) ? { success: true, results } : { success: true, exists: results[0].exists };
+      // const unitsArray = Array.isArray(units) ? units : [units];
+      // const { results } = await exportAndCheckUnits(unitsArray);
+      // // If a single unit was passed, return its existence directly.
+      // return Array.isArray(units) ? { success: true, results } : { success: true, exists: results[0].exists };
+      const response = await exportAndCheckUnits(units);
+      console.log(response)
+
+      return { success: true, response };
     } catch (error) {
       console.error('Error exporting unit:', error);
       return { success: false, error: error.message };
@@ -1030,9 +1068,13 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   ipcMain.handle('export-item', async (_, items: any) => {
     try {
       // Ensure items is treated as an array
-      const itemsArray = Array.isArray(items) ? items : [items];
-      const { results } = await exportAndCheckItems(itemsArray);
-      return { success: true, responses: results };
+      // const itemsArray = Array.isArray(items) ? items : [items];
+      // const { results } = await exportAndCheckItems(itemsArray);
+
+      const response = await exportAndCheckItems(items)
+      console.log(response)
+
+      return { success: true, responses: response };
     } catch (error) {
       console.error('Error exporting item:', error);
       return { success: false, error: error.message };

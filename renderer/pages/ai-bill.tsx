@@ -514,6 +514,7 @@ export default function BillWorkflow() {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState('Ready to export');
   const [error, setError] = useState<string | null>(null);
+  const [ourNetTotalAmout, setOurNetTotalAmount] = useState("")
 
   const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
   const MAX_FILE_SIZE_MB = 50;
@@ -596,12 +597,10 @@ export default function BillWorkflow() {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       const email = session?.user?.user_metadata?.email;
-      console.log(email);
       if (email) {
         // Define an inner async function to fetch user data
         const fetchUserData = async () => {
           const userData = await getUserDataByEmail(email);
-          console.log("User data:", userData);
           // You can set the user data in state here if needed
         };
         fetchUserData();
@@ -877,10 +876,9 @@ export default function BillWorkflow() {
 
   // };
 
+  // console.log(billData)
 
   const handleExport = async () => {
-    console.log(role);
-    console.log(billData);
 
     // Ledger names remain the same for every bill
     const ledgerNames = [
@@ -1005,32 +1003,54 @@ export default function BillWorkflow() {
     }
   };
 
+  // Calculate all values when specific fields change
+  useEffect(() => {
+    if (billData.length > 0 && billData[currentBillIndex]?.items?.length > 0) {
+      recalculateBillTotals();
+    }
+  }, [billData, currentBillIndex]);
+
+  // Function to recalculate all items and totals
+  const recalculateBillTotals = () => {
+    const updatedBillData = [...billData];
+
+    // Recalculate each item
+    updatedBillData[currentBillIndex].items = updatedBillData[currentBillIndex].items.map((item) => {
+      const qty = parseFloat(item.QTY) || 0;
+      const rate = parseFloat(item.RATE) || 0;
+      const discount = parseFloat(item.DIS) || 0;
+
+      const sgstPerUnit = parseFloat(item.SGST) || 0;
+      const cgstPerUnit = sgstPerUnit;
+      const productPrice = rate * qty;
+      const totalGST = (sgstPerUnit + cgstPerUnit);
+      const gstAmount = productPrice * (totalGST / 100);
+
+      const newNetAmt = productPrice + gstAmount;
 
 
-  const fixRowCalculation = (billIndex: number, itemIndex: number) => {
-    const newData = [...billData];
-    const item = newData[billIndex].items[itemIndex];
+      return {
+        ...item,
+        SGST: sgstPerUnit.toFixed(2),
+        CGST: cgstPerUnit.toFixed(2),
+        "NET AMT": newNetAmt.toFixed(2)
+      };
+    });
 
-    const qty = parseFloat(item.QTY) || 0;
-    const rate = parseFloat(item.RATE) || 0;
-    const discount = parseFloat(item.DIS) || 0;
-    const sgstPerUnit = parseFloat(item.SGST) || 0;
-    const cgstPerUnit = sgstPerUnit;
+    // Calculate the total NET AMT
+    const totalNetAmount = updatedBillData[currentBillIndex].items.reduce((total, item) => {
+      return total + (parseFloat(item["NET AMT"]) || 0);
+    }, 0);
 
-    const standardGross =
-      ((qty * rate * 100) - (qty * discount * 100)) / 100;
+    setOurNetTotalAmount(totalNetAmount)
+    // Store the total in the bill data
+    // updatedBillData[currentBillIndex].totalNetAmount = totalNetAmount.toFixed(2);
 
-    const totalGST = qty * (sgstPerUnit + cgstPerUnit);
-    const newNetAmt = standardGross + totalGST;
-
-    item["G AMT"] = standardGross.toFixed(2);
-    item.SGST = sgstPerUnit.toFixed(2);
-    item.CGST = cgstPerUnit.toFixed(2);
-    item["NET AMT"] = newNetAmt.toFixed(2);
-
-    newData[billIndex].items[itemIndex] = item;
-    setBillData(newData);
+    // Update state without triggering infinite loop
+    setBillData(updatedBillData);
   };
+
+
 
   // Role selection UI if no role is selected yet
   if (currentStep === 0 && !role) {
@@ -1436,7 +1456,7 @@ export default function BillWorkflow() {
                       {[
                         "Product",
                         "QTY",
-                        "FREE",
+                        // "FREE",
                         "HSN",
                         "MRP",
                         "RATE",
@@ -1457,32 +1477,45 @@ export default function BillWorkflow() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {billData[currentBillIndex]?.items?.map((item: any, idx: number) => {
-                      const qty = parseFloat(item.QTY);
-                      const rate = parseFloat(item.RATE);
-                      const gAmt = parseFloat(item["G AMT"]);
-                      const discount = parseFloat(item.DIS) || 0;
-                      const netAmt = parseFloat(item["NET AMT"]);
-                      const calcGross = item.QTY && item.RATE ? qty * rate - qty * discount : null;
-                      const calcNet =
-                        item["G AMT"] && (item["NET AMT"] || item["NET AMT"] === 0)
-                          ? gAmt + qty * (parseFloat(item.SGST) + parseFloat(item.CGST))
-                          : null;
-                      const grossValid =
-                        item.QTY && item.RATE && item["G AMT"]
-                          ? calcGross !== null && Math.abs(calcGross - gAmt) < 0.01
-                          : true;
-                      const netValid =
-                        item["G AMT"] &&
-                          (item["NET AMT"] || item["NET AMT"] === 0)
-                          ? calcNet !== null && Math.abs(calcNet - netAmt) < 0.01
-                          : true;
-                      const rowHasError = !grossValid || !netValid;
+                      // const qty = parseFloat(item.QTY);
+                      // const rate = parseFloat(item.RATE);
+                      // // const gAmt = parseFloat(item["G AMT"]);
+                      // const discount = parseFloat(item.DIS) || 0;
+                      // // const netAmt = parseFloat(item["NET AMT"]);
+                      // // const calcGross = item.QTY && item.RATE ? qty * rate - qty * discount : null;
+                      // // const calcNet =
+                      // //   item["G AMT"] && (item["NET AMT"] || item["NET AMT"] === 0)
+                      // //     ? gAmt + qty * (parseFloat(item.SGST) + parseFloat(item.CGST))
+                      // //     : null;
+                      // // const grossValid =
+                      // //   item.QTY && item.RATE && item["G AMT"]
+                      // //     ? calcGross !== null && Math.abs(calcGross - gAmt) < 0.01
+                      // //     : true;
+                      // // const netValid =
+                      // //   item["G AMT"] &&
+                      // //     (item["NET AMT"] || item["NET AMT"] === 0)
+                      // //     ? calcNet !== null && Math.abs(calcNet - netAmt) < 0.01
+                      // //     : true;
 
+                      // const sgstPerUnit = parseFloat(item.SGST) || 0;
+                      // const cgstPerUnit = sgstPerUnit;
+                      // const productPrice = rate * qty
+                      // const totalGST = (sgstPerUnit + cgstPerUnit);
+                      // const gstAmount = productPrice * (totalGST / 100);
+
+                      // const newNetAmt = productPrice + gstAmount;
+
+                      // // item["G AMT"] = standardGross.toFixed(2);
+                      // item.SGST = sgstPerUnit.toFixed(2);
+                      // item.CGST = cgstPerUnit.toFixed(2);
+                      // item["NET AMT"] = newNetAmt.toFixed(2);
                       return (
                         <>
                           <tr
                             key={idx}
-                            className={`hover:bg-gray-50 transition-colors ${rowHasError ? "bg-yellow-50" : ""}`}
+                            className={`transition-colors mt-10
+                              ${item.Qty == 0 || item.RATE == 0 ? "bg-red-300" : ""} 
+                            `}
                           >
                             <td
                               className="px-3 py-2.5 w-72 relative"
@@ -1509,14 +1542,14 @@ export default function BillWorkflow() {
                                 className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                             </td>
-                            <td className="px-3 py-2 w-20">
+                            {/* <td className="px-3 py-2 w-20">
                               <input
                                 type="text"
                                 value={item.FREE || ""}
                                 onChange={(e) => handleItemChange(currentBillIndex, idx, "FREE", e.target.value)}
                                 className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
-                            </td>
+                            </td> */}
                             <td className="px-3 py-2 w-28">
                               <input
                                 type="text"
@@ -1566,12 +1599,18 @@ export default function BillWorkflow() {
                               />
                             </td>
                             <td className="px-3 py-2 w-28">
-                              <input
+                              {/* <input
                                 type="number"
                                 value={item["NET AMT"] || ""}
+                                disabled
                                 onChange={(e) => handleItemChange(currentBillIndex, idx, "NET AMT", e.target.value)}
                                 className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
+                              /> */}
+                              <p
+                                className="w-full  rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                {item["NET AMT"]}
+                              </p>
                             </td>
                             <td className="px-3 py-2 w-10">
                               <div className="flex items-center space-x-2">
@@ -1583,7 +1622,7 @@ export default function BillWorkflow() {
                                   <Trash2 className="w-4 h-4" />
                                 </button>
 
-                                {(!grossValid || !netValid) && (
+                                {/* {(!grossValid || !netValid) && (
                                   <button
                                     onClick={() => fixRowCalculation(currentBillIndex, idx)}
                                     className="text-green-600 hover:text-green-800 p-1.5 hover:bg-green-50 rounded transition-colors"
@@ -1591,12 +1630,12 @@ export default function BillWorkflow() {
                                   >
                                     <Check className="w-4 h-4" />
                                   </button>
-                                )}
+                                )} */}
                               </div>
                             </td>
                           </tr>
-                          <tr >
-                            <td  className="px-3 py-2.5 text-center" colSpan={11}>
+                          <tr className="pb-10">
+                            <td className={`px-3 py-2.5 text-center border-b-8 border-gray-300  ${item.Qty == 0 || item.RATE == 0 ? "bg-red-300" : ""} `} colSpan={11}>
                               <div className="gap-2 mx-auto w-[fit-content]">
                                 {billData[currentBillIndex].invoice_items_cropped_images.cell_images.filter((item, index) => index === 0 || index === idx + 1).map(
                                   (row: any, rowIndex: number) => (
@@ -1607,7 +1646,7 @@ export default function BillWorkflow() {
                                             key={colIndex}
                                             src={`${img}`}
                                             alt={`Invoice cell ${rowIndex}-${colIndex}`}
-                                            className="max-w-[100px] max-h-[100px] object-contain border"
+                                            className="w-[90px] h-[30px] object-contain border"
                                           />
                                         ) : (
                                           <div
