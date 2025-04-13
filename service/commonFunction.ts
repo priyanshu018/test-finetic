@@ -6,11 +6,11 @@
  * @throws Error if no name is provided.
  */
 export function createPurchaserLedger(name: string): string {
-    if (!name) {
-        throw new Error("Purchase name is required.");
-    }
+  if (!name) {
+    throw new Error("Purchase name is required.");
+  }
 
-    const xml = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
+  const xml = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
     <LEDGER NAME="${name}" RESERVEDNAME="">
       <OLDAUDITENTRYIDS.LIST TYPE="Number">
         <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
@@ -215,7 +215,7 @@ export function createPurchaserLedger(name: string): string {
     </LEDGER>
   </TALLYMESSAGE>`;
 
-    return xml;
+  return xml;
 }
 
 
@@ -225,35 +225,35 @@ export function createPurchaserLedger(name: string): string {
 * @returns A string containing the combined XML for all the tax ledgers.
 */
 export function createTaxLedgers(taxLedgers: string[]): string {
-    let xmlOutput = "";
+  let xmlOutput = "";
 
-    taxLedgers.forEach((ledgerName, index) => {
-        // Generate a pseudo-unique GUID for demonstration purposes.
-        const guidSuffix = (252 + index).toString().padStart(4, "0");
-        const guid = `bf911d27-633e-4ad7-ba7c-a871d6f9461e-${guidSuffix}`;
+  taxLedgers.forEach((ledgerName, index) => {
+    // Generate a pseudo-unique GUID for demonstration purposes.
+    const guidSuffix = (252 + index).toString().padStart(4, "0");
+    const guid = `bf911d27-633e-4ad7-ba7c-a871d6f9461e-${guidSuffix}`;
 
-        // Set an alterID, for example purposes.
-        const alterID = 1000 + index;
+    // Set an alterID, for example purposes.
+    const alterID = 1000 + index;
 
-        // Determine the GST duty head based on the ledger name.
-        let gstDutyHead = "";
-        if (ledgerName.toLowerCase().startsWith("igst")) {
-            gstDutyHead = "IGST";
-        } else if (ledgerName.toLowerCase().startsWith("cgst")) {
-            gstDutyHead = "CGST";
-        } else if (ledgerName.toLowerCase().startsWith("ut/sgst")) {
-            // For 'ut/sgst' ledgers, the GST duty head remains "CGST".
-            gstDutyHead = "CGST";
-        }
+    // Determine the GST duty head based on the ledger name.
+    let gstDutyHead = "";
+    if (ledgerName.toLowerCase().startsWith("igst")) {
+      gstDutyHead = "IGST";
+    } else if (ledgerName.toLowerCase().startsWith("cgst")) {
+      gstDutyHead = "CGST";
+    } else if (ledgerName.toLowerCase().startsWith("ut/sgst")) {
+      // For 'ut/sgst' ledgers, the GST duty head remains "CGST".
+      gstDutyHead = "CGST";
+    }
 
-        // Determine the TAXTYPE: default is "GST" but for ut/sgst we override to "CGST".
-        let taxType = "GST";
-        if (ledgerName.toLowerCase().startsWith("ut/sgst")) {
-            taxType = "CGST";
-        }
+    // Determine the TAXTYPE: default is "GST" but for ut/sgst we override to "CGST".
+    let taxType = "GST";
+    if (ledgerName.toLowerCase().startsWith("ut/sgst")) {
+      taxType = "CGST";
+    }
 
-        // Create the XML ledger definition.
-        const xmlLedger = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
+    // Create the XML ledger definition.
+    const xmlLedger = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
     <LEDGER NAME="${ledgerName}" RESERVEDNAME="">
       <OLDAUDITENTRYIDS.LIST TYPE="Number">
         <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
@@ -451,10 +451,10 @@ export function createTaxLedgers(taxLedgers: string[]): string {
     </LEDGER>
   </TALLYMESSAGE>`;
 
-        xmlOutput += xmlLedger + "\n";
-    });
+    xmlOutput += xmlLedger + "\n";
+  });
 
-    return xmlOutput;
+  return xmlOutput;
 }
 
 
@@ -462,8 +462,8 @@ export function createTaxLedgers(taxLedgers: string[]): string {
  * Interface defining the expected structure of a unit object.
  */
 export interface Unit {
-    name: string;
-    decimal: number;
+  name: string;
+  decimal: number;
 }
 
 /**
@@ -474,34 +474,34 @@ export interface Unit {
  * @throws Error if the payload is not an array.
  */
 export function createUnits(units: unknown): string {
-    if (!Array.isArray(units)) {
-        throw new Error("Payload must be an array of unit objects.");
+  if (!Array.isArray(units)) {
+    throw new Error("Payload must be an array of unit objects.");
+  }
+
+  let xmlOutput = "";
+  // Base values for generating GUID suffix and ALTERID.
+  const baseGUID = "bf911d27-633e-4ad7-ba7c-a871d6f9461e-";
+  const startingSuffix = 263; // starting numerical value for the GUID suffix (example: 00000263)
+  const baseAlterID = 1005; // starting alterID value
+
+  // Loop over each unit in the payload to generate XML for each.
+  (units as Unit[]).forEach((unit, index) => {
+    const { name, decimal } = unit;
+
+    // Basic check on individual properties.
+    if (!name || typeof decimal === "undefined") {
+      // Skip this entry. Alternatively, you could log or throw an error here.
+      return;
     }
 
-    let xmlOutput = "";
-    // Base values for generating GUID suffix and ALTERID.
-    const baseGUID = "bf911d27-633e-4ad7-ba7c-a871d6f9461e-";
-    const startingSuffix = 263; // starting numerical value for the GUID suffix (example: 00000263)
-    const baseAlterID = 1005; // starting alterID value
+    // Generate a pseudo-unique GUID by appending an incremental suffix.
+    const guidSuffix = (startingSuffix + index).toString().padStart(8, "0");
+    const guid = baseGUID + guidSuffix;
+    // Calculate the ALTERID based on the index.
+    const alterID = baseAlterID + index;
 
-    // Loop over each unit in the payload to generate XML for each.
-    (units as Unit[]).forEach((unit, index) => {
-        const { name, decimal } = unit;
-
-        // Basic check on individual properties.
-        if (!name || typeof decimal === "undefined") {
-            // Skip this entry. Alternatively, you could log or throw an error here.
-            return;
-        }
-
-        // Generate a pseudo-unique GUID by appending an incremental suffix.
-        const guidSuffix = (startingSuffix + index).toString().padStart(8, "0");
-        const guid = baseGUID + guidSuffix;
-        // Calculate the ALTERID based on the index.
-        const alterID = baseAlterID + index;
-
-        // Create the XML for this unit.
-        const xmlUnit = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
+    // Create the XML for this unit.
+    const xmlUnit = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
       <UNIT NAME="${name}" RESERVEDNAME="">
         <NAME>${name}</NAME>
         <GUID>${guid}</GUID>
@@ -520,11 +520,11 @@ export function createUnits(units: unknown): string {
       </UNIT>
     </TALLYMESSAGE>`;
 
-        // Append the current unit XML to our output.
-        xmlOutput += xmlUnit + "\n";
-    });
+    // Append the current unit XML to our output.
+    xmlOutput += xmlUnit + "\n";
+  });
 
-    return xmlOutput;
+  return xmlOutput;
 }
 
 
@@ -532,12 +532,12 @@ export function createUnits(units: unknown): string {
 * Interface defining the structure of a stock item object.
 */
 export interface StockItem {
-    Product: string;
-    HSN: string;
-    SGST: number;
-    CGST: number;
-    gst: number;
-    symbol: string;
+  Product: string;
+  HSN: string;
+  SGST: number;
+  CGST: number;
+  gst: number;
+  symbol: string;
 }
 
 /**
@@ -548,39 +548,39 @@ export interface StockItem {
  * @throws Error if the payload is not an array.
  */
 export function createStockItems(items: unknown): string {
-    // Validate that the input is an array.
-    if (!Array.isArray(items)) {
-        throw new Error("Payload must be an array of stock item objects.");
+  // Validate that the input is an array.
+  if (!Array.isArray(items)) {
+    throw new Error("Payload must be an array of stock item objects.");
+  }
+
+  let xmlOutput = "";
+  const baseGUID = "bf911d27-633e-4ad7-ba7c-a871d6f9461e-";
+  const startingSuffix = 269; // Starting suffix for GUID (example: "00000269")
+  const baseAlterID = 1011;   // Starting alterID value
+
+  (items as StockItem[]).forEach((item, index) => {
+    const { Product, HSN, SGST, CGST, gst, symbol } = item;
+
+    // Basic validation for required fields.
+    if (
+      !Product ||
+      !HSN ||
+      typeof SGST === "undefined" ||
+      typeof CGST === "undefined" ||
+      typeof gst === "undefined" ||
+      !symbol
+    ) {
+      // Skip this entry. You can also choose to throw an error or log a warning.
+      return;
     }
 
-    let xmlOutput = "";
-    const baseGUID = "bf911d27-633e-4ad7-ba7c-a871d6f9461e-";
-    const startingSuffix = 269; // Starting suffix for GUID (example: "00000269")
-    const baseAlterID = 1011;   // Starting alterID value
+    // Generate a pseudo-unique GUID and ALTERID for each stock item.
+    const guidSuffix = (startingSuffix + index).toString().padStart(8, "0");
+    const guid = baseGUID + guidSuffix;
+    const alterID = baseAlterID + index;
 
-    (items as StockItem[]).forEach((item, index) => {
-        const { Product, HSN, SGST, CGST, gst, symbol } = item;
-
-        // Basic validation for required fields.
-        if (
-            !Product ||
-            !HSN ||
-            typeof SGST === "undefined" ||
-            typeof CGST === "undefined" ||
-            typeof gst === "undefined" ||
-            !symbol
-        ) {
-            // Skip this entry. You can also choose to throw an error or log a warning.
-            return;
-        }
-
-        // Generate a pseudo-unique GUID and ALTERID for each stock item.
-        const guidSuffix = (startingSuffix + index).toString().padStart(8, "0");
-        const guid = baseGUID + guidSuffix;
-        const alterID = baseAlterID + index;
-
-        // Build the XML for the current stock item.
-        const xmlItem = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
+    // Build the XML for the current stock item.
+    const xmlItem = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
       <STOCKITEM NAME="${Product}" RESERVEDNAME="">
         <OLDAUDITENTRYIDS.LIST TYPE="Number">
           <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
@@ -725,10 +725,10 @@ export function createStockItems(items: unknown): string {
       </STOCKITEM>
     </TALLYMESSAGE>`;
 
-        xmlOutput += xmlItem + "\n";
-    });
+    xmlOutput += xmlItem + "\n";
+  });
 
-    return xmlOutput;
+  return xmlOutput;
 }
 
 
@@ -741,16 +741,16 @@ export function createStockItems(items: unknown): string {
 * @throws Error if either name or gst is not provided.
 */
 export function createPartyLedger(name: string, gst: string): string {
-    if (!name || !gst) {
-        throw new Error('Both "name" and "gst" fields are required.');
-    }
+  if (!name || !gst) {
+    throw new Error('Both "name" and "gst" fields are required.');
+  }
 
-    // Generate a pseudo-unique GUID by appending a random hexadecimal integer.
-    const randomSuffix = Math.floor(Math.random() * 10000).toString(16);
-    const guid = `bf911d27-633e-4ad7-ba7c-a871d6f9461e-${randomSuffix}`;
+  // Generate a pseudo-unique GUID by appending a random hexadecimal integer.
+  const randomSuffix = Math.floor(Math.random() * 10000).toString(16);
+  const guid = `bf911d27-633e-4ad7-ba7c-a871d6f9461e-${randomSuffix}`;
 
-    // Construct the XML using a template literal.
-    const xml = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
+  // Construct the XML using a template literal.
+  const xml = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
       <LEDGER NAME="${name}" RESERVEDNAME="">
         <OLDAUDITENTRYIDS.LIST TYPE="Number">
           <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
@@ -964,7 +964,7 @@ export function createPartyLedger(name: string, gst: string): string {
       </LEDGER>
     </TALLYMESSAGE>`;
 
-    return xml;
+  return xml;
 }
 
 
@@ -972,25 +972,25 @@ export function createPartyLedger(name: string, gst: string): string {
  * Interface for a single sale item.
  */
 export interface Item {
-    name: string;
-    price: number;
-    quantity: number;
-    unit: string;
+  name: string;
+  price: number;
+  quantity: number;
+  unit: string;
 }
 
 /**
  * Interface for the Voucher API payload.
  */
 export interface VoucherPayload {
-    invoiceNumber: string;
-    invoiceData: string; // dd-mm-yyyy
-    partyName: string;
-    purchaseLedger: string;
-    items: Item[];
-    sgst: string; // e.g., "10%"
-    cgst: string; // e.g., "10%"
-    igst: string; // e.g., "10%"
-    isWithinState: boolean;
+  invoiceNumber: string;
+  invoiceData: string; // dd-mm-yyyy
+  partyName: string;
+  purchaseLedger: string;
+  items: Item[];
+  sgst: string; // e.g., "10%"
+  cgst: string; // e.g., "10%"
+  igst: string; // e.g., "10%"
+  isWithinState: boolean;
 }
 
 /**
@@ -999,8 +999,8 @@ export interface VoucherPayload {
  * @returns a date string in yyyyMMdd format.
  */
 function formatDate(dateStr: string): string {
-    const [dd, mm, yyyy] = dateStr.split("-");
-    return `${yyyy}${mm.padStart(2, "0")}${dd.padStart(2, "0")}`;
+  const [dd, mm, yyyy] = dateStr.split("-");
+  return `${yyyy}${mm.padStart(2, "0")}${dd.padStart(2, "0")}`;
 }
 
 /**
@@ -1009,7 +1009,7 @@ function formatDate(dateStr: string): string {
  * @returns the numeric percentage (e.g., 10)
  */
 function parsePercentage(percentStr: string): number {
-    return parseFloat(percentStr.replace("%", ""));
+  return parseFloat(percentStr.replace("%", ""));
 }
 
 /**
@@ -1023,88 +1023,92 @@ function parsePercentage(percentStr: string): number {
  * @throws Error if required fields are missing.
  */
 export function createVoucher(payload: VoucherPayload): string {
-    const {
-        invoiceNumber,
-        invoiceData,
-        partyName,
-        purchaseLedger,
-        items,
-        sgst,
-        cgst,
-        igst,
-        isWithinState,
-    } = payload;
+  const {
+    invoiceNumber,
+    invoiceData,
+    partyName,
+    purchaseLedger,
+    items,
+    sgst,
+    cgst,
+    igst,
+    isWithinState,
+  } = payload;
 
-    // Basic validation.
-    if (!invoiceNumber || !invoiceData || !partyName || !purchaseLedger || !items) {
-        throw new Error("Missing required fields in voucher payload.");
-    }
+  // Basic validation.
+  if (!invoiceNumber || !invoiceData || !partyName || !purchaseLedger || !items) {
+    throw new Error("Missing required fields in voucher payload.");
+  }
 
-    // Format the invoice date.
-    const formattedDate = formatDate(invoiceData);
+  // Format the invoice date.
+  const formattedDate = formatDate(invoiceData);
 
-    // Generate a pseudo-unique voucher GUID (for demonstration, you may use a proper generator in production).
-    const voucherGUID = `bf911d27-633e-4ad7-ba7c-a871d6f9461e-${Math.floor(Math.random() * 1000000).toString().padStart(8, "0")}`;
+  // Generate a pseudo-unique voucher GUID (for demonstration, you may use a proper generator in production).
+  const voucherGUID = `bf911d27-633e-4ad7-ba7c-a871d6f9461e-${Math.floor(Math.random() * 1000000)
+    .toString()
+    .padStart(8, "0")}`;
 
-    // Compute the total value of all items.
-    const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  // Compute the total value of all items.
+  const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-    // Compute applicable tax amounts.
-    let cgstAmount = 0, sgstAmount = 0, igstAmount = 0;
-    if (isWithinState) {
-        const cgstRate = parsePercentage(cgst) / 100;
-        const sgstRate = parsePercentage(sgst) / 100;
-        cgstAmount = totalAmount * cgstRate;
-        sgstAmount = totalAmount * sgstRate;
-    } else {
-        const igstRate = parsePercentage(igst) / 100;
-        igstAmount = totalAmount * igstRate;
-    }
+  // Compute applicable tax amounts.
+  let cgstAmount = 0, sgstAmount = 0, igstAmount = 0;
+  if (isWithinState) {
+    const cgstRate = parsePercentage(cgst) / 100;
+    const sgstRate = parsePercentage(sgst) / 100;
+    cgstAmount = totalAmount * cgstRate;
+    sgstAmount = totalAmount * sgstRate;
+  } else {
+    const igstRate = parsePercentage(igst) / 100;
+    igstAmount = totalAmount * igstRate;
+  }
 
-    // Build the ALLINVENTORYENTRIES.LIST section using a loop over items.
-    const inventoryEntriesXml = items
-        .map((item) => {
-            const itemTotal = item.price * item.quantity;
-            return `<ALLINVENTORYENTRIES.LIST>
+  // Build the ALLINVENTORYENTRIES.LIST section using a loop over items.
+  const inventoryEntriesXml = items
+    .map((item) => {
+      const itemTotal = item.price * item.quantity;
+      return `<ALLINVENTORYENTRIES.LIST>
     <STOCKITEMNAME>${item.name}</STOCKITEMNAME>
     <RATE>${item.price}</RATE>
     <AMOUNT>${itemTotal.toFixed(2)}</AMOUNT>
     <BILLEDQTY>${item.quantity} ${item.unit}</BILLEDQTY>
   </ALLINVENTORYENTRIES.LIST>`;
-        })
-        .join("\n");
+    })
+    .join("\n");
 
-    // Build the tax ledger entries.
-    // When within state, add two separate ledger entries for CGST and SGST.
-    // Otherwise, add one ledger entry for IGST.
-    let taxLedgerEntriesXml = "";
-    if (isWithinState) {
-        // CGST ledger entry.
-        taxLedgerEntriesXml += `<LEDGERENTRIES.LIST>
-    <LEDGERNAME>cgst0%</LEDGERNAME>
+  // Build dynamic tax ledger entries based on the passed values.
+  let taxLedgerEntriesXml = "";
+  if (isWithinState) {
+    // Construct dynamic names for CGST and SGST.
+    // For SGST, if an "isUt" flag is provided, you could use "Ut/Sgst" instead.
+    const dynamicCgstName = `Cgst${cgst}`;
+    const dynamicSgstName = `Ut/Sgst${sgst}`
+
+    taxLedgerEntriesXml += `<LEDGERENTRIES.LIST>
+    <LEDGERNAME>${dynamicCgstName}</LEDGERNAME>
     <AMOUNT>${(-cgstAmount).toFixed(2)}</AMOUNT>
   </LEDGERENTRIES.LIST>
   <LEDGERENTRIES.LIST>
-    <LEDGERNAME>sgst0%</LEDGERNAME>
+    <LEDGERNAME>${dynamicSgstName}</LEDGERNAME>
     <AMOUNT>${(-sgstAmount).toFixed(2)}</AMOUNT>
   </LEDGERENTRIES.LIST>`;
-    } else {
-        // IGST ledger entry.
-        taxLedgerEntriesXml += `<LEDGERENTRIES.LIST>
-    <LEDGERNAME>igst0%</LEDGERNAME>
+  } else {
+    // Dynamic IGST ledger entry.
+    const dynamicIgstName = `Igst${igst}`;
+    taxLedgerEntriesXml += `<LEDGERENTRIES.LIST>
+    <LEDGERNAME>${dynamicIgstName}</LEDGERNAME>
     <AMOUNT>${(-igstAmount).toFixed(2)}</AMOUNT>
   </LEDGERENTRIES.LIST>`;
-    }
+  }
 
-    // For demonstration purposes, we include a simple purchase ledger entry.
-    const purchaseLedgerEntryXml = `<LEDGERENTRIES.LIST>
+  // Create the purchase ledger entry.
+  const purchaseLedgerEntryXml = `<LEDGERENTRIES.LIST>
     <LEDGERNAME>${purchaseLedger}</LEDGERNAME>
     <AMOUNT>${totalAmount.toFixed(2)}</AMOUNT>
   </LEDGERENTRIES.LIST>`;
 
-    // Assemble the entire voucher XML.
-    // Note: The structure below is a simplified version based on the provided sample.
-    const xml = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
+  // Assemble the full voucher XML.
+  const xml = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
     <VOUCHER REMOTEID="${voucherGUID}" VCHTYPE="Purchase" ACTION="Create" OBJVIEW="Invoice Voucher View">
       <OLDAUDITENTRYIDS.LIST TYPE="Number">
         <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
@@ -1118,14 +1122,51 @@ export function createVoucher(payload: VoucherPayload): string {
       <REFERENCE>${invoiceNumber}</REFERENCE>
       <PARTYLEDGERNAME>${partyName}</PARTYLEDGERNAME>
       <VOUCHERTYPENAME>Purchase</VOUCHERTYPENAME>
-      <!-- Inventory entries for each item -->
       ${inventoryEntriesXml}
-      <!-- Purchase Ledger Entry -->
-      ${purchaseLedgerEntryXml}
-      <!-- Tax Ledger Entries based on isWithinState -->
-      ${taxLedgerEntriesXml}
+     ${purchaseLedgerEntryXml}
+     ${taxLedgerEntriesXml}
     </VOUCHER>
   </TALLYMESSAGE>`;
 
-    return xml;
+  return xml;
+}
+
+// ----------------------------------------------------------------------------
+
+
+import { parseStringPromise } from 'xml2js';
+
+/**
+ * Extracts LEDGER names from a Tally XML string.
+ *
+ * @param xmlData - The XML string to parse.
+ * @returns A promise that resolves to an array of LEDGER names.
+ */
+export const getLedgerNames = async (xmlData: string): Promise<string[]> => {
+  try {
+    // Parse the XML with explicitArray: false so that single elements are not wrapped in an array.
+    const result = await parseStringPromise(xmlData, { explicitArray: false });
+    
+    // Navigate to the LEDGER elements:
+    // Expected path: ENVELOPE -> BODY -> DATA -> COLLECTION -> LEDGER
+    const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
+    if (!collection) {
+      throw new Error("Cannot find COLLECTION element in the XML.");
+    }
+    
+    // The LEDGER elements might either be an array or a single object
+    const ledgers = collection.LEDGER;
+    let ledgerNames: string[] = [];
+    
+    if (Array.isArray(ledgers)) {
+      ledgerNames = ledgers.map((ledger: any) => ledger.$.NAME);
+    } else if (ledgers && ledgers.$) {
+      ledgerNames.push(ledgers.$.NAME);
+    }
+    
+    return ledgerNames;
+  } catch (error) {
+    console.error("Error parsing XML to get ledger names:", error);
+    throw error;
+  }
 }

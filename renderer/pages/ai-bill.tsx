@@ -971,35 +971,36 @@ export default function BillWorkflow() {
         updatedUnits
       );
 
-      const responsePartyName = await window.electron.exportAndCreatePartyNameEntry(purchaserName, gst)
-      if (responsePartyName.success) {
-        const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
-        if (purchaserLedgerResponse?.success) {
-          const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
-          if (allLedgerResponse?.success) {
-            const unitResponse = await window.electron.exportUnit(updatedUnits);
-            if (unitResponse?.success) {
-              const itemResponse = await window.electron.exportItem(updatedItemsForExport);
-              console.log(itemResponse, "here is item response")
-              if (itemResponse?.success) {
-                const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, "Purchase", updatedPurchaseEntryItem, true);
-                console.log(response, "response for purchaser")
-                if (response?.success) {
-                  alert("Purchase Entry Create")
-                } else {
-                  alert("Error: while create purchaser entry")
-                }
-              } else {
-                alert("Error: while creating item")
-              }
-            } else {
-              alert("Error: while creating unit ")
-            }
-          }
-        }
-      }
-    } else {
-      console.log("No bill data found");
+    //   const responsePartyName = await window.electron.exportAndCreatePartyNameEntry(purchaserName, gst)
+    //   if (responsePartyName.success) {
+    //     const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
+    //     if (purchaserLedgerResponse?.success) {
+    //       const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
+    //       if (allLedgerResponse?.success) {
+    //         const unitResponse = await window.electron.exportUnit(updatedUnits);
+    //         if (unitResponse?.success) {
+    //           const itemResponse = await window.electron.exportItem(updatedItemsForExport);
+    //           console.log(itemResponse, "here is item response")
+    //           if (itemResponse?.success) {
+    //             const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, "Purchase", updatedPurchaseEntryItem, true);
+    //             console.log(response, "response for purchaser")
+    //             if (response?.success) {
+    //               alert("Purchase Entry Create")
+    //             } else {
+    //               alert("Error: while create purchaser entry")
+    //             }
+    //           } else {
+    //             alert("Error: while creating item")
+    //           }
+    //         } else {
+    //           alert("Error: while creating unit ")
+    //         }
+    //       }
+    //     }
+    //   }
+    // } else {
+    //   console.log("No bill data found");
+    // }
     }
   };
 

@@ -51,22 +51,28 @@ contextBridge.exposeInMainWorld('electron', {
   createItem: (itemName: string, symbol: string, decimal: number, hsn: number, gst: number) =>
     ipcRenderer.invoke('create-item', itemName, symbol, decimal, hsn, gst),
 
-  createPurchaseEntry: (invoiceNumber: string,
-    date: string,
-    partyName: string,
-    purchaseLedger: string,
+  createPurchaseEntry: (payload: {
+    invoiceNumber: string;
+    invoiceData: string;
+    partyName: string;
+    purchaseLedger: string;
     items: {
       name: string;
       quantity: number;
       price: number;
-      cgst: number;
-      sgst: number;
-      igst: number;
-    }[],
-    isWithinState: boolean) =>
-    ipcRenderer.invoke('create-purchase-entry', invoiceNumber, date, partyName, purchaseLedger, items, isWithinState),
+      unit?: string;
+    }[];
+    sgst: string;
+    cgst: string;
+    igst: string;
+    isWithinState: boolean;
+  }) =>
+    ipcRenderer.invoke('create-purchase-entry', payload),
+
+    getTaxLedgerData: (xmlData: string) => ipcRenderer.invoke('get-tax-ledger-data', xmlData),
 
 });
+
 
 contextBridge.exposeInMainWorld('ipc', handler)
 

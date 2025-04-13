@@ -3,7 +3,8 @@ import { exec, execSync } from 'child_process';
 import Store from 'electron-store';
 import * as fs from 'fs';
 import { parseStringPromise } from 'xml2js';
-import { createPartyLedger, createPurchaserLedger, createStockItems, createTaxLedgers, createUnits } from '../../service/commonFunction';
+import { createPartyLedger, createPurchaserLedger, createStockItems, createTaxLedgers, createUnits, createVoucher, VoucherPayload } from '../../service/commonFunction';
+import axios from 'axios';
 
 export const createWindow = (windowName: string, options: BrowserWindowConstructorOptions): BrowserWindow => {
   const key = 'window-state';
@@ -564,17 +565,17 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
           // Append "%" for the existence check
           const targetLedgerName = ledgerType === "purchase accounts" ? ledgerName : ledgerName;
 
-           
+
           const ledgerExists = ledgers.some((ledger: any) =>
             ledger.$?.NAME?.toLowerCase() === targetLedgerName.toLowerCase()
           );
           console.log(`Ledger "${targetLedgerName}" found: ${ledgerExists}`);
 
-          if(!ledgerExists){
+          if (!ledgerExists) {
             result.push(targetLedgerName)
           }
 
-          
+
           // if (!ledgerExists) {
           //   // Append "+5" while creating the ledger
           //   const newLedgerName = ledgerType === "purchase accounts" ? ledgerName : `${ledgerName}+5`;
@@ -720,7 +721,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     if (missingUnits.length > 0) {
       console.log(`Missing units: ${missingUnits.map(u => u.name).join(', ')}`);
 
-      console.log(missingUnits,"missing units")
+      console.log(missingUnits, "missing units")
 
       // for (const unit of missingUnits) {
       //   console.log(`Creating unit "${unit.Name}"...`);
@@ -992,7 +993,138 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   }
 
+  async function getLedgerNames(xmlData: string): Promise<string[]> {
+    try {
+      // Parse the XML with explicitArray: false so that single elements are not wrapped in an array.
+      const result = await parseStringPromise(xmlData, { explicitArray: false });
 
+      // Navigate to the LEDGER elements:
+      // Expected path: ENVELOPE -> BODY -> DATA -> COLLECTION -> LEDGER
+      const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
+      if (!collection) {
+        throw new Error("Cannot find COLLECTION element in the XML.");
+      }
+
+      // The LEDGER elements might either be an array or a single object
+      const ledgers = collection.LEDGER;
+      let ledgerNames: string[] = [];
+
+      if (Array.isArray(ledgers)) {
+        ledgerNames = ledgers.map((ledger: any) => ledger.$.NAME);
+      } else if (ledgers && ledgers.$) {
+        ledgerNames.push(ledgers.$.NAME);
+      }
+
+      return ledgerNames;
+    } catch (error) {
+      console.error("Error parsing XML to get ledger names:", error);
+      throw error;
+    }
+  }
+
+  const getMissingLedgers = (existingLedgers: string[]): string[] => {
+    // Expected ledger names list.
+    const expectedLedgers = [
+      "Cgst 0%",
+      "Cgst 14%",
+      "Cgst 2.5%",
+      "Cgst 6%",
+      "Cgst 9%",
+      "Igst 0%",
+      "Igst 12%",
+      "Igst 18%",
+      "Igst 28%",
+      "Igst 5%",
+      "Ut/Sgst 0%",
+      "Ut/Sgst 14%",
+      "Ut/Sgst 2.5%",
+      "Ut/Sgst 6%",
+      "Ut/Sgst 9%"
+    ];
+
+    // Compare the expected list with the existing list,
+    // and return those items that are not present.
+    const missing = expectedLedgers.filter(
+      expected => !existingLedgers.includes(expected)
+    );
+
+    return missing;
+  };
+
+  /**
+ * Asynchronously generates an XML payload from the provided ledger names,
+ * sends it to the Tally server via HTTP POST, and returns the server response.
+ *
+ * The TAXTYPE is set based on the following rules:
+ * - If the ledger name contains "Igst", TAXTYPE is "IGST"
+ * - If the ledger name contains "Cgst" or "Ut/Sgst", TAXTYPE is "CGST"
+ *
+ * @param ledgers - An array of ledger names.
+ * @returns An object containing success status, Tally's response data, and the XML payload.
+ */
+  async function createLawLedger(ledgers: string[]): Promise<any> {
+    try {
+      // Build the XML envelope header and body start.
+      let xmlPayload = `<ENVELOPE>
+  <HEADER>
+    <TALLYREQUEST>Import Data</TALLYREQUEST>
+  </HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC>
+        <REPORTNAME>All Masters</REPORTNAME>
+      </REQUESTDESC>
+      <REQUESTDATA>
+`;
+
+      // Loop through the ledger names and generate each TALLYMESSAGE block
+      for (const ledgerName of ledgers) {
+        // Determine the tax type based on the ledger name.
+        let taxType: string;
+        if (ledgerName.includes("Igst")) {
+          taxType = "IGST";
+        } else if (ledgerName.includes("Cgst") || ledgerName.includes("Ut/Sgst")) {
+          taxType = "CGST";
+        } else {
+          taxType = ""; // You may set a default if needed.
+        }
+
+        xmlPayload += `        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <LEDGER Action="Create">
+            <NAME>${ledgerName}</NAME>
+            <PARENT>Duties &amp; Taxes</PARENT>
+            <TAXTYPE>${taxType}</TAXTYPE>
+          </LEDGER>
+        </TALLYMESSAGE>
+`;
+      }
+
+      // Close the XML envelope.
+      xmlPayload += `      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>`;
+
+      // Calculate content length (in bytes) from the XML data.
+      const contentLength = Buffer.byteLength(xmlPayload, 'utf8');
+
+      // Send the XML payload to Tally (adjust the URL if needed)
+      const response = await axios.post('http://localhost:9000', xmlPayload, {
+        headers: {
+          'Content-Type': 'application/xml',
+          'Content-Length': contentLength, // Setting the Content-Length header.
+        },
+      });
+
+      return { success: true, data: response };
+
+    } catch (error: any) {
+      console.error("Error in importLedgers function:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------------------------------------
 
   // IPC handler to bring Tally to the foreground and send multiple keystrokes
   ipcMain.handle('bring-tally-to-foreground-and-send-keys', async (_, keys: string[]) => {
@@ -1091,27 +1223,134 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   });
 
-  ipcMain.handle('create-purchase-entry', async (_, invoiceNumber: string,
-    date: string,
-    partyName: string,
-    purchaseLedger: string,
+  // ipcMain.handle('create-purchase-entry', async (_, invoiceNumber: string,
+  //   date: string,
+  //   partyName: string,
+  //   purchaseLedger: string,
+  //   items: {
+  //     name: string;
+  //     quantity: number;
+  //     price: number;
+  //     cgst: number;
+  //     sgst: number;
+  //     igst: number;
+  //   }[],
+  //   isWithinState: boolean) => {
+  //   try {
+  //     // await createPurchaseEntry(invoiceNumber, date, partyName, purchaseLedger, items, isWithinState);
+  //     return { success: true };
+  //   } catch (error) {
+  //     console.error('Error creating purchase entry:', error);
+  //     return { success: false, error: error.message };
+  //   }
+  // });
+
+
+  ipcMain.handle('create-purchase-entry', async (_, payload: {
+    invoiceNumber: string;
+    invoiceData: string;
+    partyName: string;
+    purchaseLedger: string;
     items: {
       name: string;
       quantity: number;
       price: number;
-      cgst: number;
-      sgst: number;
-      igst: number;
-    }[],
-    isWithinState: boolean) => {
+      unit?: string;
+    }[];
+    sgst: string;
+    cgst: string;
+    igst: string;
+    isWithinState: boolean;
+  }) => {
     try {
-      await createPurchaseEntry(invoiceNumber, date, partyName, purchaseLedger, items, isWithinState);
-      return { success: true };
-    } catch (error) {
+      // Destructure payload.
+      const {
+        invoiceNumber,
+        invoiceData,
+        partyName,
+        purchaseLedger,
+        items,
+        sgst,
+        cgst,
+        igst,
+        isWithinState,
+      } = payload;
+
+      // Build the voucher payload.
+      // Now we use the top-level tax values instead of relying on the first item.
+      const voucherPayload: VoucherPayload = {
+        invoiceNumber,
+        invoiceData, // expects dd-mm-yyyy format
+        partyName,
+        purchaseLedger,
+        items: items.map((item) => ({
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          // Use provided unit if available, otherwise default to "PCS"
+          unit: item.unit || "PCS",
+        })),
+        sgst,
+        cgst,
+        igst,
+        isWithinState,
+      };
+
+      // Call the voucher generator to create the voucher XML.
+      const voucherXml = createVoucher(voucherPayload);
+
+      console.log(voucherXml, "voucherXml");
+
+      // Optionally, persist or further process the voucher.
+      return { success: true, voucherXml };
+    } catch (error: any) {
       console.error('Error creating purchase entry:', error);
       return { success: false, error: error.message };
     }
   });
+
+  ipcMain.handle('get-tax-ledger-data', async (_, xmlData: string) => {
+    try {
+      // Calculate content length (in bytes) from the XML data.
+      const contentLength = Buffer.byteLength(xmlData, 'utf8');
+
+      // Make the HTTP request to your endpoint.
+      const response = await axios({
+        method: 'POST',
+        url: 'http://localhost:9000', // Replace or make configurable as needed.
+        headers: {
+          'Content-Type': 'application/xml',
+          'Content-Length': contentLength, // Setting the Content-Length header.
+        },
+        data: xmlData,
+      });
+
+      console.log(response, "here is the get response")
+
+      const filterResponse = await getLedgerNames(response.data)
+
+      console.log(filterResponse, "here i sfiletre resonse")
+
+      const missingLedgerResponse = getMissingLedgers(filterResponse)
+
+      console.log(missingLedgerResponse, "missingLedgerResponse")
+
+      if (missingLedgerResponse?.length > 0) {
+
+        const createLawLedgerResponse = await createLawLedger(missingLedgerResponse)
+        console.log(missingLedgerResponse, "missingLedgerResponse", createLawLedgerResponse, "createLawLedgerResponse")
+      }
+
+
+
+      // Return the data to the renderer process.
+      return { success: true, data: response.data, ledgerName: filterResponse };
+    } catch (error: any) {
+      console.error('Error in send-tally-xml IPC handler:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
 
   return win;
 };
