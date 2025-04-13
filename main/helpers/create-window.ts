@@ -331,667 +331,667 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     return content;
   }
 
-  // ALL FUNCTION TO START CREATING BILL 
-  async function exportAndGetPartyName(partyName: string, gst: string): Promise<any> {
-    try {
-
-      // Step 1: Get Tally installation path and set file path
-      const tallyInstallPath = await getTallyInstallPath();
-      const exportedFilePath = `${tallyInstallPath}\\master.xml`;
-      console.log(`Tally installation path: ${tallyInstallPath}`);
-      console.log(`Exporting file to: ${exportedFilePath}`);
-
-      // Step 2: Trigger Tally export (single export for all ledgers)
-      const keys = ['open tally', '%e', 'm', 'e', '{ENTER}', 'prompt here', 'y'];
-      await bringTallyToForegroundAndSendKeys(keys, 1000);
-      // console.log('Tally export triggered successfully.');
-
-      // Step 3: Wait to ensure file is fully exported
-      // console.log('Waiting for the file to be exported...');
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Step 4: Check if the exported file exists
-      if (!fs.existsSync(exportedFilePath)) {
-        throw new Error(`Exported file not found at ${exportedFilePath}.`);
-      }
-
-      // Step 5: Read and clean XML file
-      let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
-      xmlData = removeBOM(xmlData);
-      // console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
-
-      // Step 6: Validate XML content
-      if (!xmlData.trim().startsWith('<ENVELOPE>')) {
-        throw new Error('File content is not valid XML.');
-      }
-
-      // Step 7: Parse XML
-      const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
-      // console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
-
-      // Step 8: Extract LEDGER details
-      const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
-      if (!tallyMessages) {
-        throw new Error('No TALLYMESSAGE found in the XML file.');
-      }
-      const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
-      const ledgers = messagesArray.map((msg: any) => msg.LEDGER).filter(Boolean);
-
-      const targetLedgerName = partyName;
-      const ledgerExists = ledgers.some((ledger) => {
-        const ledgerName = ledger.$?.NAME;
-        const parentElement = ledger.PARENT
-
-        const nameMatch = ledgerName?.toLowerCase() === targetLedgerName?.toLowerCase();
-        const parentMatch = parentElement?.toLowerCase() === "sundry creditors";
-
-        // Debug output for each ledger
-        console.log(`Checking ledger: ${ledgerName}`);
-        console.log(`Parent value: ${parentElement}`);
-        console.log(`Name match: ${nameMatch}, Parent match: ${parentMatch}`);
-
-        return nameMatch && parentMatch;
-      });
-
-
-      console.log(`Ledger "${partyName}" found: ${ledgerExists}`);
-
-      if (!ledgerExists) {
-        // await bringTallyToForegroundAndSendKeys(['open tally'])
-        // await createPartyNameEntry(partyName, gst);
-        const response = createPartyLedger(partyName, gst)
-        return response
-
-      }
-
-      return partyName
-
-    } catch (error) {
-      console.error('Error in exportAndCheckLedger:', error);
-      throw error;
-    }
-  }
-
-  async function createPartyNameEntry(
-    partyName: string,
-    gst: string,
-  ): Promise<void> {
-    try {
-
-      // Build the initial keys array for invoice header details
-      const keys = [
-        'c',
-        'l',
-        'e',
-        'd',
-        'g',
-        'e',
-        'r',
-        '{ENTER}',
-        partyName,
-        '{ENTER}',
-        '{ENTER}',
-        's',
-        'u',
-        'n',
-        'd',
-        'r',
-        'y',
-        ' ',
-        'c',
-        'r',
-        'e',
-        'd',
-        'i',
-        't',
-        'o',
-        'r',
-        's',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        gst,
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        '{ENTER}',
-        'prompt here',
-        'y',
-        '{ESC}',
-        'prompt here',
-        'y',
-        '{ESC}',
-      ];
-
-      await bringTallyToForegroundAndSendKeys(keys);
-    } catch (error) {
-      console.error('Error creating purchase ledger:', error);
-      throw error;
-    }
-  }
-
-  async function exportAndCheckLedger(ledgerNames: string | string[], ledgerType: string): Promise<void> {
-    try {
-      // Convert ledgerNames to an array if it isn't already iterable.
-      const ledgerNamesArray = Array.isArray(ledgerNames) ? ledgerNames : ledgerNames;
-      // Step 1: Get Tally installation path and set file path
-      const tallyInstallPath = await getTallyInstallPath();
-      const exportedFilePath = `${tallyInstallPath}\\master.xml`;
-      console.log(`Tally installation path: ${tallyInstallPath}`);
-      console.log(`Exporting file to: ${exportedFilePath}`);
-
-      // Step 2: Trigger Tally export (single export for all ledgers)
-      const keys = ['open tally', '%e', 'm', 'e', '{ENTER}', 'prompt here', 'y'];
-      await bringTallyToForegroundAndSendKeys(keys, 1000);
-      // console.log('Tally export triggered successfully.');
-
-      // Step 3: Wait to ensure file is fully exported
-      // console.log('Waiting for the file to be exported...');
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Step 4: Check if the exported file exists
-      if (!fs.existsSync(exportedFilePath)) {
-        throw new Error(`Exported file not found at ${exportedFilePath}.`);
-      }
-
-      // Step 5: Read and clean XML file
-      let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
-      xmlData = removeBOM(xmlData);
-      // console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
-
-      // Step 6: Validate XML content
-      if (!xmlData.trim().startsWith('<ENVELOPE>')) {
-        throw new Error('File content is not valid XML.');
-      }
-
-      // Step 7: Parse XML
-      const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
-      // console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
-
-      // Step 8: Extract LEDGER details
-      const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
-      if (!tallyMessages) {
-        throw new Error('No TALLYMESSAGE found in the XML file.');
-      }
-      const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
-      const ledgers = messagesArray.map((msg: any) => msg.LEDGER).filter(Boolean);
-
-      // Step 9: Check each ledger and create if missing
-      if (ledgerType === "purchase accounts") {
-        const targetLedgerName = ledgerNamesArray;
-        const ledgerExists = ledgers.some((ledger) => {
-          const ledgerName = ledger.$?.NAME;
-          const parentElement = ledger.PARENT
-
-          const nameMatch = ledgerName?.toLowerCase() === targetLedgerName?.toLowerCase();
-          const parentMatch = parentElement?.toLowerCase() === "purchase accounts";
-
-          // Debug output for each ledger
-          console.log(`Checking ledger: ${ledgerName}`);
-          console.log(`Parent value: ${parentElement}`);
-          console.log(`Name match: ${nameMatch}, Parent match: ${parentMatch}`);
-
-          return nameMatch && parentMatch;
-        });
-
-        console.log(`Ledger exists: ${ledgerExists}`);
-
-        if (!ledgerExists) {
-          // await bringTallyToForegroundAndSendKeys(['open tally'])
-          // await createPurchaseLedger(ledgerNames);
-          const response = createPurchaserLedger(ledgerNames)
-          return response
-        }
-
-        return ledgerNames
-
-      } else {
-
-        const result = []
-
-        // await bringTallyToForegroundAndSendKeys(['open tally'])
-        for (const ledgerName of ledgerNamesArray) {
-          // Append "%" for the existence check
-          const targetLedgerName = ledgerType === "purchase accounts" ? ledgerName : ledgerName;
-
-
-          const ledgerExists = ledgers.some((ledger: any) =>
-            ledger.$?.NAME?.toLowerCase() === targetLedgerName.toLowerCase()
-          );
-          console.log(`Ledger "${targetLedgerName}" found: ${ledgerExists}`);
-
-          if (!ledgerExists) {
-            result.push(targetLedgerName)
-          }
-
-
-          // if (!ledgerExists) {
-          //   // Append "+5" while creating the ledger
-          //   const newLedgerName = ledgerType === "purchase accounts" ? ledgerName : `${ledgerName}+5`;
-          //   console.log(`Creating ledger "${newLedgerName}"...`);
-
-          //   const lowerName = ledgerName.toLowerCase();
-          //   if (lowerName.includes("igst")) {
-          //     await createIgstLedger(newLedgerName);
-          //   } else if (lowerName.includes("cgst") || lowerName.includes("ut/sgst")) {
-          //     await createCgstLedger(newLedgerName);
-          //   } else {
-          //     console.warn(`No creation function defined for ledger type: ${ledgerName}`);
-          //   }
-
-          // }
-        }
-
-        const response = createTaxLedgers(result)
-        return response
-      }
-    } catch (error) {
-      console.error('Error in exportAndCheckLedger:', error);
-      throw error;
-    }
-  }
-
-  async function createPurchaseLedger(ledgerName: string): Promise<void> {
-    try {
-      // Step 1: Press "c"
-      await bringTallyToForegroundAndSendKeys(['c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}', ledgerName, '{ENTER}', '{ENTER}', 'p', 'u', 'r', 'c', 'h', 'a', 's', 'e', ' ', 'a', 'c', 'c', 'o', 'u', 'n', 't',
-        '{ENTER}', '{ENTER}', 'g', 's', 't', '{ENTER}', 'g', 'o', 'o', 'd', 's', ' ', 'a', 'n', 'd', ' ', 's', 'e', 'r', 'v', 'i', 'c', 'e', 's',
-        '{ENTER}', '^a', '{ESC}', 'prompt here', 'y', '{ESC}']);
-
-    } catch (error) {
-      console.error('Error creating purchase ledger:', error);
-      throw error;
-    }
-  }
-
-  async function createIgstLedger(name: string): Promise<void> {
-    try {
-      // Step 1: Press "c"
-      await bringTallyToForegroundAndSendKeys([
-        'c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}',
-        name, '{ENTER}', '{ENTER}',
-        'D', 'u', 't', 'i', 'e', 's', ' ', '&', ' ', 'T', 'a', 'x', 'e', 's', '{ENTER}',
-        'G', 'S', 'T', '{ENTER}',
-        'I', 'G', 'S', 'T', '{ENTER}', '{ENTER}', '^a', '{ESC}', 'prompt here', 'y', '{ESC}'
-      ]);
-
-    } catch (error) {
-      console.error('Error creating purchase ledger:', error);
-      throw error;
-    }
-  }
-
-  async function createCgstLedger(name: string): Promise<void> {
-    try {
-      // Step 1: Press "c"
-      await bringTallyToForegroundAndSendKeys([
-        'c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}',
-        name, '{ENTER}', '{ENTER}',
-        'D', 'u', 't', 'i', 'e', 's', ' ', '&', ' ', 'T', 'a', 'x', 'e', 's', '{ENTER}',
-        'G', 'S', 'T', '{ENTER}',
-        'C', 'G', 'S', 'T', '{ENTER}', '{ENTER}', '^a', '{ESC}', 'prompt here', 'y', '{ESC}'
-      ]);
-
-    } catch (error) {
-      console.error('Error creating purchase ledger:', error);
-      throw error;
-    }
-  }
-
-  async function exportAndGetUnits(): Promise<any[]> {
-    // Step 1: Get Tally installation path and set file path
-    const tallyInstallPath = await getTallyInstallPath();
-    const exportedFilePath = `${tallyInstallPath}\\master.xml`;
-    console.log(`Tally installation path: ${tallyInstallPath}`);
-    console.log(`Exporting file to: ${exportedFilePath}`);
-
-    // Step 2: Trigger Tally export for units
-    const keys = [
-      'open tally', '%e', 'm', 'c', 'type of master', '{ENTER}', 'units', '{ENTER}', '{ESC}', '{ESC}', 'e',
-      'prompt here', 'y'
-    ];
-    await bringTallyToForegroundAndSendKeys(keys, 1000);
-    console.log('Tally export for units triggered successfully.');
-
-    // Step 3: Wait to ensure file is fully exported
-    console.log('Waiting for the unit file to be exported...');
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Step 4: Ensure the exported file exists
-    if (!fs.existsSync(exportedFilePath)) {
-      throw new Error(`Exported file not found at ${exportedFilePath}.`);
-    }
-
-    // Step 5: Read and clean XML file
-    let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
-    xmlData = removeBOM(xmlData);
-    console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
-
-    // Step 6: Validate XML content
-    if (!xmlData.trim().startsWith('<ENVELOPE>')) {
-      throw new Error('File content is not valid XML.');
-    }
-
-    // Step 7: Parse XML
-    const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
-    console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
-
-    // Step 8: Extract UNIT details
-    const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
-    if (!tallyMessages) {
-      return []; // No units found in the XML export.
-    }
-    const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
-    // Assume each TALLYMESSAGE for units contains a UNIT element
-    const units = messagesArray.map((msg: any) => msg.UNIT).filter(Boolean);
-    return units;
-  }
-
-  // New function: Check and create units if missing
-  async function exportAndCheckUnits(unitsToCheck: Array<{ name: string; decimal?: number }>): Promise<{ results: Array<{ name: string; exists: boolean }> }> {
-    // First export once and get the current units.
-    let existingUnits = await exportAndGetUnits();
-
-    // Loop through provided units to see which ones already exist.
-    const results: Array<{ name: string; exists: boolean }> = [];
-    const missingUnits: Array<{ name: string; decimal?: number }> = [];
-
-    for (const unit of unitsToCheck) {
-      const exists = existingUnits.some((unitElem: any) => unitElem.$?.NAME?.toLowerCase() === unit?.name?.toLowerCase());
-      results.push({ name: unit.name, exists });
-      if (!exists) {
-        missingUnits.push(unit);
-      }
-    }
-
-    // await bringTallyToForegroundAndSendKeys(['open tally'])
-
-    // If there are missing units, create them all.
-    if (missingUnits.length > 0) {
-      console.log(`Missing units: ${missingUnits.map(u => u.name).join(', ')}`);
-
-      console.log(missingUnits, "missing units")
-
-      // for (const unit of missingUnits) {
-      //   console.log(`Creating unit "${unit.Name}"...`);
-      //   await create Unit(unit.Name, unit.conversionRate);
-      // }
-      const response = createUnits(missingUnits)
-      return response
-      // After creation, re-export and verify that the missing units are now present.
-      // existingUnits = await exportAndGetUnits();
-      // Update the results based on the new export.
-      // for (const result of results) {
-      //   result.exists = existingUnits.some((unitElem: any) => unitElem.$?.NAME?.toLowerCase() === result.name.toLowerCase());
-      // }
-    }
-
-    return { results };
-  }
-
-  // Example createUnit function using dynamic parameters
-  async function createUnit(
-    name: string,
-    conversionRate: number
-  ): Promise<void> {
-    try {
-      // Bring Tally to the foreground and send keys for unit creation.
-      // The key sequence below is an example; adjust it to match your Tally workflow.
-      await bringTallyToForegroundAndSendKeys([
-        'c',
-        'u', 'n', 'i', 't',
-        '{ENTER}', // Open unit creation window
-        name, '{ENTER}', '{ENTER}', '{ENTER}',                  // Enter unit name
-        conversionRate !== undefined ? String(conversionRate) : 1,
-        '{ENTER}', // Enter conversion rate (default to 1 if missing)
-        'prompt here', 'y', '{ESC}', 'prompt here', 'y', '{ESC}'        // Complete and exit
-      ]);
-      console.log(`Unit created: ${name}`, conversionRate !== undefined ? String(conversionRate) : '1');
-    } catch (error) {
-      console.error('Error creating unit:', error);
-      throw error;
-    }
-  }
-
-  // Helper function to export the XML file and extract STOCKITEMs
-  async function exportAndGetItems(): Promise<any[]> {
-    // Step 1: Get Tally installation path and set file path
-    const tallyInstallPath = await getTallyInstallPath();
-    const exportedFilePath = `${tallyInstallPath}\\master.xml`;
-    console.log(`Tally installation path: ${tallyInstallPath}`);
-    console.log(`Exporting file to: ${exportedFilePath}`);
-
-    // Step 2: Trigger Tally export for stock items
-    const keys = [
-      'open tally', '%e', 'm', 'c', 'type of master', '{ENTER}',
-      'stock items', '{ENTER}', '{ESC}', '{ESC}', 'e',
-      'prompt here', 'y'
-    ];
-    await bringTallyToForegroundAndSendKeys(keys, 1000);
-    console.log('Tally export triggered successfully.');
-
-    // Step 3: Wait to ensure file is fully exported
-    console.log('Waiting for the file to be exported...');
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Step 4: Ensure the exported file exists
-    if (!fs.existsSync(exportedFilePath)) {
-      throw new Error(`Exported file not found at ${exportedFilePath}.`);
-    }
-
-    // Step 5: Read and clean XML file
-    let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
-    xmlData = removeBOM(xmlData);
-
-    // Step 6: Validate XML content
-    if (!xmlData.trim().startsWith('<ENVELOPE>')) {
-      throw new Error('File content is not valid XML.');
-    }
-
-    // Step 7: Parse XML
-    const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
-
-    // Step 8: Extract STOCKITEM details
-    const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
-    if (!tallyMessages) {
-      return []; // No items found
-    }
-    const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
-    const items = messagesArray.map((msg: any) => msg.STOCKITEM).filter(Boolean);
-    return items;
-  }
-
-  // New function to check and create items if missing
-  async function exportAndCheckItems(itemsToCheck: Array<{
-    Product: string;
-    HSN: string;
-    symbol?: string;
-    decimal?: string | number;
-    gst?: string | number;
-    SGST?: string;
-    CGST?: string;
-  }>): Promise<{ results: Array<{ product: string; exists: boolean }> }> {
-    // First, export once and get the list of existing items
-    let existingItems = await exportAndGetItems();
-    const results: Array<{ product: string; exists: boolean }> = [];
-    const missingItems: Array<typeof itemsToCheck[0]> = [];
-
-    // Check each item against the exported items
-    for (const item of itemsToCheck) {
-      const exists = existingItems.some((stockItem: any) =>
-        stockItem.$?.NAME?.toLowerCase() === item.Product?.toLowerCase()
-      );
-      results.push({ product: item.Product, exists });
-      if (!exists) {
-        missingItems.push(item);
-      }
-    }
-
-    // await bringTallyToForegroundAndSendKeys(['open tally'])
-
-    // If there are missing items, create them
-    if (missingItems.length > 0) {
-      console.log(`Missing items: ${missingItems.map(i => i.Product).join(', ')}`);
-      // for (const item of missingItems) {
-      //   const name = item.Product;
-      //   const symbol = item.symbol || "pcs";
-      //   const decimal = item.decimal !== undefined ? Number(item.decimal) : 0;
-      //   const hsn = item.HSN ? Number(item.HSN) : 0;
-      //   let gstValue: number;
-      //   if (item.gst !== undefined) {
-      //     gstValue = Number(item.gst);
-      //   } else if (item.SGST !== undefined && item.CGST !== undefined) {
-      //     gstValue = Number(item.SGST) + Number(item.CGST);
-      //   } else {
-      //     gstValue = 0;
-      //   }
-      //   console.log(
-      //     `Item "${name}" does not exist. Creating item with symbol "${symbol}", decimal ${decimal}, HSN ${hsn}, and GST ${gstValue}...`
-      //   );
-      //   await createItem(name, symbol, decimal, hsn, gstValue);
-      // }
-
-      // // Re-export to verify that the missing items are now present
-      // existingItems = await exportAndGetItems();
-      // // Update the results based on the new export
-      // for (const result of results) {
-      //   result.exists = existingItems.some((stockItem: any) =>
-      //     stockItem.$?.NAME?.toLowerCase() === result.product.toLowerCase()
-      //   );
-      // }
-
-      const response = createStockItems(missingItems)
-      return response
-
-    }
-
-    return { results };
-  }
-
-
-  async function createItem(name: string, symbol: string, decimal: number, hsn: number, gst: number): Promise<void> {
-    try {
-      console.log("working")
-      // await bringTallyToForegroundAndSendKeys(['prompt here'])
-      await bringTallyToForegroundAndSendKeys([
-        'c', 'i', 't', 'e', 'm', '{ENTER}',  // Open item creation
-        name,
-        '{ENTER}', '{ENTER}',
-        '{ENTER}',
-        symbol, '{ENTER}',     // Enter item name and confirm
-        '{ENTER}', "specify details", '{ENTER}', hsn, '{ENTER}', '{ENTER}', "specify details", '{ENTER}', '{ENTER}', gst, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', 'prompt here', 'y', '{ESC}', '{ESC}',
-        'prompt here', 'y', '{ESC}'  // Create and exit
-      ]);
-    } catch (error) {
-      console.error('Error creating item:', error);
-      throw error;
-    }
-  }
-
-  async function createPurchaseEntry(
-    invoiceNumber: string,
-    date: string,
-    partyName: string,
-    purchaseLedger: string,
-    items: {
-      name: string;
-      quantity: number;
-      price: number;
-      cgst: number;
-      sgst: number;
-      igst: number;
-    }[],
-    isWithinState: boolean
-  ): Promise<void> {
-    try {
-      // Format the date as dd-MM-yyyy (e.g., 02-11-2024)
-      function formatDate(date: string | Date): string {
-        // If the date is a string, check if it's already formatted as dd-mm-yyyy.
-        if (typeof date === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(date)) {
-          return date;
-        }
-
-        // Convert input to a Date object if it isn't already.
-        const dateObj = date instanceof Date ? date : new Date(date);
-
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
-        const year = dateObj.getFullYear();
-
-        return `${day}-${month}-${year}`;
-      }
-
-      // Build the initial keys array for invoice header details
-      const keys = [
-        'open tally',
-        'v',
-        '{F9}',
-        '{F2}',
-        formatDate(date),
-        '{ENTER}',
-        invoiceNumber,
-        '{ENTER}',
-        '{ENTER}',
-        partyName,
-        '{ENTER}',
-        '^a',
-        '^a',
-        // '^a',
-        purchaseLedger,
-        '{ENTER}',
-      ];
-
-      // // Loop through items and add each item entry along with its tax details
-      for (const item of items) {
-        // Add item details: name, quantity, price
-        keys.push(
-          item.name, '{ENTER}',
-          item.quantity?.toString(), '{ENTER}',
-          item.price?.toString(), '{ENTER}',
-          '{ENTER}', '{ENTER}',
-        );
-
-
-        // keys.push('{ENTER}')
-
-        // Insert tax details for the current item
-        if (isWithinState) {
-          // For within-state purchases, add CGST and SGST details for this item
-          keys.push(
-            // `Cgst${item.cgst}`, 
-            // '{ENTER}', '{ENTER}',
-            // `Sgst${item.sgst}`, '{ENTER}', '{ENTER}'
-          );
-        } else {
-          // For out-of-state purchases, add IGST detail for this item
-          keys.push(
-
-            // `Igst${item.igst}%`, '{ENTER}', '{ENTER}'
-          );
-        }
-
-        // Add keys to finalize this item's entry and move to the next row
-      }
-      keys.push('{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}');
-
-      // Send the entire keys array to Tally
-      await bringTallyToForegroundAndSendKeys(keys);
-    } catch (error) {
-      console.error('Error creating purchase ledger:', error);
-      throw error;
-    }
-  }
+  // // ALL FUNCTION TO START CREATING BILL 
+  // async function exportAndGetPartyName(partyName: string, gst: string): Promise<any> {
+  //   try {
+
+  //     // Step 1: Get Tally installation path and set file path
+  //     const tallyInstallPath = await getTallyInstallPath();
+  //     const exportedFilePath = `${tallyInstallPath}\\master.xml`;
+  //     console.log(`Tally installation path: ${tallyInstallPath}`);
+  //     console.log(`Exporting file to: ${exportedFilePath}`);
+
+  //     // Step 2: Trigger Tally export (single export for all ledgers)
+  //     const keys = ['open tally', '%e', 'm', 'e', '{ENTER}', 'prompt here', 'y'];
+  //     await bringTallyToForegroundAndSendKeys(keys, 1000);
+  //     // console.log('Tally export triggered successfully.');
+
+  //     // Step 3: Wait to ensure file is fully exported
+  //     // console.log('Waiting for the file to be exported...');
+  //     await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  //     // Step 4: Check if the exported file exists
+  //     if (!fs.existsSync(exportedFilePath)) {
+  //       throw new Error(`Exported file not found at ${exportedFilePath}.`);
+  //     }
+
+  //     // Step 5: Read and clean XML file
+  //     let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
+  //     xmlData = removeBOM(xmlData);
+  //     // console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
+
+  //     // Step 6: Validate XML content
+  //     if (!xmlData.trim().startsWith('<ENVELOPE>')) {
+  //       throw new Error('File content is not valid XML.');
+  //     }
+
+  //     // Step 7: Parse XML
+  //     const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
+  //     // console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
+
+  //     // Step 8: Extract LEDGER details
+  //     const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
+  //     if (!tallyMessages) {
+  //       throw new Error('No TALLYMESSAGE found in the XML file.');
+  //     }
+  //     const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
+  //     const ledgers = messagesArray.map((msg: any) => msg.LEDGER).filter(Boolean);
+
+  //     const targetLedgerName = partyName;
+  //     const ledgerExists = ledgers.some((ledger) => {
+  //       const ledgerName = ledger.$?.NAME;
+  //       const parentElement = ledger.PARENT
+
+  //       const nameMatch = ledgerName?.toLowerCase() === targetLedgerName?.toLowerCase();
+  //       const parentMatch = parentElement?.toLowerCase() === "sundry creditors";
+
+  //       // Debug output for each ledger
+  //       console.log(`Checking ledger: ${ledgerName}`);
+  //       console.log(`Parent value: ${parentElement}`);
+  //       console.log(`Name match: ${nameMatch}, Parent match: ${parentMatch}`);
+
+  //       return nameMatch && parentMatch;
+  //     });
+
+
+  //     console.log(`Ledger "${partyName}" found: ${ledgerExists}`);
+
+  //     if (!ledgerExists) {
+  //       // await bringTallyToForegroundAndSendKeys(['open tally'])
+  //       // await createPartyNameEntry(partyName, gst);
+  //       const response = createPartyLedger(partyName, gst)
+  //       return response
+
+  //     }
+
+  //     return partyName
+
+  //   } catch (error) {
+  //     console.error('Error in exportAndCheckLedger:', error);
+  //     throw error;
+  //   }
+  // }
+
+  // async function createPartyNameEntry(
+  //   partyName: string,
+  //   gst: string,
+  // ): Promise<void> {
+  //   try {
+
+  //     // Build the initial keys array for invoice header details
+  //     const keys = [
+  //       'c',
+  //       'l',
+  //       'e',
+  //       'd',
+  //       'g',
+  //       'e',
+  //       'r',
+  //       '{ENTER}',
+  //       partyName,
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       's',
+  //       'u',
+  //       'n',
+  //       'd',
+  //       'r',
+  //       'y',
+  //       ' ',
+  //       'c',
+  //       'r',
+  //       'e',
+  //       'd',
+  //       'i',
+  //       't',
+  //       'o',
+  //       'r',
+  //       's',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       gst,
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       'prompt here',
+  //       'y',
+  //       '{ESC}',
+  //       'prompt here',
+  //       'y',
+  //       '{ESC}',
+  //     ];
+
+  //     await bringTallyToForegroundAndSendKeys(keys);
+  //   } catch (error) {
+  //     console.error('Error creating purchase ledger:', error);
+  //     throw error;
+  //   }
+  // }
+
+  // async function exportAndCheckLedger(ledgerNames: string | string[], ledgerType: string): Promise<void> {
+  //   try {
+  //     // Convert ledgerNames to an array if it isn't already iterable.
+  //     const ledgerNamesArray = Array.isArray(ledgerNames) ? ledgerNames : ledgerNames;
+  //     // Step 1: Get Tally installation path and set file path
+  //     const tallyInstallPath = await getTallyInstallPath();
+  //     const exportedFilePath = `${tallyInstallPath}\\master.xml`;
+  //     console.log(`Tally installation path: ${tallyInstallPath}`);
+  //     console.log(`Exporting file to: ${exportedFilePath}`);
+
+  //     // Step 2: Trigger Tally export (single export for all ledgers)
+  //     const keys = ['open tally', '%e', 'm', 'e', '{ENTER}', 'prompt here', 'y'];
+  //     await bringTallyToForegroundAndSendKeys(keys, 1000);
+  //     // console.log('Tally export triggered successfully.');
+
+  //     // Step 3: Wait to ensure file is fully exported
+  //     // console.log('Waiting for the file to be exported...');
+  //     await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  //     // Step 4: Check if the exported file exists
+  //     if (!fs.existsSync(exportedFilePath)) {
+  //       throw new Error(`Exported file not found at ${exportedFilePath}.`);
+  //     }
+
+  //     // Step 5: Read and clean XML file
+  //     let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
+  //     xmlData = removeBOM(xmlData);
+  //     // console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
+
+  //     // Step 6: Validate XML content
+  //     if (!xmlData.trim().startsWith('<ENVELOPE>')) {
+  //       throw new Error('File content is not valid XML.');
+  //     }
+
+  //     // Step 7: Parse XML
+  //     const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
+  //     // console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
+
+  //     // Step 8: Extract LEDGER details
+  //     const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
+  //     if (!tallyMessages) {
+  //       throw new Error('No TALLYMESSAGE found in the XML file.');
+  //     }
+  //     const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
+  //     const ledgers = messagesArray.map((msg: any) => msg.LEDGER).filter(Boolean);
+
+  //     // Step 9: Check each ledger and create if missing
+  //     if (ledgerType === "purchase accounts") {
+  //       const targetLedgerName = ledgerNamesArray;
+  //       const ledgerExists = ledgers.some((ledger) => {
+  //         const ledgerName = ledger.$?.NAME;
+  //         const parentElement = ledger.PARENT
+
+  //         const nameMatch = ledgerName?.toLowerCase() === targetLedgerName?.toLowerCase();
+  //         const parentMatch = parentElement?.toLowerCase() === "purchase accounts";
+
+  //         // Debug output for each ledger
+  //         console.log(`Checking ledger: ${ledgerName}`);
+  //         console.log(`Parent value: ${parentElement}`);
+  //         console.log(`Name match: ${nameMatch}, Parent match: ${parentMatch}`);
+
+  //         return nameMatch && parentMatch;
+  //       });
+
+  //       console.log(`Ledger exists: ${ledgerExists}`);
+
+  //       if (!ledgerExists) {
+  //         // await bringTallyToForegroundAndSendKeys(['open tally'])
+  //         // await createPurchaseLedger(ledgerNames);
+  //         const response = createPurchaserLedger(ledgerNames)
+  //         return response
+  //       }
+
+  //       return ledgerNames
+
+  //     } else {
+
+  //       const result = []
+
+  //       // await bringTallyToForegroundAndSendKeys(['open tally'])
+  //       for (const ledgerName of ledgerNamesArray) {
+  //         // Append "%" for the existence check
+  //         const targetLedgerName = ledgerType === "purchase accounts" ? ledgerName : ledgerName;
+
+
+  //         const ledgerExists = ledgers.some((ledger: any) =>
+  //           ledger.$?.NAME?.toLowerCase() === targetLedgerName.toLowerCase()
+  //         );
+  //         console.log(`Ledger "${targetLedgerName}" found: ${ledgerExists}`);
+
+  //         if (!ledgerExists) {
+  //           result.push(targetLedgerName)
+  //         }
+
+
+  //         // if (!ledgerExists) {
+  //         //   // Append "+5" while creating the ledger
+  //         //   const newLedgerName = ledgerType === "purchase accounts" ? ledgerName : `${ledgerName}+5`;
+  //         //   console.log(`Creating ledger "${newLedgerName}"...`);
+
+  //         //   const lowerName = ledgerName.toLowerCase();
+  //         //   if (lowerName.includes("igst")) {
+  //         //     await createIgstLedger(newLedgerName);
+  //         //   } else if (lowerName.includes("cgst") || lowerName.includes("ut/sgst")) {
+  //         //     await createCgstLedger(newLedgerName);
+  //         //   } else {
+  //         //     console.warn(`No creation function defined for ledger type: ${ledgerName}`);
+  //         //   }
+
+  //         // }
+  //       }
+
+  //       const response = createTaxLedgers(result)
+  //       return response
+  //     }
+  //   } catch (error) {
+  //     console.error('Error in exportAndCheckLedger:', error);
+  //     throw error;
+  //   }
+  // }
+
+  // async function createPurchaseLedger(ledgerName: string): Promise<void> {
+  //   try {
+  //     // Step 1: Press "c"
+  //     await bringTallyToForegroundAndSendKeys(['c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}', ledgerName, '{ENTER}', '{ENTER}', 'p', 'u', 'r', 'c', 'h', 'a', 's', 'e', ' ', 'a', 'c', 'c', 'o', 'u', 'n', 't',
+  //       '{ENTER}', '{ENTER}', 'g', 's', 't', '{ENTER}', 'g', 'o', 'o', 'd', 's', ' ', 'a', 'n', 'd', ' ', 's', 'e', 'r', 'v', 'i', 'c', 'e', 's',
+  //       '{ENTER}', '^a', '{ESC}', 'prompt here', 'y', '{ESC}']);
+
+  //   } catch (error) {
+  //     console.error('Error creating purchase ledger:', error);
+  //     throw error;
+  //   }
+  // }
+
+  // async function createIgstLedger(name: string): Promise<void> {
+  //   try {
+  //     // Step 1: Press "c"
+  //     await bringTallyToForegroundAndSendKeys([
+  //       'c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}',
+  //       name, '{ENTER}', '{ENTER}',
+  //       'D', 'u', 't', 'i', 'e', 's', ' ', '&', ' ', 'T', 'a', 'x', 'e', 's', '{ENTER}',
+  //       'G', 'S', 'T', '{ENTER}',
+  //       'I', 'G', 'S', 'T', '{ENTER}', '{ENTER}', '^a', '{ESC}', 'prompt here', 'y', '{ESC}'
+  //     ]);
+
+  //   } catch (error) {
+  //     console.error('Error creating purchase ledger:', error);
+  //     throw error;
+  //   }
+  // }
+
+  // async function createCgstLedger(name: string): Promise<void> {
+  //   try {
+  //     // Step 1: Press "c"
+  //     await bringTallyToForegroundAndSendKeys([
+  //       'c', 'l', 'e', 'd', 'g', 'e', 'r', '{ENTER}',
+  //       name, '{ENTER}', '{ENTER}',
+  //       'D', 'u', 't', 'i', 'e', 's', ' ', '&', ' ', 'T', 'a', 'x', 'e', 's', '{ENTER}',
+  //       'G', 'S', 'T', '{ENTER}',
+  //       'C', 'G', 'S', 'T', '{ENTER}', '{ENTER}', '^a', '{ESC}', 'prompt here', 'y', '{ESC}'
+  //     ]);
+
+  //   } catch (error) {
+  //     console.error('Error creating purchase ledger:', error);
+  //     throw error;
+  //   }
+  // }
+
+  // async function exportAndGetUnits(): Promise<any[]> {
+  //   // Step 1: Get Tally installation path and set file path
+  //   const tallyInstallPath = await getTallyInstallPath();
+  //   const exportedFilePath = `${tallyInstallPath}\\master.xml`;
+  //   console.log(`Tally installation path: ${tallyInstallPath}`);
+  //   console.log(`Exporting file to: ${exportedFilePath}`);
+
+  //   // Step 2: Trigger Tally export for units
+  //   const keys = [
+  //     'open tally', '%e', 'm', 'c', 'type of master', '{ENTER}', 'units', '{ENTER}', '{ESC}', '{ESC}', 'e',
+  //     'prompt here', 'y'
+  //   ];
+  //   await bringTallyToForegroundAndSendKeys(keys, 1000);
+  //   console.log('Tally export for units triggered successfully.');
+
+  //   // Step 3: Wait to ensure file is fully exported
+  //   console.log('Waiting for the unit file to be exported...');
+  //   await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  //   // Step 4: Ensure the exported file exists
+  //   if (!fs.existsSync(exportedFilePath)) {
+  //     throw new Error(`Exported file not found at ${exportedFilePath}.`);
+  //   }
+
+  //   // Step 5: Read and clean XML file
+  //   let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
+  //   xmlData = removeBOM(xmlData);
+  //   console.log("Cleaned XML Data (First 50 chars):", xmlData.slice(0, 50));
+
+  //   // Step 6: Validate XML content
+  //   if (!xmlData.trim().startsWith('<ENVELOPE>')) {
+  //     throw new Error('File content is not valid XML.');
+  //   }
+
+  //   // Step 7: Parse XML
+  //   const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
+  //   console.log('Parsed XML Data:', JSON.stringify(parsedXml, null, 2));
+
+  //   // Step 8: Extract UNIT details
+  //   const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
+  //   if (!tallyMessages) {
+  //     return []; // No units found in the XML export.
+  //   }
+  //   const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
+  //   // Assume each TALLYMESSAGE for units contains a UNIT element
+  //   const units = messagesArray.map((msg: any) => msg.UNIT).filter(Boolean);
+  //   return units;
+  // }
+
+  // // New function: Check and create units if missing
+  // async function exportAndCheckUnits(unitsToCheck: Array<{ name: string; decimal?: number }>): Promise<{ results: Array<{ name: string; exists: boolean }> }> {
+  //   // First export once and get the current units.
+  //   let existingUnits = await exportAndGetUnits();
+
+  //   // Loop through provided units to see which ones already exist.
+  //   const results: Array<{ name: string; exists: boolean }> = [];
+  //   const missingUnits: Array<{ name: string; decimal?: number }> = [];
+
+  //   for (const unit of unitsToCheck) {
+  //     const exists = existingUnits.some((unitElem: any) => unitElem.$?.NAME?.toLowerCase() === unit?.name?.toLowerCase());
+  //     results.push({ name: unit.name, exists });
+  //     if (!exists) {
+  //       missingUnits.push(unit);
+  //     }
+  //   }
+
+  //   // await bringTallyToForegroundAndSendKeys(['open tally'])
+
+  //   // If there are missing units, create them all.
+  //   if (missingUnits.length > 0) {
+  //     console.log(`Missing units: ${missingUnits.map(u => u.name).join(', ')}`);
+
+  //     console.log(missingUnits, "missing units")
+
+  //     // for (const unit of missingUnits) {
+  //     //   console.log(`Creating unit "${unit.Name}"...`);
+  //     //   await create Unit(unit.Name, unit.conversionRate);
+  //     // }
+  //     const response = createUnits(missingUnits)
+  //     return response
+  //     // After creation, re-export and verify that the missing units are now present.
+  //     // existingUnits = await exportAndGetUnits();
+  //     // Update the results based on the new export.
+  //     // for (const result of results) {
+  //     //   result.exists = existingUnits.some((unitElem: any) => unitElem.$?.NAME?.toLowerCase() === result.name.toLowerCase());
+  //     // }
+  //   }
+
+  //   return { results };
+  // }
+
+  // // Example createUnit function using dynamic parameters
+  // async function createUnit(
+  //   name: string,
+  //   conversionRate: number
+  // ): Promise<void> {
+  //   try {
+  //     // Bring Tally to the foreground and send keys for unit creation.
+  //     // The key sequence below is an example; adjust it to match your Tally workflow.
+  //     await bringTallyToForegroundAndSendKeys([
+  //       'c',
+  //       'u', 'n', 'i', 't',
+  //       '{ENTER}', // Open unit creation window
+  //       name, '{ENTER}', '{ENTER}', '{ENTER}',                  // Enter unit name
+  //       conversionRate !== undefined ? String(conversionRate) : 1,
+  //       '{ENTER}', // Enter conversion rate (default to 1 if missing)
+  //       'prompt here', 'y', '{ESC}', 'prompt here', 'y', '{ESC}'        // Complete and exit
+  //     ]);
+  //     console.log(`Unit created: ${name}`, conversionRate !== undefined ? String(conversionRate) : '1');
+  //   } catch (error) {
+  //     console.error('Error creating unit:', error);
+  //     throw error;
+  //   }
+  // }
+
+  // // Helper function to export the XML file and extract STOCKITEMs
+  // async function exportAndGetItems(): Promise<any[]> {
+  //   // Step 1: Get Tally installation path and set file path
+  //   const tallyInstallPath = await getTallyInstallPath();
+  //   const exportedFilePath = `${tallyInstallPath}\\master.xml`;
+  //   console.log(`Tally installation path: ${tallyInstallPath}`);
+  //   console.log(`Exporting file to: ${exportedFilePath}`);
+
+  //   // Step 2: Trigger Tally export for stock items
+  //   const keys = [
+  //     'open tally', '%e', 'm', 'c', 'type of master', '{ENTER}',
+  //     'stock items', '{ENTER}', '{ESC}', '{ESC}', 'e',
+  //     'prompt here', 'y'
+  //   ];
+  //   await bringTallyToForegroundAndSendKeys(keys, 1000);
+  //   console.log('Tally export triggered successfully.');
+
+  //   // Step 3: Wait to ensure file is fully exported
+  //   console.log('Waiting for the file to be exported...');
+  //   await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  //   // Step 4: Ensure the exported file exists
+  //   if (!fs.existsSync(exportedFilePath)) {
+  //     throw new Error(`Exported file not found at ${exportedFilePath}.`);
+  //   }
+
+  //   // Step 5: Read and clean XML file
+  //   let xmlData = fs.readFileSync(exportedFilePath, { encoding: 'utf-8' });
+  //   xmlData = removeBOM(xmlData);
+
+  //   // Step 6: Validate XML content
+  //   if (!xmlData.trim().startsWith('<ENVELOPE>')) {
+  //     throw new Error('File content is not valid XML.');
+  //   }
+
+  //   // Step 7: Parse XML
+  //   const parsedXml = await parseStringPromise(xmlData, { explicitArray: false });
+
+  //   // Step 8: Extract STOCKITEM details
+  //   const tallyMessages = parsedXml?.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA?.TALLYMESSAGE;
+  //   if (!tallyMessages) {
+  //     return []; // No items found
+  //   }
+  //   const messagesArray = Array.isArray(tallyMessages) ? tallyMessages : [tallyMessages];
+  //   const items = messagesArray.map((msg: any) => msg.STOCKITEM).filter(Boolean);
+  //   return items;
+  // }
+
+  // // New function to check and create items if missing
+  // async function exportAndCheckItems(itemsToCheck: Array<{
+  //   Product: string;
+  //   HSN: string;
+  //   symbol?: string;
+  //   decimal?: string | number;
+  //   gst?: string | number;
+  //   SGST?: string;
+  //   CGST?: string;
+  // }>): Promise<{ results: Array<{ product: string; exists: boolean }> }> {
+  //   // First, export once and get the list of existing items
+  //   let existingItems = await exportAndGetItems();
+  //   const results: Array<{ product: string; exists: boolean }> = [];
+  //   const missingItems: Array<typeof itemsToCheck[0]> = [];
+
+  //   // Check each item against the exported items
+  //   for (const item of itemsToCheck) {
+  //     const exists = existingItems.some((stockItem: any) =>
+  //       stockItem.$?.NAME?.toLowerCase() === item.Product?.toLowerCase()
+  //     );
+  //     results.push({ product: item.Product, exists });
+  //     if (!exists) {
+  //       missingItems.push(item);
+  //     }
+  //   }
+
+  //   // await bringTallyToForegroundAndSendKeys(['open tally'])
+
+  //   // If there are missing items, create them
+  //   if (missingItems.length > 0) {
+  //     console.log(`Missing items: ${missingItems.map(i => i.Product).join(', ')}`);
+  //     // for (const item of missingItems) {
+  //     //   const name = item.Product;
+  //     //   const symbol = item.symbol || "pcs";
+  //     //   const decimal = item.decimal !== undefined ? Number(item.decimal) : 0;
+  //     //   const hsn = item.HSN ? Number(item.HSN) : 0;
+  //     //   let gstValue: number;
+  //     //   if (item.gst !== undefined) {
+  //     //     gstValue = Number(item.gst);
+  //     //   } else if (item.SGST !== undefined && item.CGST !== undefined) {
+  //     //     gstValue = Number(item.SGST) + Number(item.CGST);
+  //     //   } else {
+  //     //     gstValue = 0;
+  //     //   }
+  //     //   console.log(
+  //     //     `Item "${name}" does not exist. Creating item with symbol "${symbol}", decimal ${decimal}, HSN ${hsn}, and GST ${gstValue}...`
+  //     //   );
+  //     //   await createItem(name, symbol, decimal, hsn, gstValue);
+  //     // }
+
+  //     // // Re-export to verify that the missing items are now present
+  //     // existingItems = await exportAndGetItems();
+  //     // // Update the results based on the new export
+  //     // for (const result of results) {
+  //     //   result.exists = existingItems.some((stockItem: any) =>
+  //     //     stockItem.$?.NAME?.toLowerCase() === result.product.toLowerCase()
+  //     //   );
+  //     // }
+
+  //     const response = createStockItems(missingItems)
+  //     return response
+
+  //   }
+
+  //   return { results };
+  // }
+
+
+  // async function createItem(name: string, symbol: string, decimal: number, hsn: number, gst: number): Promise<void> {
+  //   try {
+  //     console.log("working")
+  //     // await bringTallyToForegroundAndSendKeys(['prompt here'])
+  //     await bringTallyToForegroundAndSendKeys([
+  //       'c', 'i', 't', 'e', 'm', '{ENTER}',  // Open item creation
+  //       name,
+  //       '{ENTER}', '{ENTER}',
+  //       '{ENTER}',
+  //       symbol, '{ENTER}',     // Enter item name and confirm
+  //       '{ENTER}', "specify details", '{ENTER}', hsn, '{ENTER}', '{ENTER}', "specify details", '{ENTER}', '{ENTER}', gst, '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', 'prompt here', 'y', '{ESC}', '{ESC}',
+  //       'prompt here', 'y', '{ESC}'  // Create and exit
+  //     ]);
+  //   } catch (error) {
+  //     console.error('Error creating item:', error);
+  //     throw error;
+  //   }
+  // }
+
+  // async function createPurchaseEntry(
+  //   invoiceNumber: string,
+  //   date: string,
+  //   partyName: string,
+  //   purchaseLedger: string,
+  //   items: {
+  //     name: string;
+  //     quantity: number;
+  //     price: number;
+  //     cgst: number;
+  //     sgst: number;
+  //     igst: number;
+  //   }[],
+  //   isWithinState: boolean
+  // ): Promise<void> {
+  //   try {
+  //     // Format the date as dd-MM-yyyy (e.g., 02-11-2024)
+  //     function formatDate(date: string | Date): string {
+  //       // If the date is a string, check if it's already formatted as dd-mm-yyyy.
+  //       if (typeof date === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(date)) {
+  //         return date;
+  //       }
+
+  //       // Convert input to a Date object if it isn't already.
+  //       const dateObj = date instanceof Date ? date : new Date(date);
+
+  //       const day = String(dateObj.getDate()).padStart(2, '0');
+  //       const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  //       const year = dateObj.getFullYear();
+
+  //       return `${day}-${month}-${year}`;
+  //     }
+
+  //     // Build the initial keys array for invoice header details
+  //     const keys = [
+  //       'open tally',
+  //       'v',
+  //       '{F9}',
+  //       '{F2}',
+  //       formatDate(date),
+  //       '{ENTER}',
+  //       invoiceNumber,
+  //       '{ENTER}',
+  //       '{ENTER}',
+  //       partyName,
+  //       '{ENTER}',
+  //       '^a',
+  //       '^a',
+  //       // '^a',
+  //       purchaseLedger,
+  //       '{ENTER}',
+  //     ];
+
+  //     // // Loop through items and add each item entry along with its tax details
+  //     for (const item of items) {
+  //       // Add item details: name, quantity, price
+  //       keys.push(
+  //         item.name, '{ENTER}',
+  //         item.quantity?.toString(), '{ENTER}',
+  //         item.price?.toString(), '{ENTER}',
+  //         '{ENTER}', '{ENTER}',
+  //       );
+
+
+  //       // keys.push('{ENTER}')
+
+  //       // Insert tax details for the current item
+  //       if (isWithinState) {
+  //         // For within-state purchases, add CGST and SGST details for this item
+  //         keys.push(
+  //           // `Cgst${item.cgst}`, 
+  //           // '{ENTER}', '{ENTER}',
+  //           // `Sgst${item.sgst}`, '{ENTER}', '{ENTER}'
+  //         );
+  //       } else {
+  //         // For out-of-state purchases, add IGST detail for this item
+  //         keys.push(
+
+  //           // `Igst${item.igst}%`, '{ENTER}', '{ENTER}'
+  //         );
+  //       }
+
+  //       // Add keys to finalize this item's entry and move to the next row
+  //     }
+  //     keys.push('{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}', '{ENTER}');
+
+  //     // Send the entire keys array to Tally
+  //     await bringTallyToForegroundAndSendKeys(keys);
+  //   } catch (error) {
+  //     console.error('Error creating purchase ledger:', error);
+  //     throw error;
+  //   }
+  // }
 
   async function getLedgerNames(xmlData: string): Promise<string[]> {
     try {
@@ -1049,6 +1049,10 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     );
 
     return missing;
+  };
+
+  const checkPartyNameExist = (existingLedgers, expectedPartyName) => {
+    return existingLedgers.includes(expectedPartyName);
   };
 
   /**
@@ -1124,6 +1128,88 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   }
 
+  /**
+ * Asynchronously generates an XML payload for a single ledger,
+ * sends it to the Tally server via a GET request,
+ * and returns the server response.
+ *
+ * Optional fields such as address, country, state, mobile, and gstin are added only if they have a value.
+ *
+ * @param ledgerDetails - An object containing details for the ledger to create.
+ * @returns An object containing success status, Tally's response data, and the XML payload.
+ */
+  async function createPartyName(ledgerDetails: {
+    name: string;
+    parent: string;
+    address?: string;
+    country?: string;
+    state?: string;
+    mobile?: string;
+    gstin?: string;
+  }): Promise<any> {
+    try {
+      // Build XML for optional fields only if their value is present.
+      let optionalFields = "";
+      if (ledgerDetails.address) {
+        optionalFields += `            <ADDRESS>${ledgerDetails.address}</ADDRESS>\n`;
+      }
+      if (ledgerDetails.country) {
+        optionalFields += `            <COUNTRYOFRESIDENCE>${ledgerDetails.country}</COUNTRYOFRESIDENCE>\n`;
+      }
+      if (ledgerDetails.state) {
+        optionalFields += `            <LEDSTATENAME>${ledgerDetails.state}</LEDSTATENAME>\n`;
+      }
+      if (ledgerDetails.mobile) {
+        optionalFields += `            <LEDGERMOBILE>${ledgerDetails.mobile}</LEDGERMOBILE>\n`;
+      }
+      if (ledgerDetails.gstin) {
+        optionalFields += `            <PARTYGSTIN>${ledgerDetails.gstin}</PARTYGSTIN>\n`;
+      }
+
+      // Build the complete XML payload.
+      const xmlPayload = `<ENVELOPE>
+  <HEADER>
+    <TALLYREQUEST>Import Data</TALLYREQUEST>
+  </HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC>
+        <REPORTNAME>All Masters</REPORTNAME>
+      </REQUESTDESC>
+      <REQUESTDATA>
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <LEDGER Action="Create">
+            <NAME>${ledgerDetails.name}</NAME>
+            <PARENT>${ledgerDetails.parent}</PARENT>
+${optionalFields}          </LEDGER>
+        </TALLYMESSAGE>
+      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>`;
+
+      // Calculate the content length from the XML payload.
+      const contentLength = Buffer.byteLength(xmlPayload, 'utf8');
+
+      // Send the XML payload to Tally (using GET as per your curl example)
+      const response = await axios.get('http://localhost:9000', {
+        headers: {
+          'Content-Type': 'application/xml',
+          'Content-Length': contentLength.toString()
+        },
+        data: xmlPayload
+      });
+
+      console.log(response, "wile creating")
+
+      return { success: true, data: response.data, xmlPayload };
+
+    } catch (error: any) {
+      console.error("Error in createLedger function:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
   // ------------------------------------------------------------------------------------------------------------------------
 
   // IPC handler to bring Tally to the foreground and send multiple keystrokes
@@ -1136,92 +1222,92 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     }
   });
 
-  ipcMain.handle('create-party-name-entry', async (_, partyName: string, gst: string) => {
-    try {
-      const response = await exportAndGetPartyName(partyName, gst);
-      console.log(response)
-      return { success: true, response };
-    } catch (error) {
-      console.error('Error creating party entry:', error);
-      return { success: false, error: error.message };
-    }
-  });
+  // ipcMain.handle('create-party-name-entry', async (_, partyName: string, gst: string) => {
+  //   try {
+  //     const response = await exportAndGetPartyName(partyName, gst);
+  //     console.log(response)
+  //     return { success: true, response };
+  //   } catch (error) {
+  //     console.error('Error creating party entry:', error);
+  //     return { success: false, error: error.message };
+  //   }
+  // });
 
-  ipcMain.handle('export-ledger', async (_, ledgerName: string, ledgerType: string) => {
-    try {
-      const response = await exportAndCheckLedger(ledgerName, ledgerType);
-      console.log(response)
-      return { success: true, response };
-    } catch (error) {
-      console.error('Error creating purchase entry:', error);
-      return { success: false, error: error.message };
-    }
-  });
+  // ipcMain.handle('export-ledger', async (_, ledgerName: string, ledgerType: string) => {
+  //   try {
+  //     const response = await exportAndCheckLedger(ledgerName, ledgerType);
+  //     console.log(response)
+  //     return { success: true, response };
+  //   } catch (error) {
+  //     console.error('Error creating purchase entry:', error);
+  //     return { success: false, error: error.message };
+  //   }
+  // });
 
-  ipcMain.handle('create-igst-ledger', async (_, ledgerName: string) => {
-    try {
-      await createIgstLedger(ledgerName);
-      return { success: true, ledgerName };
-    } catch (error) {
-      // You might want to pass more details for error handling
-      return { success: false, error: error.message };
-    }
-  });
+  // ipcMain.handle('create-igst-ledger', async (_, ledgerName: string) => {
+  //   try {
+  //     await createIgstLedger(ledgerName);
+  //     return { success: true, ledgerName };
+  //   } catch (error) {
+  //     // You might want to pass more details for error handling
+  //     return { success: false, error: error.message };
+  //   }
+  // });
 
-  ipcMain.handle('create-cgst-ledger', async (_, ledgerName: string) => {
-    try {
-      await createCgstLedger(ledgerName);
-      return { success: true, ledgerName };
-    } catch (error) {
-      // You might want to pass more details for error handling
-      return { success: false, error: error.message };
-    }
-  });
+  // ipcMain.handle('create-cgst-ledger', async (_, ledgerName: string) => {
+  //   try {
+  //     await createCgstLedger(ledgerName);
+  //     return { success: true, ledgerName };
+  //   } catch (error) {
+  //     // You might want to pass more details for error handling
+  //     return { success: false, error: error.message };
+  //   }
+  // });
 
   // Updated IPC handler to use the new function
-  ipcMain.handle('export-unit', async (_, units: any) => {
-    try {
-      // If units is an array, check all; otherwise, wrap it in an array.
-      // const unitsArray = Array.isArray(units) ? units : [units];
-      // const { results } = await exportAndCheckUnits(unitsArray);
-      // // If a single unit was passed, return its existence directly.
-      // return Array.isArray(units) ? { success: true, results } : { success: true, exists: results[0].exists };
-      const response = await exportAndCheckUnits(units);
-      console.log(response)
+  // ipcMain.handle('export-unit', async (_, units: any) => {
+  //   try {
+  //     // If units is an array, check all; otherwise, wrap it in an array.
+  //     // const unitsArray = Array.isArray(units) ? units : [units];
+  //     // const { results } = await exportAndCheckUnits(unitsArray);
+  //     // // If a single unit was passed, return its existence directly.
+  //     // return Array.isArray(units) ? { success: true, results } : { success: true, exists: results[0].exists };
+  //     const response = await exportAndCheckUnits(units);
+  //     console.log(response)
 
-      return { success: true, response };
-    } catch (error) {
-      console.error('Error exporting unit:', error);
-      return { success: false, error: error.message };
-    }
-  });
+  //     return { success: true, response };
+  //   } catch (error) {
+  //     console.error('Error exporting unit:', error);
+  //     return { success: false, error: error.message };
+  //   }
+  // });
 
-  // Updated IPC handler using the new function
-  ipcMain.handle('export-item', async (_, items: any) => {
-    try {
-      // Ensure items is treated as an array
-      // const itemsArray = Array.isArray(items) ? items : [items];
-      // const { results } = await exportAndCheckItems(itemsArray);
+  // // Updated IPC handler using the new function
+  // ipcMain.handle('export-item', async (_, items: any) => {
+  //   try {
+  //     // Ensure items is treated as an array
+  //     // const itemsArray = Array.isArray(items) ? items : [items];
+  //     // const { results } = await exportAndCheckItems(itemsArray);
 
-      const response = await exportAndCheckItems(items)
-      console.log(response)
+  //     const response = await exportAndCheckItems(items)
+  //     console.log(response)
 
-      return { success: true, responses: response };
-    } catch (error) {
-      console.error('Error exporting item:', error);
-      return { success: false, error: error.message };
-    }
-  });
+  //     return { success: true, responses: response };
+  //   } catch (error) {
+  //     console.error('Error exporting item:', error);
+  //     return { success: false, error: error.message };
+  //   }
+  // });
 
-  ipcMain.handle('create-item', async (_, itemName: string, symbol: string, decimal: number, hsn: number, gst: number) => {
-    try {
-      await createItem(itemName, symbol, decimal, hsn, gst);
-      return { success: true, itemName };
-    } catch (error) {
-      console.error('Error creating item:', error);
-      return { success: false, error: error.message };
-    }
-  });
+  // ipcMain.handle('create-item', async (_, itemName: string, symbol: string, decimal: number, hsn: number, gst: number) => {
+  //   try {
+  //     await createItem(itemName, symbol, decimal, hsn, gst);
+  //     return { success: true, itemName };
+  //   } catch (error) {
+  //     console.error('Error creating item:', error);
+  //     return { success: false, error: error.message };
+  //   }
+  // });
 
   // ipcMain.handle('create-purchase-entry', async (_, invoiceNumber: string,
   //   date: string,
@@ -1339,6 +1425,49 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
         const createLawLedgerResponse = await createLawLedger(missingLedgerResponse)
         console.log(missingLedgerResponse, "missingLedgerResponse", createLawLedgerResponse, "createLawLedgerResponse")
+      }
+
+
+
+      // Return the data to the renderer process.
+      return { success: true, data: response.data, ledgerName: filterResponse };
+    } catch (error: any) {
+      console.error('Error in send-tally-xml IPC handler:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+
+  ipcMain.handle('create-party-ledger', async (_, xmlData: string, partyName: string, partyDetailData) => {
+    try {
+      // Calculate content length (in bytes) from the XML data.
+      const contentLength = Buffer.byteLength(xmlData, 'utf8');
+
+      // Make the HTTP request to your endpoint.
+      const response = await axios({
+        method: 'POST',
+        url: 'http://localhost:9000', // Replace or make configurable as needed.
+        headers: {
+          'Content-Type': 'application/xml',
+          'Content-Length': contentLength, // Setting the Content-Length header.
+        },
+        data: xmlData,
+      });
+
+      console.log(response, "here is the get response")
+
+      const filterResponse = await getLedgerNames(response.data)
+
+      console.log(filterResponse, "here i sfiletre resonse")
+
+      const missingLedgerResponse = checkPartyNameExist(filterResponse, partyName)
+
+      console.log(missingLedgerResponse, "missingLedgerResponse")
+
+      if (!missingLedgerResponse) {
+
+        const createPartNameLedger = await createPartyName(partyDetailData)
+        console.log(missingLedgerResponse, "missingLedgerResponse", createPartNameLedger, "createLawLedgerResponse")
       }
 
 

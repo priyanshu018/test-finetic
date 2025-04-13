@@ -69,7 +69,17 @@ contextBridge.exposeInMainWorld('electron', {
   }) =>
     ipcRenderer.invoke('create-purchase-entry', payload),
 
-    getTaxLedgerData: (xmlData: string) => ipcRenderer.invoke('get-tax-ledger-data', xmlData),
+  getTaxLedgerData: (xmlData: string) => ipcRenderer.invoke('get-tax-ledger-data', xmlData),
+
+  createPartyName: (xmlData: string, partyName: string, ledgerDetails: {
+    name: string;
+    parent: string;
+    address?: string;
+    country?: string;
+    state?: string;
+    mobile?: string;
+    gstin?: string;
+  }) => ipcRenderer.invoke('create-party-ledger', xmlData, partyName, ledgerDetails),
 
 });
 

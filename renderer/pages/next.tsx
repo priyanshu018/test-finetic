@@ -42,9 +42,61 @@ export default function IndexPage() {
   const [email, setEmail] = useState("")
   const router = useRouter()
   // Keep existing electron functions
+
+  const ledgerXmlData = `
+  <ENVELOPE>
+<HEADER>
+  <VERSION>1</VERSION>
+  <TALLYREQUEST>Export</TALLYREQUEST>
+  <TYPE>Collection</TYPE>
+  <ID>Ledgers</ID>
+</HEADER>
+<BODY>
+  <DESC>
+    <STATICVARIABLES>
+      <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+      <SVCURRENTCOMPANY>PrimeDepth Labs</SVCURRENTCOMPANY>
+    </STATICVARIABLES>
+    <TDL>
+      <TDLMESSAGE>
+        <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
+          <TYPE>Ledger</TYPE>
+          <NATIVEMETHOD>Address</NATIVEMETHOD>
+          <NATIVEMETHOD>Masterid</NATIVEMETHOD>
+          <NATIVEMETHOD>*</NATIVEMETHOD>
+        </COLLECTION>
+      </TDLMESSAGE>
+    </TDL>
+  </DESC>
+</BODY>
+</ENVELOPE>
+  `
+
   const handleCreatePartyLedger = async () => {
-    const purchaserLedgerResponse = await window.electron.exportAndCreatePartyNameEntry("EVERYDAY STORE-WAVE", "03AALFE5567F1ZF")
-    console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
+    // const purchaserLedgerResponse = await window.electron.exportAndCreatePartyNameEntry("EVERYDAY STORE-WAVE", "03AALFE5567F1ZF")
+    // console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
+
+
+    const response = await window.electron.createPartyName(ledgerXmlData, "code test", {
+      name: "code test",
+      parent: "Sundry Creditors",
+      address: "",
+      country: "",
+      state: "",
+      mobile: "",
+      gstin: "",
+    })
+      .then((result) => {
+        if (result.success) {
+          // console.log('Response from Tally:', result.data);
+          return result
+        } else {
+          console.error('Error sending XML to Tally:', result.error);
+        }
+      });
+
+
+    console.log(response, "taxLedgerData")
   }
 
   useEffect(() => {
@@ -53,43 +105,17 @@ export default function IndexPage() {
   }, [])
 
   const handleCreatePurchaseLedger = async () => {
-    const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
-    console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
+    // const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
+    // console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
+
   }
 
 
   const handleCreateCgstIgstSgstLedger = async () => {
 
-    const xmlData = `
-    <ENVELOPE>
-	<HEADER>
-		<VERSION>1</VERSION>
-		<TALLYREQUEST>Export</TALLYREQUEST>
-		<TYPE>Collection</TYPE>
-		<ID>Ledgers</ID>
-	</HEADER>
-	<BODY>
-		<DESC>
-			<STATICVARIABLES>
-				<SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
-				<SVCURRENTCOMPANY>PrimeDepth Labs</SVCURRENTCOMPANY>
-			</STATICVARIABLES>
-			<TDL>
-				<TDLMESSAGE>
-					<COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
-						<TYPE>Ledger</TYPE>
-						<NATIVEMETHOD>Address</NATIVEMETHOD>
-						<NATIVEMETHOD>Masterid</NATIVEMETHOD>
-						<NATIVEMETHOD>*</NATIVEMETHOD>
-					</COLLECTION>
-				</TDLMESSAGE>
-			</TDL>
-		</DESC>
-	</BODY>
-</ENVELOPE>
-    `
 
-    const response = await window.electron.getTaxLedgerData(xmlData)
+
+    const response = await window.electron.getTaxLedgerData(ledgerXmlData)
       .then((result) => {
         if (result.success) {
           // console.log('Response from Tally:', result.data);
@@ -101,7 +127,7 @@ export default function IndexPage() {
 
 
     console.log(response, "taxLedgerData")
-    // const ledgerNames = [
+    // const ledgerNames = [ 
     //   'Cgst0%', 'Cgst2.5%', 'Cgst6%', 'Cgst9%', 'Cgst14%',
     //   'Igst0%', 'Igst5%', 'Igst12%', 'Igst18%', 'Igst28%',
     //   'Ut/Sgst0%', 'Ut/Sgst2.5%', 'Ut/Sgst6%', 'Ut/Sgst9%', 'Ut/Sgst14%'
