@@ -1056,6 +1056,21 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   };
 
   /**
+ * Parse the CREATED and EXCEPTIONS counts from the given response XML.
+ * @param {string} xmlResponse – The raw response string.
+ * @returns {{ created: number, exceptions: number }}
+ */
+  function parseResponse(xmlResponse) {
+    const createdMatch = xmlResponse.match(/<CREATED>(\d+)<\/CREATED>/);
+    const exceptionsMatch = xmlResponse.match(/<EXCEPTIONS>(\d+)<\/EXCEPTIONS>/);
+
+    return {
+      created: createdMatch ? parseInt(createdMatch[1], 10) : 0,
+      exceptions: exceptionsMatch ? parseInt(exceptionsMatch[1], 10) : 0,
+    };
+  }
+
+  /**
  * Asynchronously generates an XML payload from the provided ledger names,
  * sends it to the Tally server via HTTP POST, and returns the server response.
  *
@@ -1199,8 +1214,6 @@ ${optionalFields}          </LEDGER>
         },
         data: xmlPayload
       });
-
-      console.log(response, "wile creating")
 
       return { success: true, data: response.data, xmlPayload };
 
@@ -1411,15 +1424,8 @@ ${optionalFields}          </LEDGER>
         data: xmlData,
       });
 
-      console.log(response, "here is the get response")
-
       const filterResponse = await getLedgerNames(response.data)
-
-      console.log(filterResponse, "here i sfiletre resonse")
-
       const missingLedgerResponse = getMissingLedgers(filterResponse)
-
-      console.log(missingLedgerResponse, "missingLedgerResponse")
 
       if (missingLedgerResponse?.length > 0) {
 
@@ -1454,26 +1460,19 @@ ${optionalFields}          </LEDGER>
         data: xmlData,
       });
 
-      console.log(response, "here is the get response")
-
       const filterResponse = await getLedgerNames(response.data)
-
-      console.log(filterResponse, "here i sfiletre resonse")
-
       const missingLedgerResponse = checkPartyNameExist(filterResponse, partyName)
 
-      console.log(missingLedgerResponse, "missingLedgerResponse")
-
       if (!missingLedgerResponse) {
-
         const createPartNameLedger = await createPartyName(partyDetailData)
-        console.log(missingLedgerResponse, "missingLedgerResponse", createPartNameLedger, "createLawLedgerResponse")
+        const checkCreatedLedgerResponse = await getLedgerNames(response.data)
+        const data = parseResponse(createPartNameLedger?.data)
+        return { success: true, data, ledgerName: checkCreatedLedgerResponse };
       }
 
-
+      return { success: true, isExist: missingLedgerResponse, data: filterResponse };
 
       // Return the data to the renderer process.
-      return { success: true, data: response.data, ledgerName: filterResponse };
     } catch (error: any) {
       console.error('Error in send-tally-xml IPC handler:', error);
       return { success: false, error: error.message };

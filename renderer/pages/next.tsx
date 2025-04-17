@@ -77,8 +77,8 @@ export default function IndexPage() {
     // console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
 
 
-    const response = await window.electron.createPartyName(ledgerXmlData, "code test", {
-      name: "code test",
+    const response = await window.electron.createPartyName(ledgerXmlData, "code test1", {
+      name: "code test1",
       parent: "Sundry Creditors",
       address: "",
       country: "",
@@ -88,7 +88,7 @@ export default function IndexPage() {
     })
       .then((result) => {
         if (result.success) {
-          // console.log('Response from Tally:', result.data);
+          console.log('Response from Tally:', result.data);
           return result
         } else {
           console.error('Error sending XML to Tally:', result.error);
@@ -313,7 +313,7 @@ export default function IndexPage() {
         name: "G",
         decimal: 3
       }
-    ]
+    ] 
     const response = await window.electron.exportUnit(units);
     console.log(response, "here is ");
   };
