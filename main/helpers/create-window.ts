@@ -1223,6 +1223,56 @@ ${optionalFields}          </LEDGER>
     }
   }
 
+
+  async function getUnitNames(xmlData: string): Promise<string[]> {
+    try {
+      // Parse the XML with explicitArray: false so that single elements are not wrapped in an array.
+      const result = await parseStringPromise(xmlData, { explicitArray: false });
+
+      // Navigate to the UNIT elements:
+      // Expected path: ENVELOPE -> BODY -> DATA -> COLLECTION -> UNIT
+      const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
+      if (!collection) {
+        throw new Error("Cannot find COLLECTION element in the XML.");
+      }
+
+      // The UNIT elements might either be an array or a single object
+      const units = collection.UNIT;
+      let unitNames: string[] = [];
+
+      if (Array.isArray(units)) {
+        // If there are multiple units, map through the array to get their names
+        unitNames = units.map((unit: any) => unit.$.NAME);
+      } else if (units && units.$) {
+        // If there's only a single unit, push its name to the array
+        unitNames.push(units.$.NAME);
+      }
+
+      return unitNames;
+    } catch (error) {
+      console.error("Error parsing XML to get unit names:", error);
+      throw error;
+    }
+  }
+
+  interface Unit {
+    name: string;
+    decimal: number;
+  }
+
+  async function checkUnitNames(existData: string[], unitsData: Unit[]): Promise<unit[]> {
+    try {
+      // Find the units that do not exist in the existData
+      const nonMatchingUnits = unitsData.filter(unit => !existData.includes(unit.name));
+
+      // Return the full objects of units that do not exist in the existData
+      return nonMatchingUnits;
+    } catch (error) {
+      console.error("Error checking non-matching unit objects:", error);
+      throw error;
+    }
+  }
+
   // ------------------------------------------------------------------------------------------------------------------------
 
   // IPC handler to bring Tally to the foreground and send multiple keystrokes
@@ -1368,6 +1418,88 @@ ${optionalFields}          </LEDGER>
       return { success: false, error: error.message };
     }
   });
+
+  ipcMain.handle('create-unit', async (_, unitData: any) => {
+    try {
+
+      let xmlData = `<ENVELOPE>
+    <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>Custom List of Units</ID>
+    </HEADER>
+    <BODY>
+        <DESC>
+            <STATICVARIABLES />
+            <TDL>
+                <TDLMESSAGE>
+                    <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="Custom List of Units">
+                        <TYPE>Units</TYPE>
+                        <NATIVEMETHOD>MasterID</NATIVEMETHOD>
+                        <NATIVEMETHOD>GUID</NATIVEMETHOD>
+                    </COLLECTION>
+                </TDLMESSAGE>
+            </TDL>
+        </DESC>
+    </BODY>
+</ENVELOPE>`
+
+      // Calculate content length (in bytes) from the XML data.
+      const contentLength = Buffer.byteLength(xmlData, 'utf8');
+
+      // Make the HTTP request to your endpoint.
+      const response = await axios({
+        method: 'POST',
+        url: 'http://localhost:9000', // Replace or make configurable as needed.
+        headers: {
+          'Content-Type': 'application/xml',
+          'Content-Length': contentLength, // Setting the Content-Length header.
+        },
+        data: xmlData,
+      });
+
+      const getDataFromXml = await getUnitNames(response?.data)
+
+      const filterResponse = await checkUnitNames(getDataFromXml, unitData)
+
+      console.log(filterResponse?.length, "length")
+
+
+
+      if (filterResponse?.length > 0) {
+        const xmlResponse = await createUnits(filterResponse)
+
+        const contentLength = Buffer.byteLength(xmlResponse, 'utf8');
+
+        const response = await axios({
+          method: 'GET',
+          url: 'http://localhost:9000', // Replace or make configurable as needed.
+          headers: {
+            'Content-Type': 'application/xml',
+            'Content-Length': contentLength, // Setting the Content-Length header.
+          },
+          data: xmlResponse,
+        });
+
+        const data = parseResponse(response?.data)
+        console.log(data, "data hete")
+
+        if (data?.created === filterResponse?.length) {
+          return { success: true, isExist: filterResponse, data: unitData };
+        } else {
+          return { success: false, data: unitData };
+        }
+      } else {
+        return { success: true, isExist: filterResponse, data: unitData };
+      }
+    } catch (error: any) {
+      console.error('Error in send-tally-xml IPC handler:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+
 
   ipcMain.handle('create-purchase-entry', async (_, payload: {
     invoiceNumber: string;

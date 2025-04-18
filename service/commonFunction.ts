@@ -532,10 +532,18 @@ export function createUnits(units: unknown): string {
   }
 
   let xmlOutput = "";
-  // Base values for generating GUID suffix and ALTERID.
-  const baseGUID = "bf911d27-633e-4ad7-ba7c-a871d6f9461e-";
-  const startingSuffix = 263; // starting numerical value for the GUID suffix (example: 00000263)
-  const baseAlterID = 1005; // starting alterID value
+
+  // Wrap the generated XML in the main ENVELOPE structure
+  xmlOutput += `<ENVELOPE>
+    <HEADER>
+        <TALLYREQUEST>Import Data</TALLYREQUEST>
+    </HEADER>
+    <BODY>
+        <IMPORTDATA>
+            <REQUESTDESC>
+                <REPORTNAME>All Masters</REPORTNAME>
+            </REQUESTDESC>
+            <REQUESTDATA>`;
 
   // Loop over each unit in the payload to generate XML for each.
   (units as Unit[]).forEach((unit, index) => {
@@ -547,35 +555,24 @@ export function createUnits(units: unknown): string {
       return;
     }
 
-    // Generate a pseudo-unique GUID by appending an incremental suffix.
-    const guidSuffix = (startingSuffix + index).toString().padStart(8, "0");
-    const guid = baseGUID + guidSuffix;
-    // Calculate the ALTERID based on the index.
-    const alterID = baseAlterID + index;
-
     // Create the XML for this unit.
     const xmlUnit = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
-      <UNIT NAME="${name}" RESERVEDNAME="">
+      <UNIT Action="Create">
+        <ISSIMPLEUNIT>true</ISSIMPLEUNIT>
         <NAME>${name}</NAME>
-        <GUID>${guid}</GUID>
-        <ISUPDATINGTARGETID>No</ISUPDATINGTARGETID>
-        <ISDELETED>No</ISDELETED>
-        <ISSECURITYONWHENENTERED>No</ISSECURITYONWHENENTERED>
-        <ASORIGINAL>Yes</ASORIGINAL>
-        <ISGSTEXCLUDED>No</ISGSTEXCLUDED>
-        <ISSIMPLEUNIT>Yes</ISSIMPLEUNIT>
-        <ALTERID>${alterID}</ALTERID>
         <DECIMALPLACES>${decimal}</DECIMALPLACES>
-        <REPORTINGUQCDETAILS.LIST>
-          <APPLICABLEFROM>20250401</APPLICABLEFROM>
-          <REPORTINGUQCNAME>&#4; Not Applicable</REPORTINGUQCNAME>
-        </REPORTINGUQCDETAILS.LIST>
       </UNIT>
     </TALLYMESSAGE>`;
 
     // Append the current unit XML to our output.
     xmlOutput += xmlUnit + "\n";
   });
+
+  // Close the XML structure
+  xmlOutput += `</REQUESTDATA>
+        </IMPORTDATA>
+    </BODY>
+</ENVELOPE>`;
 
   return xmlOutput;
 }

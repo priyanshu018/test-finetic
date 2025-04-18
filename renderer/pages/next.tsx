@@ -314,7 +314,7 @@ export default function IndexPage() {
         decimal: 3
       }
     ] 
-    const response = await window.electron.exportUnit(units);
+    const response = await window.electron.createUnit(units);
     console.log(response, "here is ");
   };
 

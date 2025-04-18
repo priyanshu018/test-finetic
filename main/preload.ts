@@ -31,7 +31,10 @@ contextBridge.exposeInMainWorld('electron', {
     gstin?: string;
   }) => ipcRenderer.invoke('create-party-ledger', xmlData, partyName, ledgerDetails),
 
-  createPurchaserLedger: (xmlData: string, purchaserName: string) => ipcRenderer.invoke("create-purchaser-ledger", xmlData, purchaserName)
+  createPurchaserLedger: (xmlData: string, purchaserName: string) => ipcRenderer.invoke("create-purchaser-ledger", xmlData, purchaserName),
+
+  createUnit: (unitData: any) => ipcRenderer.invoke("create-unit", unitData),
+
 
 });
 
