@@ -1258,13 +1258,22 @@ ${optionalFields}          </LEDGER>
       if (missingLedgerResponse?.length > 0) {
 
         const createLawLedgerResponse = await createLawLedger(missingLedgerResponse)
-        console.log(missingLedgerResponse, "missingLedgerResponse", createLawLedgerResponse, "createLawLedgerResponse")
+        const responseData = parseResponse(createLawLedgerResponse?.data?.data)
+        console.log(responseData, "hereeee", missingLedgerResponse)
+
+        if (responseData?.created === missingLedgerResponse?.length + 1) {
+          return { success: true, data: responseData, ledgerName: missingLedgerResponse };
+        } else {
+          return { success: false, data: responseData, ledgerName: missingLedgerResponse };
+
+        }
+      } else {
+        // Return the data to the renderer process.
+        return { success: true, data: response.data, ledgerName: filterResponse };
       }
 
 
 
-      // Return the data to the renderer process.
-      return { success: true, data: response.data, ledgerName: filterResponse };
     } catch (error: any) {
       console.error('Error in send-tally-xml IPC handler:', error);
       return { success: false, error: error.message };

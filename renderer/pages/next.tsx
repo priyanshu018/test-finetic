@@ -119,7 +119,7 @@ export default function IndexPage() {
       .then((result) => {
         if (result.success) {
           // console.log('Response from Tally:', result.data);
-          return result.ledgerName
+          return result
         } else {
           console.error('Error sending XML to Tally:', result.error);
         }
