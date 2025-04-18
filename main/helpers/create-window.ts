@@ -1272,6 +1272,71 @@ ${optionalFields}          </LEDGER>
       throw error;
     }
   }
+  /**
+   * Function to extract stock item names from XML data.
+   * @param xmlData - The XML string to parse.
+   * @returns A promise that resolves to an array of stock item names.
+   */
+  async function getStockItemNames(xmlData: string): Promise<string[]> {
+    try {
+      // Parse the XML string using xml2js
+      const result = await parseStringPromise(xmlData, { explicitArray: false });
+
+      // Navigate to the STOCKITEM elements in the parsed data
+      const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
+      if (!collection) {
+        throw new Error("Cannot find COLLECTION element in the XML.");
+      }
+
+      // Extract stock item names
+      const stockItems = collection.STOCKITEM;
+      let stockItemNames: string[] = [];
+
+      // Check if there are stock items in the collection and handle missing data safely
+      if (stockItems) {
+        // If there's only one stock item (not an array)
+        if (!Array.isArray(stockItems)) {
+          // Ensure the name is available before accessing
+          if (stockItems.$ && stockItems.$.NAME) {
+            stockItemNames.push(stockItems.$.NAME);
+          }
+        } else {
+          // If there are multiple stock items
+          stockItemNames = stockItems
+            .map((item: any) => item.$?.NAME) // Safely access the NAME
+            .filter((name: string | undefined) => name !== undefined); // Remove undefined values
+        }
+      }
+
+      // Return the list of stock item names
+      return stockItemNames;
+    } catch (error) {
+      console.error("Error parsing XML to get stock item names:", error);
+      throw error;
+    }
+  }
+  interface Item {
+    name: string;
+    HSN: string;
+    SGST: number;
+    CGST: number;
+    gst: number;
+    symbol: string;
+  }
+
+  async function checkItemNames(existData: string[], itemsData: Item[]): Promise<Item[]> {
+    try {
+      // Find the items that do not exist in the existData
+      const nonMatchingItems = itemsData.filter(item => !existData.includes(item.name));
+
+      // Return the full objects of items that do not exist in the existData
+      return nonMatchingItems;
+    } catch (error) {
+      console.error("Error checking non-matching item objects:", error);
+      throw error;
+    }
+  }
+
 
   // ------------------------------------------------------------------------------------------------------------------------
 
@@ -1499,7 +1564,114 @@ ${optionalFields}          </LEDGER>
     }
   });
 
+  ipcMain.handle('create-item', async (_, itemData: any) => {
+    try {
 
+      let xmlData = `<ENVELOPE>
+    <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>Custom List of StockItems</ID>
+    </HEADER>
+    <BODY>
+        <DESC>
+            <STATICVARIABLES />
+            <TDL>
+                <TDLMESSAGE>
+                    <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="Custom List of StockItems">
+                        <TYPE>StockItem</TYPE>
+                        <NATIVEMETHOD>MasterID</NATIVEMETHOD>
+                        <NATIVEMETHOD>GUID</NATIVEMETHOD>
+                    </COLLECTION>
+                </TDLMESSAGE>
+            </TDL>
+        </DESC>
+    </BODY>
+</ENVELOPE>`
+
+      // Calculate content length (in bytes) from the XML data.
+      const contentLength = Buffer.byteLength(xmlData, 'utf8');
+
+      // Make the HTTP request to your endpoint.
+      const response = await axios({
+        method: 'POST',
+        url: 'http://localhost:9000', // Replace or make configurable as needed.
+        headers: {
+          'Content-Type': 'application/xml',
+          'Content-Length': contentLength, // Setting the Content-Length header.
+        },
+        data: xmlData,
+      });
+
+      const xmlResponse = await getStockItemNames(response?.data)
+
+      const filterResponse = await checkUnitNames(xmlResponse, itemData)
+
+
+      if (xmlResponse?.length === 0) {
+        const response = await axios({
+          method: 'GET',
+          url: 'http://localhost:9000', // Replace or make configurable as needed.
+          headers: {
+            'Content-Type': 'application/xml',
+            'Content-Length': contentLength, // Setting the Content-Length header.
+          },
+          data: xmlResponse,
+        });
+
+        const data = parseResponse(response?.data)
+        console.log(data, "data hete")
+
+        if (data?.created === filterResponse?.length) {
+          return { success: true, isExist: filterResponse, data: itemData };
+        } else {
+          return { success: false, data: itemData };
+        }
+      } else {
+        console.log("elseworking")
+        const filterResponse = await checkItemNames(xmlResponse, itemData)
+
+        console.log(filterResponse,"here is ")
+
+        if (filterResponse?.length > 0) {
+          const xmlResponse = await createStockItems(filterResponse)
+
+          console.log(xmlResponse,"here sssss")
+
+          const contentLength = Buffer.byteLength(xmlResponse, 'utf8');
+
+          const response = await axios({
+            method: 'GET',
+            url: 'http://localhost:9000', // Replace or make configurable as needed.
+            headers: {
+              'Content-Type': 'application/xml',
+              'Content-Length': contentLength, // Setting the Content-Length header.
+            },
+            data: xmlResponse,
+          });
+
+          const data = parseResponse(response?.data)
+          console.log(data, "data hete")
+
+          if (data?.created === filterResponse?.length) {
+            return { success: true, isExist: filterResponse, data: itemData };
+          } else {
+            return { success: false, data: itemData };
+          }
+        } else {
+          return { success: true, isExist: filterResponse, data: itemData };
+        }
+
+      }
+
+
+
+    } catch (error: any) {
+      console.error('Error in send-tally-xml IPC handler:', error);
+      return { success: false, error: error.message };
+    }
+  });
 
   ipcMain.handle('create-purchase-entry', async (_, payload: {
     invoiceNumber: string;

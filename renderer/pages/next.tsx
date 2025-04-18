@@ -286,7 +286,7 @@ export default function IndexPage() {
         symbol: "GM"
       }
     ]
-    const response = await window.electron.exportItem(items);
+    const response = await window.electron.createItem(items);
     console.log(response);
   };
 

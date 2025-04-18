@@ -581,7 +581,7 @@ export function createUnits(units: unknown): string {
 /**
 * Interface defining the structure of a stock item object.
 */
-export interface StockItem {
+interface StockItem {
   Product: string;
   HSN: string;
   SGST: number;
@@ -590,13 +590,6 @@ export interface StockItem {
   symbol: string;
 }
 
-/**
- * Generates XML for multiple stock items.
- *
- * @param items - An array of stock item objects.
- * @returns A string containing the combined XML for all stock items.
- * @throws Error if the payload is not an array.
- */
 export function createStockItems(items: unknown): string {
   // Validate that the input is an array.
   if (!Array.isArray(items)) {
@@ -604,14 +597,28 @@ export function createStockItems(items: unknown): string {
   }
 
   let xmlOutput = "";
+
+  // Wrap the generated XML in the main ENVELOPE structure
+  xmlOutput += `<ENVELOPE>
+    <HEADER>
+        <TALLYREQUEST>Import Data</TALLYREQUEST>
+    </HEADER>
+    <BODY>
+        <IMPORTDATA>
+            <REQUESTDESC>
+                <REPORTNAME>All Masters</REPORTNAME>
+            </REQUESTDESC>
+            <REQUESTDATA>`;
+
   const baseGUID = "bf911d27-633e-4ad7-ba7c-a871d6f9461e-";
   const startingSuffix = 269; // Starting suffix for GUID (example: "00000269")
   const baseAlterID = 1011;   // Starting alterID value
 
+  // Loop through each item to generate XML for each stock item
   (items as StockItem[]).forEach((item, index) => {
     const { Product, HSN, SGST, CGST, gst, symbol } = item;
 
-    // Basic validation for required fields.
+    // Basic validation for required fields
     if (
       !Product ||
       !HSN ||
@@ -620,82 +627,24 @@ export function createStockItems(items: unknown): string {
       typeof gst === "undefined" ||
       !symbol
     ) {
-      // Skip this entry. You can also choose to throw an error or log a warning.
+      // Skip this entry if any required field is missing
       return;
     }
 
-    // Generate a pseudo-unique GUID and ALTERID for each stock item.
+    // Generate a pseudo-unique GUID and ALTERID for each stock item
     const guidSuffix = (startingSuffix + index).toString().padStart(8, "0");
     const guid = baseGUID + guidSuffix;
     const alterID = baseAlterID + index;
 
-    // Build the XML for the current stock item.
+    // Build the XML for the current stock item
     const xmlItem = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
-      <STOCKITEM NAME="${Product}" RESERVEDNAME="">
-        <OLDAUDITENTRYIDS.LIST TYPE="Number">
-          <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
-        </OLDAUDITENTRYIDS.LIST>
-        <GUID>${guid}</GUID>
-        <PARENT/>
-        <CATEGORY>&#4; Not Applicable</CATEGORY>
-        <GSTAPPLICABLE>&#4; Applicable</GSTAPPLICABLE>
-        <TAXCLASSIFICATIONNAME>&#4; Not Applicable</TAXCLASSIFICATIONNAME>
-        <GSTTYPEOFSUPPLY>Goods</GSTTYPEOFSUPPLY>
-        <EXCISEAPPLICABILITY>&#4; Applicable</EXCISEAPPLICABILITY>
-        <SALESTAXCESSAPPLICABLE/>
-        <VATAPPLICABLE>&#4; Applicable</VATAPPLICABLE>
-        <COSTINGMETHOD>Avg. Cost</COSTINGMETHOD>
-        <VALUATIONMETHOD>Avg. Price</VALUATIONMETHOD>
+      <STOCKITEM Action="Create">
+        <NAME>${Product}</NAME>
         <BASEUNITS>${symbol}</BASEUNITS>
-        <ADDITIONALUNITS>&#4; Not Applicable</ADDITIONALUNITS>
-        <EXCISEITEMCLASSIFICATION>&#4; Not Applicable</EXCISEITEMCLASSIFICATION>
-        <VATBASEUNIT>${symbol}</VATBASEUNIT>
-        <ISCOSTCENTRESON>No</ISCOSTCENTRESON>
-        <ISBATCHWISEON>No</ISBATCHWISEON>
-        <ISPERISHABLEON>No</ISPERISHABLEON>
-        <ISENTRYTAXAPPLICABLE>No</ISENTRYTAXAPPLICABLE>
-        <ISCOSTTRACKINGON>No</ISCOSTTRACKINGON>
-        <ISUPDATINGTARGETID>No</ISUPDATINGTARGETID>
-        <ISDELETED>No</ISDELETED>
-        <ISSECURITYONWHENENTERED>No</ISSECURITYONWHENENTERED>
-        <ASORIGINAL>Yes</ASORIGINAL>
-        <ISRATEINCLUSIVEVAT>No</ISRATEINCLUSIVEVAT>
-        <IGNOREPHYSICALDIFFERENCE>No</IGNOREPHYSICALDIFFERENCE>
-        <IGNORENEGATIVESTOCK>No</IGNORENEGATIVESTOCK>
-        <TREATSALESASMANUFACTURED>No</TREATSALESASMANUFACTURED>
-        <TREATPURCHASESASCONSUMED>No</TREATPURCHASESASCONSUMED>
-        <TREATREJECTSASSCRAP>No</TREATREJECTSASSCRAP>
-        <HASMFGDATE>No</HASMFGDATE>
-        <ALLOWUSEOFEXPIREDITEMS>No</ALLOWUSEOFEXPIREDITEMS>
-        <IGNOREBATCHES>No</IGNOREBATCHES>
-        <IGNOREGODOWNS>No</IGNOREGODOWNS>
-        <ADJDIFFINFIRSTSALELEDGER>No</ADJDIFFINFIRSTSALELEDGER>
-        <ADJDIFFINFIRSTPURCLEDGER>No</ADJDIFFINFIRSTPURCLEDGER>
-        <CALCONMRP>No</CALCONMRP>
-        <EXCLUDEJRNLFORVALUATION>No</EXCLUDEJRNLFORVALUATION>
-        <ISMRPINCLOFTAX>No</ISMRPINCLOFTAX>
-        <ISADDLTAXEXEMPT>No</ISADDLTAXEXEMPT>
-        <ISSUPPLEMENTRYDUTYON>No</ISSUPPLEMENTRYDUTYON>
-        <GVATISEXCISEAPPL>No</GVATISEXCISEAPPL>
-        <ISADDITIONALTAX>No</ISADDITIONALTAX>
-        <ISCESSEXEMPTED>No</ISCESSEXEMPTED>
-        <REORDERASHIGHER>No</REORDERASHIGHER>
-        <MINORDERASHIGHER>No</MINORDERASHIGHER>
-        <ISEXCISECALCULATEONMRP>No</ISEXCISECALCULATEONMRP>
-        <INCLUSIVETAX>No</INCLUSIVETAX>
-        <GSTCALCSLABONMRP>No</GSTCALCSLABONMRP>
-        <MODIFYMRPRATE>No</MODIFYMRPRATE>
-        <ALTERID>${alterID}</ALTERID>
-        <DENOMINATOR>1</DENOMINATOR>
-        <RATEOFVAT>0</RATEOFVAT>
-        <VATBASENO>1</VATBASENO>
-        <VATTRAILNO>1</VATTRAILNO>
-        <VATACTUALRATIO>1</VATACTUALRATIO>
-        <SERVICETAXDETAILS.LIST>      </SERVICETAXDETAILS.LIST>
-        <VATDETAILS.LIST>      </VATDETAILS.LIST>
-        <SALESTAXCESSDETAILS.LIST>      </SALESTAXCESSDETAILS.LIST>
+        <OPENINGBALANCE>120</OPENINGBALANCE>
+        <GSTAPPLICABLE>&#4; Applicable</GSTAPPLICABLE>
         <GSTDETAILS.LIST>
-          <APPLICABLEFROM>20250401</APPLICABLEFROM>
+          <APPLICABLEFROM>20200401</APPLICABLEFROM>
           <TAXABILITY>Taxable</TAXABILITY>
           <SRCOFGSTDETAILS>Specify Details Here</SRCOFGSTDETAILS>
           <GSTCALCSLABONMRP>No</GSTCALCSLABONMRP>
@@ -730,56 +679,30 @@ export function createStockItems(items: unknown): string {
             </RATEDETAILS.LIST>
             <GSTSLABRATES.LIST>        </GSTSLABRATES.LIST>
           </STATEWISEDETAILS.LIST>
-          <TEMPGSTITEMSLABRATES.LIST>       </TEMPGSTITEMSLABRATES.LIST>
-          <TEMPGSTDETAILSLABRATES.LIST>       </TEMPGSTDETAILSLABRATES.LIST>
         </GSTDETAILS.LIST>
         <HSNDETAILS.LIST>
-          <APPLICABLEFROM>20250401</APPLICABLEFROM>
+          <APPLICABLEFROM>20200401</APPLICABLEFROM>
           <HSNCODE>${HSN}</HSNCODE>
           <SRCOFHSNDETAILS>Specify Details Here</SRCOFHSNDETAILS>
         </HSNDETAILS.LIST>
-        <LANGUAGENAME.LIST>
-          <NAME.LIST TYPE="String">
-            <NAME>${Product}</NAME>
-          </NAME.LIST>
-          <LANGUAGEID>1033</LANGUAGEID>
-        </LANGUAGENAME.LIST>
-        <SCHVIDETAILS.LIST>      </SCHVIDETAILS.LIST>
-        <EXCISETARIFFDETAILS.LIST>      </EXCISETARIFFDETAILS.LIST>
-        <TCSCATEGORYDETAILS.LIST>      </TCSCATEGORYDETAILS.LIST>
-        <TDSCATEGORYDETAILS.LIST>      </TDSCATEGORYDETAILS.LIST>
-        <EXCLUDEDTAXATIONS.LIST>      </EXCLUDEDTAXATIONS.LIST>
-        <OLDAUDITENTRIES.LIST>      </OLDAUDITENTRIES.LIST>
-        <ACCOUNTAUDITENTRIES.LIST>      </ACCOUNTAUDITENTRIES.LIST>
-        <AUDITENTRIES.LIST>      </AUDITENTRIES.LIST>
-        <OLDMRPDETAILS.LIST>      </OLDMRPDETAILS.LIST>
-        <VATCLASSIFICATIONDETAILS.LIST>      </VATCLASSIFICATIONDETAILS.LIST>
-        <MRPDETAILS.LIST>      </MRPDETAILS.LIST>
-        <REPORTINGUOMDETAILS.LIST>      </REPORTINGUOMDETAILS.LIST>
-        <COMPONENTLIST.LIST>      </COMPONENTLIST.LIST>
-        <ADDITIONALLEDGERS.LIST>      </ADDITIONALLEDGERS.LIST>
-        <SALESLIST.LIST>      </SALESLIST.LIST>
-        <PURCHASELIST.LIST>      </PURCHASELIST.LIST>
-        <FULLPRICELIST.LIST>      </FULLPRICELIST.LIST>
-        <BATCHALLOCATIONS.LIST>      </BATCHALLOCATIONS.LIST>
-        <TRADEREXCISEDUTIES.LIST>      </TRADEREXCISEDUTIES.LIST>
-        <STANDARDCOSTLIST.LIST>      </STANDARDCOSTLIST.LIST>
-        <STANDARDPRICELIST.LIST>      </STANDARDPRICELIST.LIST>
-        <EXCISEITEMGODOWN.LIST>      </EXCISEITEMGODOWN.LIST>
-        <MULTICOMPONENTLIST.LIST>      </MULTICOMPONENTLIST.LIST>
-        <LBTDETAILS.LIST>      </LBTDETAILS.LIST>
-        <PRICELEVELLIST.LIST>      </PRICELEVELLIST.LIST>
-        <GSTCLASSFNIGSTRATES.LIST>      </GSTCLASSFNIGSTRATES.LIST>
-        <EXTARIFFDUTYHEADDETAILS.LIST>      </EXTARIFFDUTYHEADDETAILS.LIST>
-        <TEMPGSTITEMSLABRATES.LIST>      </TEMPGSTITEMSLABRATES.LIST>
+        <ALTERID>${alterID}</ALTERID>
+        <GUID>${guid}</GUID>
       </STOCKITEM>
     </TALLYMESSAGE>`;
 
+    // Append the current stock item XML to the output
     xmlOutput += xmlItem + "\n";
   });
 
+  // Close the XML structure
+  xmlOutput += `</REQUESTDATA>
+        </IMPORTDATA>
+    </BODY>
+</ENVELOPE>`;
+
   return xmlOutput;
 }
+
 
 
 /**

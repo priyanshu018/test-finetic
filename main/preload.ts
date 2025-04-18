@@ -35,8 +35,10 @@ contextBridge.exposeInMainWorld('electron', {
 
   createUnit: (unitData: any) => ipcRenderer.invoke("create-unit", unitData),
 
+  createItem: (itemData: any) => ipcRenderer.invoke("create-item", itemData),
 
 });
+
 
 
 contextBridge.exposeInMainWorld('ipc', handler)
