@@ -105,8 +105,8 @@ export default function IndexPage() {
   }, [])
 
   const handleCreatePurchaseLedger = async () => {
-    // const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
-    // console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
+    const purchaserLedgerResponse = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchaser")
+    console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
 
   }
 

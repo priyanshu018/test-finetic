@@ -3,7 +3,7 @@ import { exec, execSync } from 'child_process';
 import Store from 'electron-store';
 import * as fs from 'fs';
 import { parseStringPromise } from 'xml2js';
-import { createPartyLedger, createPurchaserLedger, createStockItems, createTaxLedgers, createUnits, createVoucher, VoucherPayload } from '../../service/commonFunction';
+import { createPartyLedgerXml, createPurchaserLedgerXml, createStockItems, createTaxLedgers, createUnits, createVoucher, VoucherPayload } from '../../service/commonFunction';
 import axios from 'axios';
 
 export const createWindow = (windowName: string, options: BrowserWindowConstructorOptions): BrowserWindow => {
@@ -1153,7 +1153,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
  * @param ledgerDetails - An object containing details for the ledger to create.
  * @returns An object containing success status, Tally's response data, and the XML payload.
  */
-  async function createPartyName(ledgerDetails: {
+  async function createPartyNameUsingXmlApi(ledgerDetails: {
     name: string;
     parent: string;
     address?: string;
@@ -1235,115 +1235,130 @@ ${optionalFields}          </LEDGER>
     }
   });
 
-  // ipcMain.handle('create-party-name-entry', async (_, partyName: string, gst: string) => {
-  //   try {
-  //     const response = await exportAndGetPartyName(partyName, gst);
-  //     console.log(response)
-  //     return { success: true, response };
-  //   } catch (error) {
-  //     console.error('Error creating party entry:', error);
-  //     return { success: false, error: error.message };
-  //   }
-  // });
 
-  // ipcMain.handle('export-ledger', async (_, ledgerName: string, ledgerType: string) => {
-  //   try {
-  //     const response = await exportAndCheckLedger(ledgerName, ledgerType);
-  //     console.log(response)
-  //     return { success: true, response };
-  //   } catch (error) {
-  //     console.error('Error creating purchase entry:', error);
-  //     return { success: false, error: error.message };
-  //   }
-  // });
+  ipcMain.handle('get-tax-ledger-data', async (_, xmlData: string) => {
+    try {
+      // Calculate content length (in bytes) from the XML data.
+      const contentLength = Buffer.byteLength(xmlData, 'utf8');
 
-  // ipcMain.handle('create-igst-ledger', async (_, ledgerName: string) => {
-  //   try {
-  //     await createIgstLedger(ledgerName);
-  //     return { success: true, ledgerName };
-  //   } catch (error) {
-  //     // You might want to pass more details for error handling
-  //     return { success: false, error: error.message };
-  //   }
-  // });
+      // Make the HTTP request to your endpoint.
+      const response = await axios({
+        method: 'POST',
+        url: 'http://localhost:9000', // Replace or make configurable as needed.
+        headers: {
+          'Content-Type': 'application/xml',
+          'Content-Length': contentLength, // Setting the Content-Length header.
+        },
+        data: xmlData,
+      });
 
-  // ipcMain.handle('create-cgst-ledger', async (_, ledgerName: string) => {
-  //   try {
-  //     await createCgstLedger(ledgerName);
-  //     return { success: true, ledgerName };
-  //   } catch (error) {
-  //     // You might want to pass more details for error handling
-  //     return { success: false, error: error.message };
-  //   }
-  // });
+      const filterResponse = await getLedgerNames(response.data)
+      const missingLedgerResponse = getMissingLedgers(filterResponse)
 
-  // Updated IPC handler to use the new function
-  // ipcMain.handle('export-unit', async (_, units: any) => {
-  //   try {
-  //     // If units is an array, check all; otherwise, wrap it in an array.
-  //     // const unitsArray = Array.isArray(units) ? units : [units];
-  //     // const { results } = await exportAndCheckUnits(unitsArray);
-  //     // // If a single unit was passed, return its existence directly.
-  //     // return Array.isArray(units) ? { success: true, results } : { success: true, exists: results[0].exists };
-  //     const response = await exportAndCheckUnits(units);
-  //     console.log(response)
+      if (missingLedgerResponse?.length > 0) {
 
-  //     return { success: true, response };
-  //   } catch (error) {
-  //     console.error('Error exporting unit:', error);
-  //     return { success: false, error: error.message };
-  //   }
-  // });
+        const createLawLedgerResponse = await createLawLedger(missingLedgerResponse)
+        console.log(missingLedgerResponse, "missingLedgerResponse", createLawLedgerResponse, "createLawLedgerResponse")
+      }
 
-  // // Updated IPC handler using the new function
-  // ipcMain.handle('export-item', async (_, items: any) => {
-  //   try {
-  //     // Ensure items is treated as an array
-  //     // const itemsArray = Array.isArray(items) ? items : [items];
-  //     // const { results } = await exportAndCheckItems(itemsArray);
 
-  //     const response = await exportAndCheckItems(items)
-  //     console.log(response)
 
-  //     return { success: true, responses: response };
-  //   } catch (error) {
-  //     console.error('Error exporting item:', error);
-  //     return { success: false, error: error.message };
-  //   }
-  // });
+      // Return the data to the renderer process.
+      return { success: true, data: response.data, ledgerName: filterResponse };
+    } catch (error: any) {
+      console.error('Error in send-tally-xml IPC handler:', error);
+      return { success: false, error: error.message };
+    }
+  });
 
-  // ipcMain.handle('create-item', async (_, itemName: string, symbol: string, decimal: number, hsn: number, gst: number) => {
-  //   try {
-  //     await createItem(itemName, symbol, decimal, hsn, gst);
-  //     return { success: true, itemName };
-  //   } catch (error) {
-  //     console.error('Error creating item:', error);
-  //     return { success: false, error: error.message };
-  //   }
-  // });
 
-  // ipcMain.handle('create-purchase-entry', async (_, invoiceNumber: string,
-  //   date: string,
-  //   partyName: string,
-  //   purchaseLedger: string,
-  //   items: {
-  //     name: string;
-  //     quantity: number;
-  //     price: number;
-  //     cgst: number;
-  //     sgst: number;
-  //     igst: number;
-  //   }[],
-  //   isWithinState: boolean) => {
-  //   try {
-  //     // await createPurchaseEntry(invoiceNumber, date, partyName, purchaseLedger, items, isWithinState);
-  //     return { success: true };
-  //   } catch (error) {
-  //     console.error('Error creating purchase entry:', error);
-  //     return { success: false, error: error.message };
-  //   }
-  // });
+  ipcMain.handle('create-party-ledger', async (_, xmlData: string, partyName: string, partyDetailData) => {
+    try {
+      // Calculate content length (in bytes) from the XML data.
+      const contentLength = Buffer.byteLength(xmlData, 'utf8');
 
+      // Make the HTTP request to your endpoint.
+      const response = await axios({
+        method: 'POST',
+        url: 'http://localhost:9000', // Replace or make configurable as needed.
+        headers: {
+          'Content-Type': 'application/xml',
+          'Content-Length': contentLength, // Setting the Content-Length header.
+        },
+        data: xmlData,
+      });
+
+      const filterResponse = await getLedgerNames(response.data)
+      const missingLedgerResponse = checkPartyNameExist(filterResponse, partyName)
+
+      if (!missingLedgerResponse) {
+        const createPartNameLedger = await createPartyNameUsingXmlApi(partyDetailData)
+        const checkCreatedLedgerResponse = await getLedgerNames(response.data)
+        const data = parseResponse(createPartNameLedger?.data)
+        return { success: true, data, ledgerName: checkCreatedLedgerResponse };
+      }
+
+      return { success: true, isExist: missingLedgerResponse, data: filterResponse };
+
+      // Return the data to the renderer process.
+    } catch (error: any) {
+      console.error('Error in send-tally-xml IPC handler:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('create-purchaser-ledger', async (_, xmlData: string, purchaserName: string) => {
+    try {
+      // Calculate content length (in bytes) from the XML data.
+      const contentLength = Buffer.byteLength(xmlData, 'utf8');
+
+      // Make the HTTP request to your endpoint.
+      const response = await axios({
+        method: 'POST',
+        url: 'http://localhost:9000', // Replace or make configurable as needed.
+        headers: {
+          'Content-Type': 'application/xml',
+          'Content-Length': contentLength, // Setting the Content-Length header.
+        },
+        data: xmlData,
+      });
+
+      const filterResponse = await getLedgerNames(response.data)
+      const missingLedgerResponse = checkPartyNameExist(filterResponse, purchaserName)
+
+      console.log(missingLedgerResponse, "here it is wprlinf")
+
+      if (!missingLedgerResponse) {
+        console.log(purchaserName, "here is")
+        const createPurchaseLedger = await createPurchaserLedgerXml(purchaserName)
+        // Calculate content length (in bytes) from the XML data.
+        const contentLength = Buffer.byteLength(createPurchaseLedger, 'utf8');
+
+        const response = await axios({
+          method: 'GET',
+          url: 'http://localhost:9000', // Replace or make configurable as needed.
+          headers: {
+            'Content-Type': 'application/xml',
+            'Content-Length': contentLength, // Setting the Content-Length header.
+          },
+          data: createPurchaseLedger,
+        });
+
+        const data = parseResponse(response?.data)
+
+        if (data?.created === 1) {
+          return { success: true, isExist: missingLedgerResponse, data: purchaserName };
+        } else {
+          return { success: false, data: purchaserName };
+        }
+      } else {
+        return { success: true, isExist: missingLedgerResponse, data: purchaserName };
+      }
+    } catch (error: any) {
+      console.error('Error in send-tally-xml IPC handler:', error);
+      return { success: false, error: error.message };
+    }
+  });
 
   ipcMain.handle('create-purchase-entry', async (_, payload: {
     invoiceNumber: string;
@@ -1408,77 +1423,116 @@ ${optionalFields}          </LEDGER>
     }
   });
 
-  ipcMain.handle('get-tax-ledger-data', async (_, xmlData: string) => {
-    try {
-      // Calculate content length (in bytes) from the XML data.
-      const contentLength = Buffer.byteLength(xmlData, 'utf8');
-
-      // Make the HTTP request to your endpoint.
-      const response = await axios({
-        method: 'POST',
-        url: 'http://localhost:9000', // Replace or make configurable as needed.
-        headers: {
-          'Content-Type': 'application/xml',
-          'Content-Length': contentLength, // Setting the Content-Length header.
-        },
-        data: xmlData,
-      });
-
-      const filterResponse = await getLedgerNames(response.data)
-      const missingLedgerResponse = getMissingLedgers(filterResponse)
-
-      if (missingLedgerResponse?.length > 0) {
-
-        const createLawLedgerResponse = await createLawLedger(missingLedgerResponse)
-        console.log(missingLedgerResponse, "missingLedgerResponse", createLawLedgerResponse, "createLawLedgerResponse")
-      }
-
-
-
-      // Return the data to the renderer process.
-      return { success: true, data: response.data, ledgerName: filterResponse };
-    } catch (error: any) {
-      console.error('Error in send-tally-xml IPC handler:', error);
-      return { success: false, error: error.message };
-    }
-  });
-
-
-  ipcMain.handle('create-party-ledger', async (_, xmlData: string, partyName: string, partyDetailData) => {
-    try {
-      // Calculate content length (in bytes) from the XML data.
-      const contentLength = Buffer.byteLength(xmlData, 'utf8');
-
-      // Make the HTTP request to your endpoint.
-      const response = await axios({
-        method: 'POST',
-        url: 'http://localhost:9000', // Replace or make configurable as needed.
-        headers: {
-          'Content-Type': 'application/xml',
-          'Content-Length': contentLength, // Setting the Content-Length header.
-        },
-        data: xmlData,
-      });
-
-      const filterResponse = await getLedgerNames(response.data)
-      const missingLedgerResponse = checkPartyNameExist(filterResponse, partyName)
-
-      if (!missingLedgerResponse) {
-        const createPartNameLedger = await createPartyName(partyDetailData)
-        const checkCreatedLedgerResponse = await getLedgerNames(response.data)
-        const data = parseResponse(createPartNameLedger?.data)
-        return { success: true, data, ledgerName: checkCreatedLedgerResponse };
-      }
-
-      return { success: true, isExist: missingLedgerResponse, data: filterResponse };
-
-      // Return the data to the renderer process.
-    } catch (error: any) {
-      console.error('Error in send-tally-xml IPC handler:', error);
-      return { success: false, error: error.message };
-    }
-  });
-
-
   return win;
 };
+
+
+
+// ipcMain.handle('create-party-name-entry', async (_, partyName: string, gst: string) => {
+//   try {
+//     const response = await exportAndGetPartyName(partyName, gst);
+//     console.log(response)
+//     return { success: true, response };
+//   } catch (error) {
+//     console.error('Error creating party entry:', error);
+//     return { success: false, error: error.message };
+//   }
+// });
+
+// ipcMain.handle('export-ledger', async (_, ledgerName: string, ledgerType: string) => {
+//   try {
+//     const response = await exportAndCheckLedger(ledgerName, ledgerType);
+//     console.log(response)
+//     return { success: true, response };
+//   } catch (error) {
+//     console.error('Error creating purchase entry:', error);
+//     return { success: false, error: error.message };
+//   }
+// });
+
+// ipcMain.handle('create-igst-ledger', async (_, ledgerName: string) => {
+//   try {
+//     await createIgstLedger(ledgerName);
+//     return { success: true, ledgerName };
+//   } catch (error) {
+//     // You might want to pass more details for error handling
+//     return { success: false, error: error.message };
+//   }
+// });
+
+// ipcMain.handle('create-cgst-ledger', async (_, ledgerName: string) => {
+//   try {
+//     await createCgstLedger(ledgerName);
+//     return { success: true, ledgerName };
+//   } catch (error) {
+//     // You might want to pass more details for error handling
+//     return { success: false, error: error.message };
+//   }
+// });
+
+// Updated IPC handler to use the new function
+// ipcMain.handle('export-unit', async (_, units: any) => {
+//   try {
+//     // If units is an array, check all; otherwise, wrap it in an array.
+//     // const unitsArray = Array.isArray(units) ? units : [units];
+//     // const { results } = await exportAndCheckUnits(unitsArray);
+//     // // If a single unit was passed, return its existence directly.
+//     // return Array.isArray(units) ? { success: true, results } : { success: true, exists: results[0].exists };
+//     const response = await exportAndCheckUnits(units);
+//     console.log(response)
+
+//     return { success: true, response };
+//   } catch (error) {
+//     console.error('Error exporting unit:', error);
+//     return { success: false, error: error.message };
+//   }
+// });
+
+// // Updated IPC handler using the new function
+// ipcMain.handle('export-item', async (_, items: any) => {
+//   try {
+//     // Ensure items is treated as an array
+//     // const itemsArray = Array.isArray(items) ? items : [items];
+//     // const { results } = await exportAndCheckItems(itemsArray);
+
+//     const response = await exportAndCheckItems(items)
+//     console.log(response)
+
+//     return { success: true, responses: response };
+//   } catch (error) {
+//     console.error('Error exporting item:', error);
+//     return { success: false, error: error.message };
+//   }
+// });
+
+// ipcMain.handle('create-item', async (_, itemName: string, symbol: string, decimal: number, hsn: number, gst: number) => {
+//   try {
+//     await createItem(itemName, symbol, decimal, hsn, gst);
+//     return { success: true, itemName };
+//   } catch (error) {
+//     console.error('Error creating item:', error);
+//     return { success: false, error: error.message };
+//   }
+// });
+
+// ipcMain.handle('create-purchase-entry', async (_, invoiceNumber: string,
+//   date: string,
+//   partyName: string,
+//   purchaseLedger: string,
+//   items: {
+//     name: string;
+//     quantity: number;
+//     price: number;
+//     cgst: number;
+//     sgst: number;
+//     igst: number;
+//   }[],
+//   isWithinState: boolean) => {
+//   try {
+//     // await createPurchaseEntry(invoiceNumber, date, partyName, purchaseLedger, items, isWithinState);
+//     return { success: true };
+//   } catch (error) {
+//     console.error('Error creating purchase entry:', error);
+//     return { success: false, error: error.message };
+//   }
+// });
