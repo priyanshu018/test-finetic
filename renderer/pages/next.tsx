@@ -335,7 +335,7 @@ export default function IndexPage() {
       cgst: { percentage: "9%", amount: 500 },
       igst: { percentage: "18%", amount: 500 },
       gstNumber:"ABCDE1234F",
-      isWithinState: true,
+      isWithinState: false,
     };
 
     // await window.electron.createPurchaseEntry("A006784", "01-04-2025", "EVERYDAY STORE-WAVE", "Purchase",

@@ -976,11 +976,11 @@ export function createVoucher(payload) {
                             </OLDAUDITENTRYIDS.LIST>
                             <APPROPRIATEFOR>&#4; Not Applicable</APPROPRIATEFOR>
                             <ROUNDTYPE>&#4; Not Applicable</ROUNDTYPE>
-                            <LEDGERNAME>ut/sgst${payload.cgst.percentage}%</LEDGERNAME>
+                            <LEDGERNAME>igst${payload.igst.percentage}%</LEDGERNAME>
                             <GSTCLASS>&#4; Not Applicable</GSTCLASS>
                             <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-                            <AMOUNT>-${payload.cgst.percentage}.00</AMOUNT>
-                            <VATEXPAMOUNT>-${payload.cgst.percentage}.00</VATEXPAMOUNT>
+                            <AMOUNT>-${payload.igst.amount}.00</AMOUNT>
+                            <VATEXPAMOUNT>-${payload.igst.amount}.00</VATEXPAMOUNT>
                         </LEDGERENTRIES.LIST>
                   `
     }
