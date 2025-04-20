@@ -37,6 +37,24 @@ contextBridge.exposeInMainWorld('electron', {
 
   createItem: (itemData: any) => ipcRenderer.invoke("create-item", itemData),
 
+  createPurchaseEntry: (payload: {
+    invoiceNumber: string;
+    invoiceDate: string;
+    partyName: string;
+    companyName:string;
+    purchaseLedger: string;
+    items: {
+      name: string;
+      quantity: number;
+      price: number;
+      unit?: string;
+    }[];
+    sgst: any;
+    cgst: any;
+    igst: any;
+    gstNumber:any;
+    isWithinState: boolean;
+  }) => ipcRenderer.invoke("create-purchase-entry", payload),
 });
 
 

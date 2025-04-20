@@ -1632,12 +1632,12 @@ ${optionalFields}          </LEDGER>
         console.log("elseworking")
         const filterResponse = await checkItemNames(xmlResponse, itemData)
 
-        console.log(filterResponse,"here is ")
+        console.log(filterResponse, "here is ")
 
         if (filterResponse?.length > 0) {
           const xmlResponse = await createStockItems(filterResponse)
 
-          console.log(xmlResponse,"here sssss")
+          console.log(xmlResponse, "here sssss")
 
           const contentLength = Buffer.byteLength(xmlResponse, 'utf8');
 
@@ -1675,8 +1675,9 @@ ${optionalFields}          </LEDGER>
 
   ipcMain.handle('create-purchase-entry', async (_, payload: {
     invoiceNumber: string;
-    invoiceData: string;
+    invoiceDate: string;
     partyName: string;
+    companyName:string;
     purchaseLedger: string;
     items: {
       name: string;
@@ -1684,22 +1685,25 @@ ${optionalFields}          </LEDGER>
       price: number;
       unit?: string;
     }[];
-    sgst: string;
-    cgst: string;
-    igst: string;
+    sgst: { percentage: string, amount: number };
+    cgst: { percentage: string, amount: number };
+    igst: { percentage: string, amount: number };
+    gstNumber:string;
     isWithinState: boolean;
   }) => {
     try {
       // Destructure payload.
       const {
         invoiceNumber,
-        invoiceData,
+        invoiceDate,
         partyName,
+        companyName,
         purchaseLedger,
         items,
         sgst,
         cgst,
         igst,
+        gstNumber,
         isWithinState,
       } = payload;
 
@@ -1707,8 +1711,9 @@ ${optionalFields}          </LEDGER>
       // Now we use the top-level tax values instead of relying on the first item.
       const voucherPayload: VoucherPayload = {
         invoiceNumber,
-        invoiceData, // expects dd-mm-yyyy format
+        invoiceDate, // expects dd-mm-yyyy format
         partyName,
+        companyName,
         purchaseLedger,
         items: items.map((item) => ({
           name: item.name,
@@ -1720,8 +1725,12 @@ ${optionalFields}          </LEDGER>
         sgst,
         cgst,
         igst,
+        gstNumber,
         isWithinState,
       };
+
+
+      console.log(voucherPayload, "voucherPayload")
 
       // Call the voucher generator to create the voucher XML.
       const voucherXml = createVoucher(voucherPayload);
@@ -1729,7 +1738,7 @@ ${optionalFields}          </LEDGER>
       console.log(voucherXml, "voucherXml");
 
       // Optionally, persist or further process the voucher.
-      return { success: true, voucherXml };
+      // return { success: true, voucherXml };
     } catch (error: any) {
       console.error('Error creating purchase entry:', error);
       return { success: false, error: error.message };
