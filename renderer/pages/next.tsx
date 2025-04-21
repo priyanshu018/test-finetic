@@ -309,7 +309,12 @@ export default function IndexPage() {
       companyName: "PrimeDepth Labs",
       partyName: "abc",
       purchaseLedger: "Purchase",
-      items: ,
+      items: [
+        { name: "CRAMEL 230GM", price: 71.2, quantity: 3, unit: "PCS" },
+        { name: "VEBA BLISS VEBA MAYONNAISE MINT", price: 105, quantity: 1, unit: "PCS" },
+        { name: "MAYONNAISE OLIVE OIL", price: 156.45, quantity: 1, unit: "PCS" },
+        // ...other items
+      ],
       sgst: { percentage: "6%", amount: 500 },
       cgst: { percentage: "9%", amount: 500 },
       igst: { percentage: "18%", amount: 500 },
