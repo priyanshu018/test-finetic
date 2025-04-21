@@ -1343,6 +1343,7 @@ ${optionalFields}          </LEDGER>
   // ------------------------------------------------------------------------------------------------------------------------
 
   // IPC handler to bring Tally to the foreground and send multiple keystrokes
+ 
   ipcMain.handle('bring-tally-to-foreground-and-send-keys', async (_, keys: string[]) => {
     try {
       await bringTallyToForegroundAndSendKeys(keys);
@@ -1351,6 +1352,8 @@ ${optionalFields}          </LEDGER>
       throw new Error(`Failed to send keys to Tally: ${error.message}`);
     }
   });
+
+
 
 
   ipcMain.handle('get-tax-ledger-data', async (_, xmlData: string) => {
@@ -1528,10 +1531,6 @@ ${optionalFields}          </LEDGER>
 
       const filterResponse = await checkUnitNames(getDataFromXml, unitData)
 
-      console.log(filterResponse?.length, "length")
-
-      console.log(filterResponse,"filter response")
-
       if (filterResponse?.length > 0) {
         const xmlResponse = await createUnits(filterResponse)
 
@@ -1549,11 +1548,7 @@ ${optionalFields}          </LEDGER>
           data: xmlResponse,
         });
 
-        console.log(response?.data,"response?.data")
-
-
         const data = parseResponse(response?.data)
-        console.log(data, "data hete")
 
         if (data?.created === filterResponse?.length) {
           return { success: true, isExist: filterResponse, data: unitData };
@@ -1611,11 +1606,8 @@ ${optionalFields}          </LEDGER>
 
       const xmlResponse = await getStockItemNames(response?.data)
 
-      console.log(xmlResponse, "xmlResponse")
-
       const filterResponse = await checkItemNames(xmlResponse, itemData)
 
-      console.log(filterResponse, "filterResponse")
       if (xmlResponse?.length === 0) {
         const response = await axios({
           method: 'GET',
@@ -1629,8 +1621,6 @@ ${optionalFields}          </LEDGER>
 
         const data = parseResponse(response?.data)
 
-        console.log(data, "data")
-
         if (data?.created === filterResponse?.length) {
           return { success: true, isExist: filterResponse, data: itemData };
         } else {
@@ -1639,10 +1629,8 @@ ${optionalFields}          </LEDGER>
       } else {
         const filterResponse = await checkItemNames(xmlResponse, itemData)
 
-        console.log(filterResponse, "filterResponse else")
         if (filterResponse?.length > 0) {
           const xmlResponse = await createStockItems(filterResponse)
-          console.log(xmlResponse, "xml response else if")
           const contentLength = Buffer.byteLength(xmlResponse, 'utf8');
 
           const response = await axios({
@@ -1656,8 +1644,6 @@ ${optionalFields}          </LEDGER>
           });
 
           const data = parseResponse(response?.data)
-
-          console.log(data, "data else if")
 
           if (data?.created === filterResponse?.length) {
             return { success: true, isExist: filterResponse, data: itemData };

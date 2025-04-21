@@ -1020,12 +1020,7 @@ export default function BillWorkflow() {
           companyName: "PrimeDepth Labs",
           partyName: purchaserName,
           purchaseLedger: "Purchase",
-          items: [
-            { name: "CRAMEL 230GM", price: 71.2, quantity: 3, unit: "PCS" },
-            { name: "VEBA BLISS VEBA MAYONNAISE MINT", price: 105, quantity: 1, unit: "PCS" },
-            { name: "MAYONNAISE OLIVE OIL", price: 156.45, quantity: 1, unit: "PCS" },
-            // ...other items
-          ],
+          items: updatedPurchaseEntryItem,
           sgst: { percentage: "6%", amount: 500 },
           cgst: { percentage: "9%", amount: 500 },
           igst: { percentage: "18%", amount: 500 },
@@ -1272,14 +1267,171 @@ export default function BillWorkflow() {
     setBillData(updatedBillData);
   };
 
+  useEffect(() => {
+    // Fetch companies when component mounts
+    fetchCompanies();
+  }, []);
+  
+  // If no company is selected and companies are loaded, set the first one as default
+  useEffect(() => {
+    if (!selectedCompanyName && selectedCompanyName.length > 0) {
+      setSelectedCompanyName(selectedCompanyName[0]);
+    }
+  }, [selectedCompanyName, selectedCompanyName]);
+
+  const fetchCompanies = async () => {
+    setIsLoading(true);
+
+    const xmlData = `<ENVELOPE>
+          <HEADER>
+            <VERSION>1</VERSION>
+            <TALLYREQUEST>Export</TALLYREQUEST>
+            <TYPE>Collection</TYPE>
+            <ID>List of Companies</ID>
+          </HEADER>
+          <BODY>
+            <DESC>
+              <STATICVARIABLES>
+                <SVIsSimpleCompany>No</SVIsSimpleCompany>
+              </STATICVARIABLES>
+              <TDL>
+                <TDLMESSAGE>
+                  <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="List of Companies">
+                    <TYPE>Company</TYPE>
+                    <NATIVEMETHOD>Name</NATIVEMETHOD>
+                  </COLLECTION>
+                  <ExportHeader>EmpId:5989</ExportHeader>
+                </TDLMESSAGE>
+              </TDL>
+            </DESC>
+          </BODY>
+        </ENVELOPE>`
+
+    try {
+       // Calculate content length (in bytes) from the XML data.
+       const contentLength = Buffer.byteLength(xmlData, 'utf8');
+
+      const response = await axios('http://localhost:9000', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/xml',
+          'Content-Length': contentLength, 
+        },
+        data: xmlData
+      });
+
+      console.log(response,"responseeee")
+      
+      const data = await response.text();
+      // Parse the XML response to extract company names
+      // This is a simplified example - you'll need to parse the actual XML response
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(data, "text/xml");
+      const companyNodes = xmlDoc.getElementsByTagName("COMPANY");
+      
+      const companyList = Array.from(companyNodes).map(node => node.textContent);
+      console.log(companyList,"companyList")
+      setSelectedCompanyName(companyList);
+      
+      if(companyList.length > 0) {
+        setSelectedCompanyName(companyList[0]);
+      }
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   // console.log(billData)
 
   // Role selection UI if no role is selected yet
   if (currentStep === 0 && !role) {
+    // return (
+    //   <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+    //     <header className="py-6 px-8 border-b border-gray-200 bg-white shadow-sm">
+    //       <div className=" mx-auto flex items-center">
+    //         <button
+    //           onClick={() => window.history.back()}
+    //           className="flex items-center text-gray-600 hover:text-blue-600 transition-colors"
+    //         >
+    //           <ChevronLeft className="h-5 w-5 mr-1" />
+    //           <span className="font-medium">Back</span>
+    //         </button>
+    //         <h1 className="text-2xl font-bold text-gray-800 ml-6">Bill Management System</h1>
+    //       </div>
+    //     </header>
+
+    //     <main className="flex-1 flex items-center justify-center p-8">
+    //       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden">
+    //         <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+    //           <h2 className="text-2xl font-bold text-gray-800">
+    //             Select Document Type
+    //           </h2>
+    //           <p className="text-gray-600 mt-1">
+    //             Choose the type of bills you want to manage
+    //           </p>
+    //         </div>
+
+    //         <div className="p-8 space-y-6">
+    //           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+    //             {/* Purchase Bills Option */}
+    //             <button
+    //               onClick={() => {
+    //                 setRole("Purchaser");
+    //                 setCurrentStep(1);
+    //               }}
+    //               className="group relative flex flex-col items-center p-8 border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 overflow-hidden"
+    //             >
+    //               <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+    //               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-5 group-hover:bg-blue-200 transition-colors duration-200 relative z-10">
+    //                 <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    //                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+    //                 </svg>
+    //               </div>
+    //               <h3 className="text-xl font-semibold text-gray-900 mb-1 relative z-10">Purchase Bills</h3>
+    //               <p className="text-gray-500 text-center mx-auto max-w-xs relative z-10">
+    //                 Enter and manage bills for items or services you've purchased
+    //               </p>
+    //               <div className="mt-6 bg-blue-500 text-white px-5 py-2 rounded-full font-medium text-sm relative z-10 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200">
+    //                 Select
+    //               </div>
+    //             </button>
+
+    //             {/* Sales Bills Option */}
+    //             <button
+    //               onClick={() => {
+    //                 setRole("Seller");
+    //                 setCurrentStep(1);
+    //               }}
+    //               className="group relative flex flex-col items-center p-8 border border-gray-200 rounded-xl hover:border-green-500 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 overflow-hidden"
+    //             >
+    //               <div className="absolute inset-0 bg-gradient-to-b from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+    //               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-5 group-hover:bg-green-200 transition-colors duration-200 relative z-10">
+    //                 <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    //                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+    //                 </svg>
+    //               </div>
+    //               <h3 className="text-xl font-semibold text-gray-900 mb-1 relative z-10">Sales Bills</h3>
+    //               <p className="text-gray-500 text-center mx-auto max-w-xs relative z-10">
+    //                 Create and manage bills for products or services you've sold
+    //               </p>
+    //               <div className="mt-6 bg-green-500 text-white px-5 py-2 rounded-full font-medium text-sm relative z-10 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200">
+    //                 Select
+    //               </div>
+    //             </button>
+    //           </div>
+    //         </div>
+    //       </div>
+    //     </main>
+    //   </div>
+    // );
+
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
         <header className="py-6 px-8 border-b border-gray-200 bg-white shadow-sm">
-          <div className=" mx-auto flex items-center">
+          <div className="mx-auto flex items-center">
             <button
               onClick={() => window.history.back()}
               className="flex items-center text-gray-600 hover:text-blue-600 transition-colors"
@@ -1295,66 +1447,130 @@ export default function BillWorkflow() {
           <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden">
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
               <h2 className="text-2xl font-bold text-gray-800">
-                Select Document Type
+                {currentStep === 0 ? "Select Company" : "Select Document Type"}
               </h2>
               <p className="text-gray-600 mt-1">
-                Choose the type of bills you want to manage
+                {currentStep === 0
+                  ? "Choose the company you want to work with"
+                  : "Choose the type of bills you want to manage"}
               </p>
             </div>
 
-            <div className="p-8 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* Purchase Bills Option */}
-                <button
-                  onClick={() => {
-                    setRole("Purchaser");
-                    setCurrentStep(1);
-                  }}
-                  className="group relative flex flex-col items-center p-8 border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-5 group-hover:bg-blue-200 transition-colors duration-200 relative z-10">
-                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
+            {currentStep === 0 ? (
+              <div className="p-8 space-y-6">
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-1 relative z-10">Purchase Bills</h3>
-                  <p className="text-gray-500 text-center mx-auto max-w-xs relative z-10">
-                    Enter and manage bills for items or services you've purchased
-                  </p>
-                  <div className="mt-6 bg-blue-500 text-white px-5 py-2 rounded-full font-medium text-sm relative z-10 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200">
-                    Select
-                  </div>
-                </button>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <label htmlFor="company" className="block text-sm font-medium text-gray-700">
+                        Select Company
+                      </label>
+                      <div className="relative">
+                        <select
+                          id="company"
+                          value={selectedCompanyName}
+                          onChange={(e) => setSelectedCompanyName(e.target.value)}
+                          className="block w-full pl-3 pr-10 py-3 text-black border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border-2"
+                        >
+                          {selectedCompanyName.length === 0 && (
+                            <option value="">No companies available</option>
+                          )}
+                          {selectedCompanyName && selectedCompanyName.map((company, index) => (
+                            <option key={index} value={company}>
+                              {company}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
 
-                {/* Sales Bills Option */}
-                <button
-                  onClick={() => {
-                    setRole("Seller");
-                    setCurrentStep(1);
-                  }}
-                  className="group relative flex flex-col items-center p-8 border border-gray-200 rounded-xl hover:border-green-500 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-b from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-5 group-hover:bg-green-200 transition-colors duration-200 relative z-10">
-                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-1 relative z-10">Sales Bills</h3>
-                  <p className="text-gray-500 text-center mx-auto max-w-xs relative z-10">
-                    Create and manage bills for products or services you've sold
-                  </p>
-                  <div className="mt-6 bg-green-500 text-white px-5 py-2 rounded-full font-medium text-sm relative z-10 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200">
-                    Select
-                  </div>
-                </button>
+                    <div className="flex justify-end mt-6">
+                      <button
+                        onClick={() => setCurrentStep(1)}
+                        disabled={!selectedCompanyName}
+                        className={`px-6 py-2 rounded-md text-white font-medium transition-all 
+                        ${!selectedCompanyName
+                            ? 'bg-gray-300 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'}`}
+                      >
+                        Continue
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
+            ) : (
+              <div className="p-8 space-y-6">
+                <div className="mb-4 pb-4 border-b border-gray-200">
+                  <div className="flex items-center">
+                    <span className="text-sm font-medium text-gray-500">Selected Company:</span>
+                    <span className="ml-2 text-sm font-semibold text-gray-900">{selectedCompanyName}</span>
+                    <button
+                      onClick={() => setCurrentStep(0)}
+                      className="ml-3 text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      Change
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {/* Purchase Bills Option */}
+                  <button
+                    onClick={() => {
+                      setRole("Purchaser");
+                      // Navigate to next step or perform action
+                    }}
+                    className="group relative flex flex-col items-center p-8 border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-5 group-hover:bg-blue-200 transition-colors duration-200 relative z-10">
+                      <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-1 relative z-10">Purchase Bills</h3>
+                    <p className="text-gray-500 text-center mx-auto max-w-xs relative z-10">
+                      Enter and manage bills for items or services you've purchased
+                    </p>
+                    <div className="mt-6 bg-blue-500 text-white px-5 py-2 rounded-full font-medium text-sm relative z-10 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200">
+                      Select
+                    </div>
+                  </button>
+
+                  {/* Sales Bills Option */}
+                  <button
+                    onClick={() => {
+                      setRole("Seller");
+                      // Navigate to next step or perform action
+                    }}
+                    className="group relative flex flex-col items-center p-8 border border-gray-200 rounded-xl hover:border-green-500 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-b from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-5 group-hover:bg-green-200 transition-colors duration-200 relative z-10">
+                      <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-1 relative z-10">Sales Bills</h3>
+                    <p className="text-gray-500 text-center mx-auto max-w-xs relative z-10">
+                      Create and manage bills for products or services you've sold
+                    </p>
+                    <div className="mt-6 bg-green-500 text-white px-5 py-2 rounded-full font-medium text-sm relative z-10 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200">
+                      Select
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </div>
     );
+
   }
 
   return (
