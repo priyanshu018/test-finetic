@@ -1,14 +1,31 @@
-import { screen, BrowserWindow, BrowserWindowConstructorOptions, Rectangle, ipcMain } from 'electron';
-import { exec, execSync } from 'child_process';
-import Store from 'electron-store';
-import * as fs from 'fs';
-import { parseStringPromise } from 'xml2js';
-import { createPartyLedgerXml, createPurchaserLedger, createStockItems, createTaxLedgers, createUnits, createVoucher, VoucherPayload } from '../../service/commonFunction';
-import axios from 'axios';
-import { error } from 'console';
+import {
+  screen,
+  BrowserWindow,
+  BrowserWindowConstructorOptions,
+  Rectangle,
+  ipcMain,
+} from "electron";
+import { exec, execSync } from "child_process";
+import Store from "electron-store";
+import * as fs from "fs";
+import { parseStringPromise } from "xml2js";
+import {
+  createPartyLedgerXml,
+  createPurchaserLedger,
+  createStockItems,
+  createTaxLedgers,
+  createUnits,
+  createVoucher,
+  VoucherPayload,
+} from "../../service/commonFunction";
+import axios from "axios";
+import { error } from "console";
 
-export const createWindow = (windowName: string, options: BrowserWindowConstructorOptions): BrowserWindow => {
-  const key = 'window-state';
+export const createWindow = (
+  windowName: string,
+  options: BrowserWindowConstructorOptions
+): BrowserWindow => {
+  const key = "window-state";
   const name = `window-state-${windowName}`;
   const store = new Store<Rectangle>({ name });
   const defaultSize = {
@@ -78,7 +95,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     },
   });
 
-  win.on('close', saveState);
+  win.on("close", saveState);
 
   // Function to get running applications
   function getRunningApplications(): Promise<any[]> {
@@ -104,7 +121,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   }
 
   // IPC handler to get running applications
-  ipcMain.handle('get-running-apps', async () => {
+  ipcMain.handle("get-running-apps", async () => {
     try {
       const runningApps = await getRunningApplications();
       return runningApps;
@@ -114,18 +131,17 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   });
 
   // IPC handler to check if Tally is running
-  ipcMain.handle('is-tally-running', async () => {
+  ipcMain.handle("is-tally-running", async () => {
     try {
       const runningApps = await getRunningApplications();
       const tallyProcess = runningApps.find((app: any) =>
-        app.ProcessName.toLowerCase().includes('tally')
+        app.ProcessName.toLowerCase().includes("tally")
       );
       return !!tallyProcess;
     } catch (error) {
       throw new Error(`Failed to check Tally status: ${error.message}`);
     }
   });
-
 
   // Function to search for Tally in installed applications
   function findTallyInstallationPath(): Promise<string | null> {
@@ -149,12 +165,12 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   // Function to search for Tally in common directories
   function searchCommonDirectories(): string | null {
     const commonPaths = [
-      'C:\\Program Files\\Tally.ERP9',
-      'C:\\Program Files (x86)\\Tally.ERP9',
-      'C:\\Tally.ERP9',
-      'C:\\Program Files\\TallyPrime',
-      'C:\\Program Files (x86)\\TallyPrime',
-      'C:\\TallyPrime'
+      "C:\\Program Files\\Tally.ERP9",
+      "C:\\Program Files (x86)\\Tally.ERP9",
+      "C:\\Tally.ERP9",
+      "C:\\Program Files\\TallyPrime",
+      "C:\\Program Files (x86)\\TallyPrime",
+      "C:\\TallyPrime",
     ];
 
     for (const path of commonPaths) {
@@ -167,14 +183,14 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
           const exePath = `${path}\\TallyPrime.exe`;
           execSync(`dir "${exePath}"`);
           return exePath;
-        } catch (e) { }
+        } catch (e) {}
       }
     }
     return null;
   }
 
   function getLastWord(str: string): string {
-    return str.trim().split(/\s+/).pop() || '';
+    return str.trim().split(/\s+/).pop() || "";
   }
 
   // function bringTallyToForegroundAndSendKeys(keys, delayBeforeY = 2000) {
@@ -237,13 +253,14 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   //   });
   // }
 
-
   function bringTallyToForegroundAndSendKeys(keys, delayBeforeY = 2000) {
     return new Promise((resolve, reject) => {
       // Check for special keys.
-      const promptIndex = keys.findIndex(key => key === "prompt here");
-      const openTallyIndex = keys.findIndex(key => key === "open tally");
-      const percentageIndex = keys.findIndex(key => key === "percentage here");
+      const promptIndex = keys.findIndex((key) => key === "prompt here");
+      const openTallyIndex = keys.findIndex((key) => key === "open tally");
+      const percentageIndex = keys.findIndex(
+        (key) => key === "percentage here"
+      );
 
       // Build the PowerShell command:
       let command = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; `;
@@ -260,13 +277,13 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
       // Send keys: if there's no "prompt here", send all keys (except "open tally") as one string.
       if (promptIndex === -1) {
-        const filteredKeys = keys.filter(key => key !== "open tally");
-        const keysString = filteredKeys.join('');
+        const filteredKeys = keys.filter((key) => key !== "open tally");
+        const keysString = filteredKeys.join("");
         command += `[System.Windows.Forms.SendKeys]::SendWait('${keysString}'); `;
         command += `Start-Sleep -Milliseconds ${delayBeforeY}; `;
       } else {
         // If "prompt here" exists, iterate through keys and handle them individually.
-        keys.forEach(key => {
+        keys.forEach((key) => {
           if (key === "prompt here") {
             command += `Start-Sleep -Milliseconds 500; `;
           } else if (key === "percentage here") {
@@ -297,14 +314,14 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
     });
   }
 
-
   function getTallyInstallPath(): Promise<string> {
     return new Promise((resolve, reject) => {
       // Check both 32-bit and 64-bit registry paths
-      const command = `powershell -Command `
-        + `"$tallyPath = (Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Tally.ERP 9' -ErrorAction SilentlyContinue).InstallPath; `
-        + `if (-not $tallyPath) { $tallyPath = (Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\WOW6432Node\\Tally.ERP 9' -ErrorAction SilentlyContinue).InstallPath; } `
-        + `if ($tallyPath) { $tallyPath } else { 'C:\\Program Files\\TallyPrime' }"`; // Fallback to default path
+      const command =
+        `powershell -Command ` +
+        `"$tallyPath = (Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Tally.ERP 9' -ErrorAction SilentlyContinue).InstallPath; ` +
+        `if (-not $tallyPath) { $tallyPath = (Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\WOW6432Node\\Tally.ERP 9' -ErrorAction SilentlyContinue).InstallPath; } ` +
+        `if ($tallyPath) { $tallyPath } else { 'C:\\Program Files\\TallyPrime' }"`; // Fallback to default path
 
       exec(command, (error, stdout, stderr) => {
         if (error) {
@@ -321,18 +338,18 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   }
 
   function removeBOM(content: string): string {
-    const buffer = Buffer.from(content, 'utf-8');
+    const buffer = Buffer.from(content, "utf-8");
     if (buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf) {
-      content = buffer?.slice(3)?.toString('utf-8');
+      content = buffer?.slice(3)?.toString("utf-8");
     }
 
     // Remove ∩┐╜ characters and invisible Unicode characters
-    content = content.replace(/∩┐╜+/g, '').replace(/[^\x20-\x7E\n\r\t<>]/g, '');
+    content = content.replace(/∩┐╜+/g, "").replace(/[^\x20-\x7E\n\r\t<>]/g, "");
 
     return content;
   }
 
-  // // ALL FUNCTION TO START CREATING BILL 
+  // // ALL FUNCTION TO START CREATING BILL
   // async function exportAndGetPartyName(partyName: string, gst: string): Promise<any> {
   //   try {
 
@@ -393,7 +410,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 
   //       return nameMatch && parentMatch;
   //     });
-
 
   //     console.log(`Ledger "${partyName}" found: ${ledgerExists}`);
 
@@ -566,7 +582,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   //         // Append "%" for the existence check
   //         const targetLedgerName = ledgerType === "purchase accounts" ? ledgerName : ledgerName;
 
-
   //         const ledgerExists = ledgers.some((ledger: any) =>
   //           ledger.$?.NAME?.toLowerCase() === targetLedgerName.toLowerCase()
   //         );
@@ -575,7 +590,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   //         if (!ledgerExists) {
   //           result.push(targetLedgerName)
   //         }
-
 
   //         // if (!ledgerExists) {
   //         //   // Append "+5" while creating the ledger
@@ -880,7 +894,6 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   //   return { results };
   // }
 
-
   // async function createItem(name: string, symbol: string, decimal: number, hsn: number, gst: number): Promise<void> {
   //   try {
   //     console.log("working")
@@ -963,14 +976,13 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   //         '{ENTER}', '{ENTER}',
   //       );
 
-
   //       // keys.push('{ENTER}')
 
   //       // Insert tax details for the current item
   //       if (isWithinState) {
   //         // For within-state purchases, add CGST and SGST details for this item
   //         keys.push(
-  //           // `Cgst${item.cgst}`, 
+  //           // `Cgst${item.cgst}`,
   //           // '{ENTER}', '{ENTER}',
   //           // `Sgst${item.sgst}`, '{ENTER}', '{ENTER}'
   //         );
@@ -997,7 +1009,9 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   async function getLedgerNames(xmlData: string): Promise<string[]> {
     try {
       // Parse the XML with explicitArray: false so that single elements are not wrapped in an array.
-      const result = await parseStringPromise(xmlData, { explicitArray: false });
+      const result = await parseStringPromise(xmlData, {
+        explicitArray: false,
+      });
 
       // Navigate to the LEDGER elements:
       // Expected path: ENVELOPE -> BODY -> DATA -> COLLECTION -> LEDGER
@@ -1040,13 +1054,13 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
       "ut/sgst14%",
       "ut/sgst2.5%",
       "ut/sgst6%",
-      "ut/sgst9%"
+      "ut/sgst9%",
     ];
 
     // Compare the expected list with the existing list,
     // and return those items that are not present.
     const missing = expectedLedgers.filter(
-      expected => !existingLedgers.includes(expected)
+      (expected) => !existingLedgers.includes(expected)
     );
 
     return missing;
@@ -1057,13 +1071,15 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   };
 
   /**
- * Parse the CREATED and EXCEPTIONS counts from the given response XML.
- * @param {string} xmlResponse – The raw response string.
- * @returns {{ created: number, exceptions: number }}
- */
+   * Parse the CREATED and EXCEPTIONS counts from the given response XML.
+   * @param {string} xmlResponse – The raw response string.
+   * @returns {{ created: number, exceptions: number }}
+   */
   function parseResponse(xmlResponse) {
     const createdMatch = xmlResponse.match(/<CREATED>(\d+)<\/CREATED>/);
-    const exceptionsMatch = xmlResponse.match(/<EXCEPTIONS>(\d+)<\/EXCEPTIONS>/);
+    const exceptionsMatch = xmlResponse.match(
+      /<EXCEPTIONS>(\d+)<\/EXCEPTIONS>/
+    );
     const responseMatch = xmlResponse.match(/<RESPONSE>(\d+)<\/RESPONSE>/);
 
     return {
@@ -1073,16 +1089,16 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   }
 
   /**
- * Asynchronously generates an XML payload from the provided ledger names,
- * sends it to the Tally server via HTTP POST, and returns the server response.
- *
- * The TAXTYPE is set based on the following rules:
- * - If the ledger name contains "Igst", TAXTYPE is "IGST"
- * - If the ledger name contains "Cgst" or "Ut/Sgst", TAXTYPE is "CGST"
- *
- * @param ledgers - An array of ledger names.
- * @returns An object containing success status, Tally's response data, and the XML payload.
- */
+   * Asynchronously generates an XML payload from the provided ledger names,
+   * sends it to the Tally server via HTTP POST, and returns the server response.
+   *
+   * The TAXTYPE is set based on the following rules:
+   * - If the ledger name contains "Igst", TAXTYPE is "IGST"
+   * - If the ledger name contains "Cgst" or "Ut/Sgst", TAXTYPE is "CGST"
+   *
+   * @param ledgers - An array of ledger names.
+   * @returns An object containing success status, Tally's response data, and the XML payload.
+   */
   async function createLawLedger(ledgers: string[]): Promise<any> {
     try {
       // Build the XML envelope header and body start.
@@ -1104,7 +1120,10 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
         let taxType: string;
         if (ledgerName.includes("Igst")) {
           taxType = "IGST";
-        } else if (ledgerName.includes("Cgst") || ledgerName.includes("Ut/Sgst")) {
+        } else if (
+          ledgerName.includes("Cgst") ||
+          ledgerName.includes("Ut/Sgst")
+        ) {
           taxType = "CGST";
         } else {
           taxType = ""; // You may set a default if needed.
@@ -1127,18 +1146,17 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
 </ENVELOPE>`;
 
       // Calculate content length (in bytes) from the XML data.
-      const contentLength = Buffer.byteLength(xmlPayload, 'utf8');
+      const contentLength = Buffer.byteLength(xmlPayload, "utf8");
 
       // Send the XML payload to Tally (adjust the URL if needed)
-      const response = await axios.post('http://localhost:9000', xmlPayload, {
+      const response = await axios.post("http://localhost:9000", xmlPayload, {
         headers: {
-          'Content-Type': 'application/xml',
-          'Content-Length': contentLength, // Setting the Content-Length header.
+          "Content-Type": "application/xml",
+          "Content-Length": contentLength, // Setting the Content-Length header.
         },
       });
 
       return { success: true, data: response };
-
     } catch (error: any) {
       console.error("Error in importLedgers function:", error);
       return { success: false, error: error.message };
@@ -1146,15 +1164,15 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   }
 
   /**
- * Asynchronously generates an XML payload for a single ledger,
- * sends it to the Tally server via a GET request,
- * and returns the server response.
- *
- * Optional fields such as address, country, state, mobile, and gstin are added only if they have a value.
- *
- * @param ledgerDetails - An object containing details for the ledger to create.
- * @returns An object containing success status, Tally's response data, and the XML payload.
- */
+   * Asynchronously generates an XML payload for a single ledger,
+   * sends it to the Tally server via a GET request,
+   * and returns the server response.
+   *
+   * Optional fields such as address, country, state, mobile, and gstin are added only if they have a value.
+   *
+   * @param ledgerDetails - An object containing details for the ledger to create.
+   * @returns An object containing success status, Tally's response data, and the XML payload.
+   */
   async function createPartyNameUsingXmlApi(ledgerDetails: {
     name: string;
     parent: string;
@@ -1206,30 +1224,30 @@ ${optionalFields}          </LEDGER>
 </ENVELOPE>`;
 
       // Calculate the content length from the XML payload.
-      const contentLength = Buffer.byteLength(xmlPayload, 'utf8');
+      const contentLength = Buffer.byteLength(xmlPayload, "utf8");
 
       // Send the XML payload to Tally (using GET as per your curl example)
-      const response = await axios.get('http://localhost:9000', {
+      const response = await axios.get("http://localhost:9000", {
         headers: {
-          'Content-Type': 'application/xml',
-          'Content-Length': contentLength.toString()
+          "Content-Type": "application/xml",
+          "Content-Length": contentLength.toString(),
         },
-        data: xmlPayload
+        data: xmlPayload,
       });
 
       return { success: true, data: response.data, xmlPayload };
-
     } catch (error: any) {
       console.error("Error in createLedger function:", error);
       return { success: false, error: error.message };
     }
   }
 
-
   async function getUnitNames(xmlData: string): Promise<string[]> {
     try {
       // Parse the XML with explicitArray: false so that single elements are not wrapped in an array.
-      const result = await parseStringPromise(xmlData, { explicitArray: false });
+      const result = await parseStringPromise(xmlData, {
+        explicitArray: false,
+      });
 
       // Navigate to the UNIT elements:
       // Expected path: ENVELOPE -> BODY -> DATA -> COLLECTION -> UNIT
@@ -1262,10 +1280,15 @@ ${optionalFields}          </LEDGER>
     decimal: number;
   }
 
-  async function checkUnitNames(existData: string[], unitsData: Unit[]): Promise<unit[]> {
+  async function checkUnitNames(
+    existData: string[],
+    unitsData: Unit[]
+  ): Promise<unit[]> {
     try {
       // Find the units that do not exist in the existData
-      const nonMatchingUnits = unitsData.filter(unit => !existData.includes(unit.name));
+      const nonMatchingUnits = unitsData.filter(
+        (unit) => !existData.includes(unit.name)
+      );
 
       // Return the full objects of units that do not exist in the existData
       return nonMatchingUnits;
@@ -1282,7 +1305,9 @@ ${optionalFields}          </LEDGER>
   async function getStockItemNames(xmlData: string): Promise<string[]> {
     try {
       // Parse the XML string using xml2js
-      const result = await parseStringPromise(xmlData, { explicitArray: false });
+      const result = await parseStringPromise(xmlData, {
+        explicitArray: false,
+      });
 
       // Navigate to the STOCKITEM elements in the parsed data
       const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
@@ -1326,10 +1351,15 @@ ${optionalFields}          </LEDGER>
     symbol: string;
   }
 
-  async function checkItemNames(existData: string[], itemsData: Item[]): Promise<Item[]> {
+  async function checkItemNames(
+    existData: string[],
+    itemsData: Item[]
+  ): Promise<Item[]> {
     try {
       // Find the items that do not exist in the existData
-      const nonMatchingItems = itemsData.filter(item => !existData.includes(item.Product));
+      const nonMatchingItems = itemsData.filter(
+        (item) => !existData.includes(item.Product)
+      );
 
       // Return the full objects of items that do not exist in the existData
       return nonMatchingItems;
@@ -1339,157 +1369,221 @@ ${optionalFields}          </LEDGER>
     }
   }
 
-
   // ------------------------------------------------------------------------------------------------------------------------
 
   // IPC handler to bring Tally to the foreground and send multiple keystrokes
- 
-  ipcMain.handle('bring-tally-to-foreground-and-send-keys', async (_, keys: string[]) => {
-    try {
-      await bringTallyToForegroundAndSendKeys(keys);
-      return `Sent keys "${keys.join(' ')}" to Tally`;
-    } catch (error) {
-      throw new Error(`Failed to send keys to Tally: ${error.message}`);
+
+  ipcMain.handle(
+    "bring-tally-to-foreground-and-send-keys",
+    async (_, keys: string[]) => {
+      try {
+        await bringTallyToForegroundAndSendKeys(keys);
+        return `Sent keys "${keys.join(" ")}" to Tally`;
+      } catch (error) {
+        throw new Error(`Failed to send keys to Tally: ${error.message}`);
+      }
     }
-  });
+  );
 
-
-
-
-  ipcMain.handle('get-tax-ledger-data', async (_, xmlData: string) => {
+  ipcMain.handle("get-company-data", async (_, xmlData: string) => {
     try {
       // Calculate content length (in bytes) from the XML data.
-      const contentLength = Buffer.byteLength(xmlData, 'utf8');
+      const contentLength = Buffer.byteLength(xmlData, "utf8");
 
       // Make the HTTP request to your endpoint.
       const response = await axios({
-        method: 'POST',
-        url: 'http://localhost:9000', // Replace or make configurable as needed.
+        method: "POST",
+        url: "http://localhost:9000", // Replace or make configurable as needed.
         headers: {
-          'Content-Type': 'application/xml',
-          'Content-Length': contentLength, // Setting the Content-Length header.
+          "Content-Type": "application/xml",
+          "Content-Length": contentLength, // Setting the Content-Length header.
         },
         data: xmlData,
       });
 
-      const filterResponse = await getLedgerNames(response.data)
-      const missingLedgerResponse = getMissingLedgers(filterResponse)
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error: any) {
+      console.error("Error in send-tally-xml IPC handler:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("get-tax-ledger-data", async (_, xmlData: string) => {
+    try {
+      // Calculate content length (in bytes) from the XML data.
+      const contentLength = Buffer.byteLength(xmlData, "utf8");
+
+      // Make the HTTP request to your endpoint.
+      const response = await axios({
+        method: "POST",
+        url: "http://localhost:9000", // Replace or make configurable as needed.
+        headers: {
+          "Content-Type": "application/xml",
+          "Content-Length": contentLength, // Setting the Content-Length header.
+        },
+        data: xmlData,
+      });
+
+      const filterResponse = await getLedgerNames(response.data);
+      const missingLedgerResponse = getMissingLedgers(filterResponse);
 
       if (missingLedgerResponse?.length > 0) {
-
-        const createLawLedgerResponse = await createLawLedger(missingLedgerResponse)
-        const responseData = parseResponse(createLawLedgerResponse?.data?.data)
+        const createLawLedgerResponse = await createLawLedger(
+          missingLedgerResponse
+        );
+        const responseData = parseResponse(createLawLedgerResponse?.data?.data);
 
         if (responseData?.created === missingLedgerResponse?.length + 1) {
-          return { success: true, data: responseData, ledgerName: missingLedgerResponse };
+          return {
+            success: true,
+            data: responseData,
+            ledgerName: missingLedgerResponse,
+          };
         } else {
-          return { success: false, data: responseData, ledgerName: missingLedgerResponse };
-
+          return {
+            success: false,
+            data: responseData,
+            ledgerName: missingLedgerResponse,
+          };
         }
       } else {
         // Return the data to the renderer process.
-        return { success: true, data: response.data, ledgerName: filterResponse };
+        return {
+          success: true,
+          data: response.data,
+          ledgerName: filterResponse,
+        };
       }
-
-
-
     } catch (error: any) {
-      console.error('Error in send-tally-xml IPC handler:', error);
+      console.error("Error in send-tally-xml IPC handler:", error);
       return { success: false, error: error.message };
     }
   });
 
-
-  ipcMain.handle('create-party-ledger', async (_, xmlData: string, partyName: string, partyDetailData) => {
-    try {
-      // Calculate content length (in bytes) from the XML data.
-      const contentLength = Buffer.byteLength(xmlData, 'utf8');
-
-      // Make the HTTP request to your endpoint.
-      const response = await axios({
-        method: 'POST',
-        url: 'http://localhost:9000', // Replace or make configurable as needed.
-        headers: {
-          'Content-Type': 'application/xml',
-          'Content-Length': contentLength, // Setting the Content-Length header.
-        },
-        data: xmlData,
-      });
-
-      const filterResponse = await getLedgerNames(response.data)
-      const missingLedgerResponse = checkPartyNameExist(filterResponse, partyName)
-
-      if (!missingLedgerResponse) {
-        const createPartNameLedger = await createPartyNameUsingXmlApi(partyDetailData)
-        const checkCreatedLedgerResponse = await getLedgerNames(response.data)
-        const data = parseResponse(createPartNameLedger?.data)
-        return { success: true, data, ledgerName: checkCreatedLedgerResponse };
-      } else {
-
-        return { success: true, isExist: missingLedgerResponse, data: filterResponse };
-      }
-
-
-      // Return the data to the renderer process.
-    } catch (error: any) {
-      console.error('Error in send-tally-xml IPC handler:', error);
-      return { success: false, error: error.message };
-    }
-  });
-
-  ipcMain.handle('create-purchaser-ledger', async (_, xmlData: string, purchaserName: string) => {
-    try {
-      // Calculate content length (in bytes) from the XML data.
-      const contentLength = Buffer.byteLength(xmlData, 'utf8');
-
-      // Make the HTTP request to your endpoint.
-      const response = await axios({
-        method: 'POST',
-        url: 'http://localhost:9000', // Replace or make configurable as needed.
-        headers: {
-          'Content-Type': 'application/xml',
-          'Content-Length': contentLength, // Setting the Content-Length header.
-        },
-        data: xmlData,
-      });
-
-      const filterResponse = await getLedgerNames(response.data)
-      const missingLedgerResponse = checkPartyNameExist(filterResponse, purchaserName)
-
-      if (!missingLedgerResponse) {
-        const createPurchaseLedger = await createPurchaserLedger(purchaserName)
-
+  ipcMain.handle(
+    "create-party-ledger",
+    async (_, xmlData: string, partyName: string, partyDetailData) => {
+      try {
         // Calculate content length (in bytes) from the XML data.
-        const contentLength = Buffer.byteLength(createPurchaseLedger, 'utf8');
+        const contentLength = Buffer.byteLength(xmlData, "utf8");
 
+        // Make the HTTP request to your endpoint.
         const response = await axios({
-          method: 'GET',
-          url: 'http://localhost:9000', // Replace or make configurable as needed.
+          method: "POST",
+          url: "http://localhost:9000", // Replace or make configurable as needed.
           headers: {
-            'Content-Type': 'application/xml',
-            'Content-Length': contentLength, // Setting the Content-Length header.
+            "Content-Type": "application/xml",
+            "Content-Length": contentLength, // Setting the Content-Length header.
           },
-          data: createPurchaseLedger,
+          data: xmlData,
         });
 
-        const data = parseResponse(response?.data)
-        if (data?.created === 1) {
-          return { success: true, isExist: missingLedgerResponse, data: purchaserName };
+        const filterResponse = await getLedgerNames(response.data);
+        const missingLedgerResponse = checkPartyNameExist(
+          filterResponse,
+          partyName
+        );
+
+        if (!missingLedgerResponse) {
+          const createPartNameLedger = await createPartyNameUsingXmlApi(
+            partyDetailData
+          );
+          const checkCreatedLedgerResponse = await getLedgerNames(
+            response.data
+          );
+          const data = parseResponse(createPartNameLedger?.data);
+          return {
+            success: true,
+            data,
+            ledgerName: checkCreatedLedgerResponse,
+          };
         } else {
-          return { success: false, data: purchaserName, error: response };
+          return {
+            success: true,
+            isExist: missingLedgerResponse,
+            data: filterResponse,
+          };
         }
-      } else {
-        return { success: true, isExist: missingLedgerResponse, data: purchaserName };
+
+        // Return the data to the renderer process.
+      } catch (error: any) {
+        console.error("Error in send-tally-xml IPC handler:", error);
+        return { success: false, error: error.message };
       }
-    } catch (error: any) {
-      console.error('Error in send-tally-xml IPC handler:', error);
-      return { success: false, error: error.message };
     }
-  });
+  );
 
-  ipcMain.handle('create-unit', async (_, unitData: any) => {
+  ipcMain.handle(
+    "create-purchaser-ledger",
+    async (_, xmlData: string, purchaserName: string) => {
+      try {
+        // Calculate content length (in bytes) from the XML data.
+        const contentLength = Buffer.byteLength(xmlData, "utf8");
+
+        // Make the HTTP request to your endpoint.
+        const response = await axios({
+          method: "POST",
+          url: "http://localhost:9000", // Replace or make configurable as needed.
+          headers: {
+            "Content-Type": "application/xml",
+            "Content-Length": contentLength, // Setting the Content-Length header.
+          },
+          data: xmlData,
+        });
+
+        const filterResponse = await getLedgerNames(response.data);
+        const missingLedgerResponse = checkPartyNameExist(
+          filterResponse,
+          purchaserName
+        );
+
+        if (!missingLedgerResponse) {
+          const createPurchaseLedger = await createPurchaserLedger(
+            purchaserName
+          );
+
+          // Calculate content length (in bytes) from the XML data.
+          const contentLength = Buffer.byteLength(createPurchaseLedger, "utf8");
+
+          const response = await axios({
+            method: "GET",
+            url: "http://localhost:9000", // Replace or make configurable as needed.
+            headers: {
+              "Content-Type": "application/xml",
+              "Content-Length": contentLength, // Setting the Content-Length header.
+            },
+            data: createPurchaseLedger,
+          });
+
+          const data = parseResponse(response?.data);
+          if (data?.created === 1) {
+            return {
+              success: true,
+              isExist: missingLedgerResponse,
+              data: purchaserName,
+            };
+          } else {
+            return { success: false, data: purchaserName, error: response };
+          }
+        } else {
+          return {
+            success: true,
+            isExist: missingLedgerResponse,
+            data: purchaserName,
+          };
+        }
+      } catch (error: any) {
+        console.error("Error in send-tally-xml IPC handler:", error);
+        return { success: false, error: error.message };
+      }
+    }
+  );
+
+  ipcMain.handle("create-unit", async (_, unitData: any) => {
     try {
-
       let xmlData = `<ENVELOPE>
     <HEADER>
         <VERSION>1</VERSION>
@@ -1511,44 +1605,44 @@ ${optionalFields}          </LEDGER>
             </TDL>
         </DESC>
     </BODY>
-</ENVELOPE>`
+</ENVELOPE>`;
 
       // Calculate content length (in bytes) from the XML data.
-      const contentLength = Buffer.byteLength(xmlData, 'utf8');
+      const contentLength = Buffer.byteLength(xmlData, "utf8");
 
       // Make the HTTP request to your endpoint.
       const response = await axios({
-        method: 'POST',
-        url: 'http://localhost:9000', // Replace or make configurable as needed.
+        method: "POST",
+        url: "http://localhost:9000", // Replace or make configurable as needed.
         headers: {
-          'Content-Type': 'application/xml',
-          'Content-Length': contentLength, // Setting the Content-Length header.
+          "Content-Type": "application/xml",
+          "Content-Length": contentLength, // Setting the Content-Length header.
         },
         data: xmlData,
       });
 
-      const getDataFromXml = await getUnitNames(response?.data)
+      const getDataFromXml = await getUnitNames(response?.data);
 
-      const filterResponse = await checkUnitNames(getDataFromXml, unitData)
+      const filterResponse = await checkUnitNames(getDataFromXml, unitData);
 
       if (filterResponse?.length > 0) {
-        const xmlResponse = await createUnits(filterResponse)
+        const xmlResponse = await createUnits(filterResponse);
 
-        console.log(xmlResponse,"xml response")
+        console.log(xmlResponse, "xml response");
 
-        const contentLength = Buffer.byteLength(xmlResponse, 'utf8');
+        const contentLength = Buffer.byteLength(xmlResponse, "utf8");
 
         const response = await axios({
-          method: 'GET',
-          url: 'http://localhost:9000', // Replace or make configurable as needed.
+          method: "GET",
+          url: "http://localhost:9000", // Replace or make configurable as needed.
           headers: {
-            'Content-Type': 'application/xml',
-            'Content-Length': contentLength, // Setting the Content-Length header.
+            "Content-Type": "application/xml",
+            "Content-Length": contentLength, // Setting the Content-Length header.
           },
           data: xmlResponse,
         });
 
-        const data = parseResponse(response?.data)
+        const data = parseResponse(response?.data);
 
         if (data?.created === filterResponse?.length) {
           return { success: true, isExist: filterResponse, data: unitData };
@@ -1559,14 +1653,13 @@ ${optionalFields}          </LEDGER>
         return { success: true, isExist: filterResponse, data: unitData };
       }
     } catch (error: any) {
-      console.error('Error in send-tally-xml IPC handler:', error);
+      console.error("Error in send-tally-xml IPC handler:", error);
       return { success: false, error: error.message };
     }
   });
 
-  ipcMain.handle('create-item', async (_, itemData: any) => {
+  ipcMain.handle("create-item", async (_, itemData: any) => {
     try {
-
       let xmlData = `<ENVELOPE>
     <HEADER>
         <VERSION>1</VERSION>
@@ -1588,38 +1681,38 @@ ${optionalFields}          </LEDGER>
             </TDL>
         </DESC>
     </BODY>
-</ENVELOPE>`
+</ENVELOPE>`;
 
       // Calculate content length (in bytes) from the XML data.
-      const contentLength = Buffer.byteLength(xmlData, 'utf8');
+      const contentLength = Buffer.byteLength(xmlData, "utf8");
 
       // Make the HTTP request to your endpoint.
       const response = await axios({
-        method: 'POST',
-        url: 'http://localhost:9000', // Replace or make configurable as needed.
+        method: "POST",
+        url: "http://localhost:9000", // Replace or make configurable as needed.
         headers: {
-          'Content-Type': 'application/xml',
-          'Content-Length': contentLength, // Setting the Content-Length header.
+          "Content-Type": "application/xml",
+          "Content-Length": contentLength, // Setting the Content-Length header.
         },
         data: xmlData,
       });
 
-      const xmlResponse = await getStockItemNames(response?.data)
+      const xmlResponse = await getStockItemNames(response?.data);
 
-      const filterResponse = await checkItemNames(xmlResponse, itemData)
+      const filterResponse = await checkItemNames(xmlResponse, itemData);
 
       if (xmlResponse?.length === 0) {
         const response = await axios({
-          method: 'GET',
-          url: 'http://localhost:9000', // Replace or make configurable as needed.
+          method: "GET",
+          url: "http://localhost:9000", // Replace or make configurable as needed.
           headers: {
-            'Content-Type': 'application/xml',
-            'Content-Length': contentLength, // Setting the Content-Length header.
+            "Content-Type": "application/xml",
+            "Content-Length": contentLength, // Setting the Content-Length header.
           },
           data: xmlResponse,
         });
 
-        const data = parseResponse(response?.data)
+        const data = parseResponse(response?.data);
 
         if (data?.created === filterResponse?.length) {
           return { success: true, isExist: filterResponse, data: itemData };
@@ -1627,23 +1720,23 @@ ${optionalFields}          </LEDGER>
           return { success: false, data: itemData };
         }
       } else {
-        const filterResponse = await checkItemNames(xmlResponse, itemData)
+        const filterResponse = await checkItemNames(xmlResponse, itemData);
 
         if (filterResponse?.length > 0) {
-          const xmlResponse = await createStockItems(filterResponse)
-          const contentLength = Buffer.byteLength(xmlResponse, 'utf8');
+          const xmlResponse = await createStockItems(filterResponse);
+          const contentLength = Buffer.byteLength(xmlResponse, "utf8");
 
           const response = await axios({
-            method: 'GET',
-            url: 'http://localhost:9000', // Replace or make configurable as needed.
+            method: "GET",
+            url: "http://localhost:9000", // Replace or make configurable as needed.
             headers: {
-              'Content-Type': 'application/xml',
-              'Content-Length': contentLength, // Setting the Content-Length header.
+              "Content-Type": "application/xml",
+              "Content-Length": contentLength, // Setting the Content-Length header.
             },
             data: xmlResponse,
           });
 
-          const data = parseResponse(response?.data)
+          const data = parseResponse(response?.data);
 
           if (data?.created === filterResponse?.length) {
             return { success: true, isExist: filterResponse, data: itemData };
@@ -1653,93 +1746,92 @@ ${optionalFields}          </LEDGER>
         } else {
           return { success: true, isExist: filterResponse, data: itemData };
         }
-
       }
-
-
-
     } catch (error: any) {
-      console.error('Error in send-tally-xml IPC handler:', error);
+      console.error("Error in send-tally-xml IPC handler:", error);
       return { success: false, error: error.message };
     }
   });
 
-  ipcMain.handle('create-purchase-entry', async (_, payload: {
-    invoiceNumber: string;
-    invoiceDate: string;
-    partyName: string;
-    companyName: string;
-    purchaseLedger: string;
-    items: {
-      name: string;
-      quantity: number;
-      price: number;
-      unit?: string;
-    }[];
-    sgst: { percentage: string, amount: number };
-    cgst: { percentage: string, amount: number };
-    igst: { percentage: string, amount: number };
-    gstNumber: string;
-    isWithinState: boolean;
-  }) => {
-    try {
-      // Destructure payload.
-      const {
-        invoiceNumber,
-        invoiceDate,
-        partyName,
-        companyName,
-        purchaseLedger,
-        items,
-        sgst,
-        cgst,
-        igst,
-        gstNumber,
-        isWithinState,
-      } = payload;
+  ipcMain.handle(
+    "create-purchase-entry",
+    async (
+      _,
+      payload: {
+        invoiceNumber: string;
+        invoiceDate: string;
+        partyName: string;
+        companyName: string;
+        purchaseLedger: string;
+        items: {
+          name: string;
+          quantity: number;
+          price: number;
+          unit?: string;
+        }[];
+        sgst: { percentage: string; amount: number };
+        cgst: { percentage: string; amount: number };
+        igst: { percentage: string; amount: number };
+        gstNumber: string;
+        isWithinState: boolean;
+      }
+    ) => {
+      try {
+        // Destructure payload.
+        const {
+          invoiceNumber,
+          invoiceDate,
+          partyName,
+          companyName,
+          purchaseLedger,
+          items,
+          sgst,
+          cgst,
+          igst,
+          gstNumber,
+          isWithinState,
+        } = payload;
 
-      // Build the voucher payload.
-      // Now we use the top-level tax values instead of relying on the first item.
-      const voucherPayload: VoucherPayload = {
-        invoiceNumber,
-        invoiceDate, // expects dd-mm-yyyy format
-        partyName,
-        companyName,
-        purchaseLedger,
-        items: items.map((item) => ({
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          // Use provided unit if available, otherwise default to "PCS"
-          unit: item.unit || "PCS",
-        })),
-        sgst,
-        cgst,
-        igst,
-        gstNumber,
-        isWithinState,
-      };
+        // Build the voucher payload.
+        // Now we use the top-level tax values instead of relying on the first item.
+        const voucherPayload: VoucherPayload = {
+          invoiceNumber,
+          invoiceDate, // expects dd-mm-yyyy format
+          partyName,
+          companyName,
+          purchaseLedger,
+          items: items.map((item) => ({
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            // Use provided unit if available, otherwise default to "PCS"
+            unit: item.unit || "PCS",
+          })),
+          sgst,
+          cgst,
+          igst,
+          gstNumber,
+          isWithinState,
+        };
 
+        console.log(voucherPayload, "voucherPayload");
 
-      console.log(voucherPayload, "voucherPayload")
+        // Call the voucher generator to create the voucher XML.
+        const voucherXml = createVoucher(voucherPayload);
 
-      // Call the voucher generator to create the voucher XML.
-      const voucherXml = createVoucher(voucherPayload);
+        console.log(voucherXml, "voucherXml");
 
-      console.log(voucherXml, "voucherXml");
-
-      // Optionally, persist or further process the voucher.
-      // return { success: true, voucherXml };
-    } catch (error: any) {
-      console.error('Error creating purchase entry:', error);
-      return { success: false, error: error.message };
+        // Optionally, persist or further process the voucher.
+        // return { success: true, voucherXml };
+      } catch (error: any) {
+        console.error("Error creating purchase entry:", error);
+        return { success: false, error: error.message };
+      }
     }
-  });
+  );
 
   return win;
 };
-
-
 
 // ipcMain.handle('create-party-name-entry', async (_, partyName: string, gst: string) => {
 //   try {

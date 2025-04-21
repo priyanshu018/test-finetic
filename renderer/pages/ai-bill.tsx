@@ -1309,16 +1309,8 @@ export default function BillWorkflow() {
 
     try {
        // Calculate content length (in bytes) from the XML data.
-       const contentLength = Buffer.byteLength(xmlData, 'utf8');
 
-      const response = await axios('http://localhost:9000', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/xml',
-          'Content-Length': contentLength, 
-        },
-        data: xmlData
-      });
+       const response = await window.electron.getCompanyData(xmlData)
 
       console.log(response,"responseeee")
       

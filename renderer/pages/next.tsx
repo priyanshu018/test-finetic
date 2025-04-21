@@ -121,6 +121,55 @@ export default function IndexPage() {
       });
   }
 
+  const handleGetComapnyData = async () => {
+
+    const xmlData = `<ENVELOPE>
+    <HEADER>
+      <VERSION>1</VERSION>
+      <TALLYREQUEST>Export</TALLYREQUEST>
+      <TYPE>Collection</TYPE>
+      <ID>List of Companies</ID>
+    </HEADER>
+    <BODY>
+      <DESC>
+        <STATICVARIABLES>
+          <SVIsSimpleCompany>No</SVIsSimpleCompany>
+        </STATICVARIABLES>
+        <TDL>
+          <TDLMESSAGE>
+            <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="List of Companies">
+              <TYPE>Company</TYPE>
+              <NATIVEMETHOD>Name</NATIVEMETHOD>
+            </COLLECTION>
+            <ExportHeader>EmpId:5989</ExportHeader>
+          </TDLMESSAGE>
+        </TDL>
+      </DESC>
+    </BODY>
+  </ENVELOPE>`
+
+  try {
+    // Calculate content length (in bytes) from the XML data.
+
+    const response = await window.electron.getCompanyData(xmlData)
+
+   console.log(response,"responseeee")
+   
+   const data = await response.text();
+   // Parse the XML response to extract company names
+   // This is a simplified example - you'll need to parse the actual XML response
+   const parser = new DOMParser();
+   const xmlDoc = parser.parseFromString(data, "text/xml");
+   const companyNodes = xmlDoc.getElementsByTagName("COMPANY");
+   
+   const companyList = Array.from(companyNodes).map(node => node.textContent);
+   console.log(companyList,"companyList")
+
+ } catch (error) {
+   console.error("Error fetching companies:", error);
+ } 
+  }
+
   const handleExportItems = async () => {
 
     const items = [
@@ -635,6 +684,7 @@ export default function IndexPage() {
       </div>
 
       <div>
+      <button className="text-black bg-red-400 p-4" onClick={handleGetComapnyData}>Get Comapny Data</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreateCgstIgstSgstLedger}>Create IGST/CGST/SGST ledger</button>
