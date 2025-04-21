@@ -3,8 +3,9 @@ import { exec, execSync } from 'child_process';
 import Store from 'electron-store';
 import * as fs from 'fs';
 import { parseStringPromise } from 'xml2js';
-import { createPartyLedgerXml, createPurchaserLedgerXml, createStockItems, createTaxLedgers, createUnits, createVoucher, VoucherPayload } from '../../service/commonFunction';
+import { createPartyLedgerXml, createPurchaserLedger, createStockItems, createTaxLedgers, createUnits, createVoucher, VoucherPayload } from '../../service/commonFunction';
 import axios from 'axios';
+import { error } from 'console';
 
 export const createWindow = (windowName: string, options: BrowserWindowConstructorOptions): BrowserWindow => {
   const key = 'window-state';
@@ -1025,21 +1026,21 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   const getMissingLedgers = (existingLedgers: string[]): string[] => {
     // Expected ledger names list.
     const expectedLedgers = [
-      "Cgst 0%",
-      "Cgst 14%",
-      "Cgst 2.5%",
-      "Cgst 6%",
-      "Cgst 9%",
-      "Igst 0%",
-      "Igst 12%",
-      "Igst 18%",
-      "Igst 28%",
-      "Igst 5%",
-      "Ut/Sgst 0%",
-      "Ut/Sgst 14%",
-      "Ut/Sgst 2.5%",
-      "Ut/Sgst 6%",
-      "Ut/Sgst 9%"
+      "cgst0%",
+      "cgst14%",
+      "cgst2.5%",
+      "cgst6%",
+      "cgst9%",
+      "igst0%",
+      "igst12%",
+      "igst18%",
+      "igst28%",
+      "igst5%",
+      "ut/sgst0%",
+      "ut/sgst14%",
+      "ut/sgst2.5%",
+      "ut/sgst6%",
+      "ut/sgst9%"
     ];
 
     // Compare the expected list with the existing list,
@@ -1063,6 +1064,7 @@ export const createWindow = (windowName: string, options: BrowserWindowConstruct
   function parseResponse(xmlResponse) {
     const createdMatch = xmlResponse.match(/<CREATED>(\d+)<\/CREATED>/);
     const exceptionsMatch = xmlResponse.match(/<EXCEPTIONS>(\d+)<\/EXCEPTIONS>/);
+    const responseMatch = xmlResponse.match(/<RESPONSE>(\d+)<\/RESPONSE>/);
 
     return {
       created: createdMatch ? parseInt(createdMatch[1], 10) : 0,
@@ -1316,7 +1318,7 @@ ${optionalFields}          </LEDGER>
     }
   }
   interface Item {
-    name: string;
+    Product: string;
     HSN: string;
     SGST: number;
     CGST: number;
@@ -1327,7 +1329,7 @@ ${optionalFields}          </LEDGER>
   async function checkItemNames(existData: string[], itemsData: Item[]): Promise<Item[]> {
     try {
       // Find the items that do not exist in the existData
-      const nonMatchingItems = itemsData.filter(item => !existData.includes(item.name));
+      const nonMatchingItems = itemsData.filter(item => !existData.includes(item.Product));
 
       // Return the full objects of items that do not exist in the existData
       return nonMatchingItems;
@@ -1374,7 +1376,6 @@ ${optionalFields}          </LEDGER>
 
         const createLawLedgerResponse = await createLawLedger(missingLedgerResponse)
         const responseData = parseResponse(createLawLedgerResponse?.data?.data)
-        console.log(responseData, "hereeee", missingLedgerResponse)
 
         if (responseData?.created === missingLedgerResponse?.length + 1) {
           return { success: true, data: responseData, ledgerName: missingLedgerResponse };
@@ -1420,9 +1421,11 @@ ${optionalFields}          </LEDGER>
         const checkCreatedLedgerResponse = await getLedgerNames(response.data)
         const data = parseResponse(createPartNameLedger?.data)
         return { success: true, data, ledgerName: checkCreatedLedgerResponse };
+      } else {
+
+        return { success: true, isExist: missingLedgerResponse, data: filterResponse };
       }
 
-      return { success: true, isExist: missingLedgerResponse, data: filterResponse };
 
       // Return the data to the renderer process.
     } catch (error: any) {
@@ -1450,11 +1453,9 @@ ${optionalFields}          </LEDGER>
       const filterResponse = await getLedgerNames(response.data)
       const missingLedgerResponse = checkPartyNameExist(filterResponse, purchaserName)
 
-      console.log(missingLedgerResponse, "here it is wprlinf")
-
       if (!missingLedgerResponse) {
-        console.log(purchaserName, "here is")
-        const createPurchaseLedger = await createPurchaserLedgerXml(purchaserName)
+        const createPurchaseLedger = await createPurchaserLedger(purchaserName)
+
         // Calculate content length (in bytes) from the XML data.
         const contentLength = Buffer.byteLength(createPurchaseLedger, 'utf8');
 
@@ -1469,11 +1470,10 @@ ${optionalFields}          </LEDGER>
         });
 
         const data = parseResponse(response?.data)
-
         if (data?.created === 1) {
           return { success: true, isExist: missingLedgerResponse, data: purchaserName };
         } else {
-          return { success: false, data: purchaserName };
+          return { success: false, data: purchaserName, error: response };
         }
       } else {
         return { success: true, isExist: missingLedgerResponse, data: purchaserName };
@@ -1530,10 +1530,12 @@ ${optionalFields}          </LEDGER>
 
       console.log(filterResponse?.length, "length")
 
-
+      console.log(filterResponse,"filter response")
 
       if (filterResponse?.length > 0) {
         const xmlResponse = await createUnits(filterResponse)
+
+        console.log(xmlResponse,"xml response")
 
         const contentLength = Buffer.byteLength(xmlResponse, 'utf8');
 
@@ -1546,6 +1548,9 @@ ${optionalFields}          </LEDGER>
           },
           data: xmlResponse,
         });
+
+        console.log(response?.data,"response?.data")
+
 
         const data = parseResponse(response?.data)
         console.log(data, "data hete")
@@ -1606,9 +1611,11 @@ ${optionalFields}          </LEDGER>
 
       const xmlResponse = await getStockItemNames(response?.data)
 
-      const filterResponse = await checkUnitNames(xmlResponse, itemData)
+      console.log(xmlResponse, "xmlResponse")
 
+      const filterResponse = await checkItemNames(xmlResponse, itemData)
 
+      console.log(filterResponse, "filterResponse")
       if (xmlResponse?.length === 0) {
         const response = await axios({
           method: 'GET',
@@ -1621,7 +1628,8 @@ ${optionalFields}          </LEDGER>
         });
 
         const data = parseResponse(response?.data)
-        console.log(data, "data hete")
+
+        console.log(data, "data")
 
         if (data?.created === filterResponse?.length) {
           return { success: true, isExist: filterResponse, data: itemData };
@@ -1629,16 +1637,12 @@ ${optionalFields}          </LEDGER>
           return { success: false, data: itemData };
         }
       } else {
-        console.log("elseworking")
         const filterResponse = await checkItemNames(xmlResponse, itemData)
 
-        console.log(filterResponse, "here is ")
-
+        console.log(filterResponse, "filterResponse else")
         if (filterResponse?.length > 0) {
           const xmlResponse = await createStockItems(filterResponse)
-
-          console.log(xmlResponse, "here sssss")
-
+          console.log(xmlResponse, "xml response else if")
           const contentLength = Buffer.byteLength(xmlResponse, 'utf8');
 
           const response = await axios({
@@ -1652,7 +1656,8 @@ ${optionalFields}          </LEDGER>
           });
 
           const data = parseResponse(response?.data)
-          console.log(data, "data hete")
+
+          console.log(data, "data else if")
 
           if (data?.created === filterResponse?.length) {
             return { success: true, isExist: filterResponse, data: itemData };
@@ -1677,7 +1682,7 @@ ${optionalFields}          </LEDGER>
     invoiceNumber: string;
     invoiceDate: string;
     partyName: string;
-    companyName:string;
+    companyName: string;
     purchaseLedger: string;
     items: {
       name: string;
@@ -1688,7 +1693,7 @@ ${optionalFields}          </LEDGER>
     sgst: { percentage: string, amount: number };
     cgst: { percentage: string, amount: number };
     igst: { percentage: string, amount: number };
-    gstNumber:string;
+    gstNumber: string;
     isWithinState: boolean;
   }) => {
     try {

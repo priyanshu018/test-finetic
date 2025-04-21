@@ -524,7 +524,21 @@ export function createUnits(units: unknown): string {
     xmlOutput += xmlUnit + "\n";
   });
 
-  return xmlOutput;
+  return `<ENVELOPE>
+    <HEADER>
+        <TALLYREQUEST>Import Data</TALLYREQUEST>
+    </HEADER>
+    <BODY>
+        <IMPORTDATA>
+            <REQUESTDESC>
+                <REPORTNAME>All Masters</REPORTNAME>
+            </REQUESTDESC>
+            <REQUESTDATA>
+              ${xmlOutput} 
+            </REQUESTDATA>
+        </IMPORTDATA>
+    </BODY>
+</ENVELOPE>`;
 }
 
 
@@ -552,8 +566,7 @@ export function createStockItems(items: unknown): string {
   if (!Array.isArray(items)) {
     throw new Error("Payload must be an array of stock item objects.");
   }
-
-  let xmlOutput = "";
+  let xmlOutput = ""
   const baseGUID = "bf911d27-633e-4ad7-ba7c-a871d6f9461e-";
   const startingSuffix = 269; // Starting suffix for GUID (example: "00000269")
   const baseAlterID = 1011;   // Starting alterID value
@@ -571,7 +584,7 @@ export function createStockItems(items: unknown): string {
       !symbol
     ) {
       // Skip this entry. You can also choose to throw an error or log a warning.
-      return;
+      return "missing argument";
     }
 
     // Generate a pseudo-unique GUID and ALTERID for each stock item.
@@ -725,7 +738,22 @@ export function createStockItems(items: unknown): string {
       </STOCKITEM>
     </TALLYMESSAGE>`;
 
-    xmlOutput += xmlItem + "\n";
+    xmlOutput += `<ENVELOPE>
+    <HEADER>
+        <TALLYREQUEST>Import Data</TALLYREQUEST>
+    </HEADER>
+    <BODY>
+        <IMPORTDATA>
+            <REQUESTDESC>
+                <REPORTNAME>All Masters</REPORTNAME>
+            </REQUESTDESC>
+            <REQUESTDATA>
+            ${xmlItem}
+             </REQUESTDATA>
+        </IMPORTDATA>
+    </BODY>
+</ENVELOPE>
+            `
   });
 
   return xmlOutput;
@@ -876,7 +904,7 @@ export function createVoucher(payload) {
                 
                   ${payload.items.map(item => {
     let itemTotal = item.price * item.quantity;
-  
+
     return `<ALLINVENTORYENTRIES.LIST>
                       <STOCKITEMNAME>${item.name}</STOCKITEMNAME>
                        <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>

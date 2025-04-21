@@ -73,12 +73,9 @@ export default function IndexPage() {
   `
 
   const handleCreatePartyLedger = async () => {
-    // const purchaserLedgerResponse = await window.electron.exportAndCreatePartyNameEntry("EVERYDAY STORE-WAVE", "03AALFE5567F1ZF")
-    // console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
 
-
-    const response = await window.electron.createPartyName(ledgerXmlData, "code test1", {
-      name: "code test1",
+    const response = await window.electron.createPartyName(ledgerXmlData, "EVERYDAY STORE-WAVE", {
+      name: "EVERYDAY STORE-WAVE",
       parent: "Sundry Creditors",
       address: "",
       country: "",
@@ -105,7 +102,7 @@ export default function IndexPage() {
   }, [])
 
   const handleCreatePurchaseLedger = async () => {
-    const purchaserLedgerResponse = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchaser")
+    const purchaserLedgerResponse = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase")
     console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
 
   }
@@ -113,29 +110,15 @@ export default function IndexPage() {
 
   const handleCreateCgstIgstSgstLedger = async () => {
 
-
-
     const response = await window.electron.getTaxLedgerData(ledgerXmlData)
       .then((result) => {
         if (result.success) {
-          // console.log('Response from Tally:', result.data);
+          console.log('Response from Tally:', result);
           return result
         } else {
           console.error('Error sending XML to Tally:', result.error);
         }
       });
-
-
-    console.log(response, "taxLedgerData")
-    // const ledgerNames = [ 
-    //   'Cgst0%', 'Cgst2.5%', 'Cgst6%', 'Cgst9%', 'Cgst14%',
-    //   'Igst0%', 'Igst5%', 'Igst12%', 'Igst18%', 'Igst28%',
-    //   'Ut/Sgst0%', 'Ut/Sgst2.5%', 'Ut/Sgst6%', 'Ut/Sgst9%', 'Ut/Sgst14%'
-    // ];
-
-    // const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
-
-    // console.log(allLedgerResponse)
   }
 
   const handleExportItems = async () => {
@@ -314,6 +297,7 @@ export default function IndexPage() {
         decimal: 3
       }
     ]
+
     const response = await window.electron.createUnit(units);
     console.log(response, "here is ");
   };
@@ -334,11 +318,9 @@ export default function IndexPage() {
       sgst: { percentage: "6%", amount: 500 },
       cgst: { percentage: "9%", amount: 500 },
       igst: { percentage: "18%", amount: 500 },
-      gstNumber:"ABCDE1234F",
+      gstNumber: "ABCDE1234F",
       isWithinState: false,
     };
-
-    // await window.electron.createPurchaseEntry("A006784", "01-04-2025", "EVERYDAY STORE-WAVE", "Purchase",
     // [
     //   {
     //     name: "CRAMEL 230GM",
@@ -452,126 +434,6 @@ export default function IndexPage() {
     //   , false);
 
     window.electron.createPurchaseEntry(
-      // {
-      //   "invoiceNumber": "A006784",
-      //   "invoiceData": "01-04-2025",
-      //   "partyName": "EVERYDAY STORE-WAVE",
-      //   "purchaseLedger": "Purchase",
-      //   "items": [
-      //     {
-      //       "name": "CRAMEL 230GM",
-      //       "price": 71.2,
-      //       "quantity": 3,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA BLISS VEBA MAYONNAISE MINT",
-      //       "price": 105,
-      //       "quantity": 1,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "MAYONNAISE OLIVE OIL",
-      //       "price": 156.45,
-      //       "quantity": 1,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA PSTA N PIZZA HRDY TOMATO",
-      //       "price": 32.15,
-      //       "quantity": 12,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA RSTA N PIZZA HRBY TOMATO",
-      //       "price": 70.75,
-      //       "quantity": 3,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA VEBAIPSTA N PIZZA HRBY TOMATO",
-      //       "price": 120.75,
-      //       "quantity": 3,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "PSTA CHESSY SAUCES ALFRDO",
-      //       "price": 2.15,
-      //       "quantity": 3,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA DIP SALSA",
-      //       "price": 117.15,
-      //       "quantity": 2,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA SNDWCH SPRD CRT CUCMBR",
-      //       "price": 77.9,
-      //       "quantity": 3,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA VEBA HOT SAUCES SRIRCHA CHILLI",
-      //       "price": 125,
-      //       "quantity": 2,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "SWEET SAUCES OINION",
-      //       "price": 120.75,
-      //       "quantity": 3,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA VEBATHAI-STYLESWEET CHILLI",
-      //       "price": 90.52,
-      //       "quantity": 3,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA KETCHUPTOMATO NONGARLIC",
-      //       "price": 2.86,
-      //       "quantity": 3,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA KETCHUPTOMATO CHERS SPL",
-      //       "price": 120.75,
-      //       "quantity": 3,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA KETCHUP TOMATO NO AD SUGI",
-      //       "price": 135,
-      //       "quantity": 2,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA HAYONNAISETANDOORI",
-      //       "price": 77.9,
-      //       "quantity": 3,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA WHOLE GRAIN MUSTRD",
-      //       "price": 135,
-      //       "quantity": 3,
-      //       "unit": "PCS"
-      //     },
-      //     {
-      //       "name": "VEBA SALAD SAUCE TOKYO STYL",
-      //       "price": 142.15,
-      //       "quantity": 3,
-      //       "unit": "PCS"
-      //     }
-      //   ],
-      //   "sgst": "9%",
-      //   "cgst": "9%",
-      //   "igst": "18%",
-      //   "isWithinState": true
-      // }
       payload
 
     ).then(response => {
