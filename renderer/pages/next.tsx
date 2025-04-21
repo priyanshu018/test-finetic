@@ -684,7 +684,7 @@ export default function IndexPage() {
       </div>
 
       <div>
-      <button className="text-black bg-red-400 p-4" onClick={handleGetComapnyData}>Get Comapny Data</button>
+      <button className="text-black bg-red-400 p-4" onClick={handleGetComapnyData}>Get Company Data</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreateCgstIgstSgstLedger}>Create IGST/CGST/SGST ledger</button>
