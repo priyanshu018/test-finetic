@@ -27,26 +27,19 @@ import { ZoomOut, RotateCcw, Move, Maximize, Minimize, Minus } from "lucide-reac
 import { supabase } from "../lib/supabase";
 import { parseStringPromise } from 'xml2js';
 
-
 export async function extractCompanyNames(xmlString) {
-  // parse without forcing arrays, but still capture attributes
   const doc = await parseStringPromise(xmlString, { explicitArray: false });
 
-  // dive to COMPANY node(s)
   let companies = doc.ENVELOPE.BODY.DATA.COLLECTION.COMPANY;
   if (!companies) return [];
 
-  // normalize to array
   if (!Array.isArray(companies)) companies = [companies];
 
-  // pull out the text in the <NAME> node
   return companies.map(c => {
     const nameNode = c.NAME;
-    // if xml2js saw attributes on <NAME>, it'll be { _: "text", $: { … } }
     if (nameNode && typeof nameNode === 'object' && '_' in nameNode) {
       return nameNode._;
     }
-    // otherwise it was just text
     return nameNode;
   });
 }
@@ -63,10 +56,15 @@ declare global {
       exportUnit: (unit: any) => Promise<any>;
       exportItem: (items: any) => Promise<any>;
       createPurchaseEntry: (invoiceNumber: string, date: string, purchaserName: string, purchaseName: string, updatedPurchaseEntryItem: any, isWithinState: boolean) => Promise<any>
+      getCompanyData: (xmlData: string) => Promise<any>
+      createPartyName: (xmlData: string, purchaserName: string, partyDetails: any) => Promise<any>
+      createPurchaserLedger: (xmlData: string, ledgerName: string) => Promise<any>
+      getTaxLedgerData: (xmlData: string) => Promise<any>
+      createUnit: (units: any) => Promise<any>
+      createItem: (items: any) => Promise<any>
     };
   }
 }
-
 
 interface Product {
   Product: string;
@@ -100,6 +98,12 @@ interface PurchaserEntry {
   unit: string;
 }
 
+interface ZoomableImageProps {
+  src: string;
+  alt: string;
+  style?: React.CSSProperties;
+}
+
 const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -110,41 +114,29 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
 
-  // Show initial guide on first render
-
-
   const adjustZoom = (amount: number) => {
-    // Calculate new zoom level with limits
     const newZoom = Math.max(1, Math.min(5, zoom + amount));
-
-    // If no change, don't do anything
     if (newZoom === zoom) return;
 
-    // Get container and image dimensions
     if (!containerRef.current || !imageRef.current) return;
 
     const containerRect = containerRef.current.getBoundingClientRect();
     const containerWidth = containerRect.width;
     const containerHeight = containerRect.height;
 
-    // Calculate the center point of the container
     const centerX = containerWidth / 2;
     const centerY = containerHeight / 2;
 
-    // Calculate new position to zoom toward center
     if (newZoom > zoom) {
-      // Zooming in - adjust position to keep center point fixed
       const scaleFactor = newZoom / zoom;
       const newPosX = (position.x - centerX) * scaleFactor + centerX;
       const newPosY = (position.y - centerY) * scaleFactor + centerY;
       setPosition({ x: newPosX, y: newPosY });
     } else {
-      // Zooming out - adjust position gradually back to center
       const scaleFactor = newZoom / zoom;
       const newPosX = position.x * scaleFactor;
       const newPosY = position.y * scaleFactor;
 
-      // If we're zooming out to 1, reset position entirely
       if (newZoom === 1) {
         setPosition({ x: 0, y: 0 });
       } else {
@@ -152,10 +144,8 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
       }
     }
 
-    // Apply new zoom
     setZoom(newZoom);
 
-    // Show guide briefly when zooming
     if (!isFirstVisit && !showGuide) {
       setShowGuide(true);
       const timer = setTimeout(() => setShowGuide(false), 2000);
@@ -165,7 +155,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    const delta = e.deltaY * -0.003; // Smaller increment for smoother zoom
+    const delta = e.deltaY * -0.003;
     adjustZoom(delta);
   };
 
@@ -176,7 +166,6 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
         x: e.clientX - position.x,
         y: e.clientY - position.y
       });
-      // Show grab cursor
       if (containerRef.current) {
         containerRef.current.style.cursor = "grabbing";
       }
@@ -194,7 +183,6 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
 
   const handleMouseUp = () => {
     setIsDragging(false);
-    // Reset cursor
     if (containerRef.current) {
       containerRef.current.style.cursor = zoom > 1 ? "grab" : "default";
     }
@@ -205,18 +193,15 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
       setZoom(1);
       setPosition({ x: 0, y: 0 });
     } else {
-      // Get the click position relative to the container
       if (!containerRef.current) return;
 
       const rect = containerRef.current.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
 
-      // Calculate center offsets
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
 
-      // Zoom in centered on the click point
       setZoom(2);
       setPosition({
         x: (centerX - clickX) * 2,
@@ -269,17 +254,15 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
           width: '100%',
           height: '100%',
           objectFit: 'contain',
-          pointerEvents: 'none' // Prevent image dragging interference
+          pointerEvents: 'none'
         }}
       />
 
-      {/* Zoom Percentage Indicator */}
       <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-sm shadow-sm">
         <ZoomIn className="w-3.5 h-3.5" />
         {Math.round(zoom * 100)}%
       </div>
 
-      {/* Controls Panel */}
       <div className="absolute top-3 right-3 transition-opacity opacity-80 hover:opacity-100">
         <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-lg shadow-lg flex gap-1 border border-gray-200">
           <button
@@ -320,7 +303,6 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
         </div>
       </div>
 
-      {/* Mobile Controls (bottom) */}
       <div className="md:hidden absolute bottom-12 left-1/2 transform -translate-x-1/2 transition-opacity opacity-80 hover:opacity-100">
         <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg flex gap-1 border border-gray-200">
           <button
@@ -341,7 +323,6 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
         </div>
       </div>
 
-      {/* Usage Guide Overlay */}
       {showGuide && (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center transition-opacity">
           <div className="bg-white rounded-xl p-5 max-w-md shadow-xl">
@@ -376,7 +357,6 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
         </div>
       )}
 
-      {/* Subtle instruction hint when zoom > 1 */}
       {zoom > 1 && !showGuide && (
         <div className="absolute bottom-12 left-3 bg-black/40 text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm opacity-80">
           <Move className="w-3 h-3" />
@@ -470,17 +450,11 @@ const Stepper = ({ steps, currentStep }: StepperProps) => {
     <div className="w-full max-w-4xl mx-auto mb-10">
       <div className="flex items-center justify-between">
         {steps.map((step, index) => (
-          <div key={step} className="flex-1  relative">
+          <div key={step} className="flex-1 relative">
             <div className="flex flex-col items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${currentStep >= index
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-                : "bg-gray-200 text-gray-500"
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${currentStep >= index ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-gray-200 text-gray-500"
                 }`}>
-                {currentStep > index ? (
-                  <Check className="w-5 h-5" />
-                ) : (
-                  index + 1
-                )}
+                {currentStep > index ? <Check className="w-5 h-5" /> : index + 1}
               </div>
               <div className={`mt-2 text-center ${currentStep >= index ? "text-gray-800 font-medium" : "text-gray-400"
                 }`}>
@@ -488,8 +462,6 @@ const Stepper = ({ steps, currentStep }: StepperProps) => {
                 <span className="md:hidden">{step.split(' ')[0]}</span>
               </div>
             </div>
-
-
           </div>
         ))}
       </div>
@@ -528,9 +500,8 @@ const NumberField = ({ label, value, onChange, style = {} }) => (
 );
 
 export default function BillWorkflow() {
-  // Steps: 0 = Role Selection & Upload, 1 = Verify/Edit, 2 = Confirm
   const [currentStep, setCurrentStep] = useState(0);
-  const [role, setRole] = useState(""); // role: "Purchaser" or "Seller"
+  const [role, setRole] = useState("");
   const [files, setFiles] = useState<any[]>([]);
   const [billData, setBillData] = useState<any[]>([]);
   const [currentBillIndex, setCurrentBillIndex] = useState(0);
@@ -539,8 +510,9 @@ export default function BillWorkflow() {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState('Ready to export');
   const [error, setError] = useState<string | null>(null);
-  const [ourNetTotalAmout, setOurNetTotalAmount] = useState("")
-  const [selectedCompanyName, setSelectedCompanyName] = useState("")
+  const [netAmountTotal, setNetAmountTotal] = useState<number>(0);
+  const [gstTotals, setGstTotals] = useState<{ [key: string]: number }>({});
+  const [selectedCompanyName, setSelectedCompanyName] = useState(['Prime Depth Labs']);
 
   const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
   const MAX_FILE_SIZE_MB = 50;
@@ -606,8 +578,7 @@ export default function BillWorkflow() {
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('email', email)
-
+        .eq('email', email);
 
       if (error) {
         throw error;
@@ -618,21 +589,19 @@ export default function BillWorkflow() {
       console.error('Error fetching user data:', error);
       return null;
     }
-  }
+  };
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       const email = session?.user?.user_metadata?.email;
       if (email) {
-        // Define an inner async function to fetch user data
         const fetchUserData = async () => {
           const userData = await getUserDataByEmail(email);
-          // You can set the user data in state here if needed
         };
         fetchUserData();
       }
     });
-  }, [])
+  }, []);
 
   const handleNextStep = async () => {
     setIsLoading(true);
@@ -640,24 +609,22 @@ export default function BillWorkflow() {
       const requests = files.map(async (fileObj) => {
         const formData = new FormData();
         formData.append("file", fileObj.file);
-        formData.append("user_id", "2")
+        formData.append("user_id", "2");
         const response = await axios.post(
           `${BackendLink}/extract-bill-details/`,
           formData,
           {
             headers: {
-              "Content-Type":
-                "multipart/form-data; boundary=---011000010111000001101001"
+              "Content-Type": "multipart/form-data; boundary=---011000010111000001101001"
             }
           }
         );
-        console.log(response.data, "data");
         return response.data;
       });
 
       const results = await Promise.all(requests);
       setBillData(results);
-      setCurrentStep(2); // Move to Verify/Edit step
+      setCurrentStep(2);
     } catch (error: any) {
       console.error("Error extracting bill details:", error);
       toast.error("Error extracting bill details. Please try again.");
@@ -678,9 +645,36 @@ export default function BillWorkflow() {
   const handleItemChange = (billIndex: number, itemIndex: number, field: string, value: any) => {
     const newData = [...billData];
     const updatedItems = [...newData[billIndex].items];
+
+    // Update the specific field
     updatedItems[itemIndex] = { ...updatedItems[itemIndex], [field]: value };
+
+    // If changing GST-related fields (QTY, RATE, SGST, CGST), recalculate derived values
+    if (['QTY', 'RATE', 'SGST', 'CGST'].includes(field)) {
+      const item = updatedItems[itemIndex];
+      const qty = parseFloat(item.QTY) || 0;
+      const rate = parseFloat(item.RATE) || 0;
+      const sgst = parseFloat(item.SGST) || 0;
+      const cgst = parseFloat(item.CGST) || 0;
+
+      // Calculate G AMT (product price)
+      const productPrice = qty * rate;
+      updatedItems[itemIndex]["G AMT"] = productPrice.toFixed(2);
+
+      // Calculate GST amount
+      const totalGST = sgst + cgst;
+      const gstAmount = productPrice * (totalGST / 100);
+
+      // Calculate NET AMT
+      const netAmount = productPrice + gstAmount;
+      updatedItems[itemIndex]["NET AMT"] = netAmount.toFixed(2);
+    }
+
     newData[billIndex].items = updatedItems;
     setBillData(newData);
+
+    // Call recalculateBillTotals to update the totals
+    recalculateBillTotals(billIndex, itemIndex, field, value);
   };
 
   const addItem = (billIndex: number) => {
@@ -695,7 +689,8 @@ export default function BillWorkflow() {
       "G AMT": "",
       SGST: "",
       CGST: "",
-      "NET AMT": ""
+      "NET AMT": "",
+      UNIT: "PCS"
     };
     const newData = [...billData];
     if (!newData[billIndex].items) {
@@ -709,6 +704,9 @@ export default function BillWorkflow() {
     const newData = [...billData];
     newData[billIndex].items.splice(itemIndex, 1);
     setBillData(newData);
+
+    // Recalculate totals after removing an item
+    recalculateBillTotals(billIndex, itemIndex, "", "");
   };
 
   const handleProductDragStart = (e: React.DragEvent<HTMLTableCellElement>, billIndex: number, itemIndex: number) => {
@@ -738,6 +736,42 @@ export default function BillWorkflow() {
     setBillData((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
+  // Function to handle bill selection change
+  const handleBillChange = (newIndex: number) => {
+    setCurrentBillIndex(newIndex);
+
+    // Recalculate totals for the newly selected bill
+    if (billData.length > 0 && billData[newIndex]?.items?.length > 0) {
+      // Calculate initial totals for the new bill
+      const totalNetAmount = billData[newIndex].items.reduce((total, item) => {
+        return total + (parseFloat(item["NET AMT"]) || 0);
+      }, 0);
+
+      // Calculate GST totals by rate
+      const gstRateTotals: { [key: string]: number } = {};
+
+      billData[newIndex].items.forEach(item => {
+        const gstRate = (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
+        const gAmount = parseFloat(item["NET AMT"]) || 0;
+        const gstAmount = (gAmount * gstRate) / 100;
+        console.log({ gstRate, gAmount })
+        if (gstRate > 0) {
+          const rateKey = `${gstRate}%`;
+          if (!gstRateTotals[rateKey]) {
+            gstRateTotals[rateKey] = 0;
+          }
+          gstRateTotals[rateKey] += gstAmount;
+        }
+      });
+
+      setNetAmountTotal(totalNetAmount);
+      setGstTotals(gstRateTotals);
+    } else {
+      // Reset totals if there are no items
+      setNetAmountTotal(0);
+      setGstTotals({});
+    }
+  };
 
   function formatDateToDDMMYYYY(dateInput: Date | string): string {
     let date: Date;
@@ -745,7 +779,6 @@ export default function BillWorkflow() {
     if (dateInput instanceof Date) {
       date = dateInput;
     } else {
-      // If the input contains '/' it might be in a non-ISO format.
       if (dateInput?.includes('/')) {
         const parts = dateInput.split('/');
         if (parts.length === 3) {
@@ -755,17 +788,13 @@ export default function BillWorkflow() {
           const num3 = parseInt(part3, 10);
 
           let day: number, month: number, year: number;
-          // Heuristic to decide which part is the day or month:
           if (num1 > 12) {
-            // If the first number is greater than 12, assume dd/mm/yyyy.
             day = num1;
             month = num2;
           } else if (num2 > 12) {
-            // If the second number is greater than 12, assume mm/dd/yyyy.
             month = num1;
             day = num2;
           } else {
-            // Ambiguous: default to dd/mm/yyyy.
             day = num1;
             month = num2;
           }
@@ -773,16 +802,13 @@ export default function BillWorkflow() {
 
           date = new Date(year, month - 1, day);
         } else {
-          // If not exactly 3 parts, let Date handle it.
           date = new Date(dateInput);
         }
       } else {
-        // For other formats (like ISO), use the Date constructor.
         date = new Date(dateInput);
       }
     }
 
-    // Format day and month with leading zeros if needed.
     const dd = date.getDate().toString().padStart(2, '0');
     const mm = (date.getMonth() + 1).toString().padStart(2, '0');
     const yyyy = date.getFullYear();
@@ -790,87 +816,19 @@ export default function BillWorkflow() {
     return `${dd}-${mm}-${yyyy}`;
   }
 
-
-  // function extractGSTData(data: Product[]): string[] {
-  //   const seenProducts = new Set<string>();
-  //   const result: GSTData[] = [];
-
-  //   for (const item of data) {
-  //     if (seenProducts.has(item.Product)) {
-  //       // Skip duplicate product names
-  //       continue;
-  //     }
-  //     seenProducts.add(item.Product);
-
-  //     const gstValue = item.SGST + item.CGST;
-
-  //     // Remove apostrophes and double quotes from the product name
-  //     const productName = item.Product.replace(/['"]/g, "");
-
-  //     result.push({
-  //       Product: productName,
-  //       HSN: item.HSN,
-  //       SGST: item.SGST,
-  //       CGST: item.CGST,
-  //       gst: gstValue,
-  //       decimal: gstValue / 100,
-  //       symbol: item.UNIT
-  //     });
-  //   }
-
-  //   return result;
-
-
-  // }
-
-
-  // console.log(billData,"bill data")
-
-  // function extractPurchaserEntries(data: Product[]): PurchaserEntry[] {
-
-  //   return data.map(product => {
-  //     // Keep the product name intact with measurement details.
-  //     const productName = product.Product.replace(/['"]/g, "");
-
-  //     return {
-  //       name: productName,
-  //       price: product.RATE === 0 ? 1 : product.RATE,
-  //       quantity: product.QTY === 0 ? 1 : product.QTY,
-  //       unit: "PCS"
-  //     };
-  //   });
-  // }
-
-  // function extractUnitsFromItems(rawItems) {
-  //   const uniqueUnits = [];
-  //   rawItems.forEach(item => {
-  //     const unit = item?.UNIT || "PCS";
-  //     if (!uniqueUnits.some(u => u.Name === unit)) {
-  //       uniqueUnits.push({ name: unit, decimal: 3 });
-  //     }
-  //   });
-  //   return uniqueUnits;
-  // }
-
   function extractGSTData(data: Product[]): GSTData[] {
     const seenProducts = new Set<string>();
     const result: GSTData[] = [];
 
     for (const item of data) {
       if (seenProducts.has(item.Product)) {
-        // Skip duplicate product names
         continue;
       }
       seenProducts.add(item.Product);
 
-      // Convert SGST and CGST to numbers before adding them
       const gstValue = (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
-
-      // Remove apostrophes and double quotes from the product name
       const productName = item.Product.replace(/['"]/g, "");
-
-      // Extract unit from the item
-      const unit = item.UNIT?.replace(/\d+/g, "").trim() || "PCS"; // You can modify this if needed
+      const unit = item.UNIT?.replace(/\d+/g, "").trim() || "PCS";
 
       result.push({
         Product: productName,
@@ -879,21 +837,17 @@ export default function BillWorkflow() {
         CGST: item.CGST,
         gst: gstValue,
         decimal: gstValue / 100,
-        symbol: unit  // Use the extracted unit here
+        symbol: unit
       });
     }
 
     return result;
   }
 
-
   function extractPurchaserEntries(data: Product[]): PurchaserEntry[] {
     return data.map(product => {
-      // Keep the product name intact with measurement details.
       const productName = product.Product.replace(/['"]/g, "");
-
-      // Extract unit from the product details
-      const unit = product.UNIT?.replace(/\d+/g, "").trim() || "PCS"; // Use extractUnitsFromItems if needed
+      const unit = product.UNIT?.replace(/\d+/g, "").trim() || "PCS";
 
       return {
         name: productName,
@@ -904,12 +858,10 @@ export default function BillWorkflow() {
     });
   }
 
-
-
   function extractUnitsFromItems(rawItems) {
     const uniqueUnits = [];
     rawItems.forEach(item => {
-      const unit = item?.UNIT?.replace(/\d+/g, "").trim() || "PCS"; // Remove digits from the unit string
+      const unit = item?.UNIT?.replace(/\d+/g, "").trim() || "PCS";
       if (!uniqueUnits.some(u => u.name === unit)) {
         uniqueUnits.push({ name: unit, decimal: 3 });
       }
@@ -917,62 +869,7 @@ export default function BillWorkflow() {
     return uniqueUnits;
   }
 
-
-  // const handleExport = async () => {
-  //   console.log(role);
-  //   console.log(billData);
-  //   const purchaserName = role === "Purchaser" ? billData?.[0]?.receiverDetails?.name : billData?.[0]?.senderDetails?.name;
-  //   const gst = role === "Purchaser" ? billData?.[0]?.receiverDetails?.gst : billData?.[0]?.senderDetails?.gst;
-  //   const ledgerNames = [
-  //     'Cgst0', 'Cgst2.5', 'Cgst6', 'Cgst9', 'Cgst14',
-  //     'Igst0', 'Igst5', 'Igst12', 'Igst18', 'Igst28',
-  //     'Ut/Sgst0', 'Ut/Sgst2.5', 'Ut/Sgst6', 'Ut/Sgst9', 'Ut/Sgst14'
-  //   ];
-  //   const items = billData?.[0]?.items
-  //   const isPurchaser = role === "Purchaser"
-  //   const date = formatDateToDDMMYYYY(billData?.[0]?.billDate)
-  //   const updatedItemsForExport = extractGSTData(items)
-  //   const updatedUnits = extractUnitsFromItems(items)
-  //   const updatedPurchaseEntryItem = extractPurchaserEntries(items)
-  //   const invoiceNumber = billData?.[0]?.invoiceNumber
-
-  //   const responsePartyName = await window.electron.exportAndCreatePartyNameEntry(purchaserName, gst)
-  //   if (responsePartyName.success) {
-  //     const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
-  //     if (purchaserLedgerResponse?.success) {
-  //       const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
-  //       if (allLedgerResponse?.success) {
-  //         const unitResponse = await window.electron.exportUnit(updatedUnits);
-  //         if (unitResponse?.success) {
-  //           const itemResponse = await window.electron.exportItem(updatedItemsForExport);
-  //           console.log(itemResponse, "here is item response")
-  //           if (itemResponse?.success) {
-  //             const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, "Purchase", updatedPurchaseEntryItem, true);
-  //             console.log(response, "response for purchaser")
-  //             if (response?.success) {
-  //               alert("Purchase Entry Create")
-  //             } else {
-  //               alert("Error: while create purchaser entry")
-  //             }
-  //           } else {
-  //             alert("Error: while creating item")
-  //           }
-  //         } else {
-  //           alert("Error: while creating unit ")
-  //         }
-  //       }
-  //     }
-  //   }
-
-  //   console.log(invoiceNumber, date, purchaserName, updatedItemsForExport, purchaserName, updatedPurchaseEntryItem, true, updatedUnits)
-
-  // };
-
-  // console.log(billData)
-
   const handleExport = async () => {
-
-    // Ledger names remain the same for every bill
     const ledgerNames = [
       'Cgst0', 'Cgst2.5', 'Cgst6', 'Cgst9', 'Cgst14',
       'Igst0', 'Igst5', 'Igst12', 'Igst18', 'Igst28',
@@ -981,37 +878,34 @@ export default function BillWorkflow() {
 
     const ledgerXmlData = `
     <ENVELOPE>
-  <HEADER>
-    <VERSION>1</VERSION>
-    <TALLYREQUEST>Export</TALLYREQUEST>
-    <TYPE>Collection</TYPE>
-    <ID>Ledgers</ID>
-  </HEADER>
-  <BODY>
-    <DESC>
-      <STATICVARIABLES>
-        <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
-        <SVCURRENTCOMPANY>${selectedCompanyName}</SVCURRENTCOMPANY>
-      </STATICVARIABLES>
-      <TDL>
-        <TDLMESSAGE>
-          <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
-            <TYPE>Ledger</TYPE>
-            <NATIVEMETHOD>Address</NATIVEMETHOD>
-            <NATIVEMETHOD>Masterid</NATIVEMETHOD>
-            <NATIVEMETHOD>*</NATIVEMETHOD>
-          </COLLECTION>
-        </TDLMESSAGE>
-      </TDL>
-    </DESC>
-  </BODY>
-  </ENVELOPE>`
-
+      <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>Ledgers</ID>
+      </HEADER>
+      <BODY>
+        <DESC>
+          <STATICVARIABLES>
+            <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+            <SVCURRENTCOMPANY>${selectedCompanyName}</SVCURRENTCOMPANY>
+          </STATICVARIABLES>
+          <TDL>
+            <TDLMESSAGE>
+              <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
+                <TYPE>Ledger</TYPE>
+                <NATIVEMETHOD>Address</NATIVEMETHOD>
+                <NATIVEMETHOD>Masterid</NATIVEMETHOD>
+                <NATIVEMETHOD>*</NATIVEMETHOD>
+              </COLLECTION>
+            </TDLMESSAGE>
+          </TDL>
+        </DESC>
+      </BODY>
+    </ENVELOPE>`;
 
     if (billData && billData.length > 1) {
-      // If there are multiple bills, loop through each one
       for (let bill of billData) {
-        // Use conditional extraction based on role for each bill
         const purchaserName =
           role === "Purchaser"
             ? bill.receiverDetails?.name
@@ -1027,18 +921,6 @@ export default function BillWorkflow() {
         const updatedPurchaseEntryItem = extractPurchaserEntries(items);
         const invoiceNumber = bill.invoiceNumber;
 
-        // Log the details for this bill
-        console.log(
-          {
-            invoiceNumber,
-            date,
-            purchaserName,
-            updatedItemsForExport,
-            updatedPurchaseEntryItem,
-            updatedUnits
-          }
-        );
-
         const purchaseVoucherPayload = {
           invoiceNumber: invoiceNumber,
           invoiceDate: date,
@@ -1053,34 +935,6 @@ export default function BillWorkflow() {
           isWithinState: false,
         };
 
-        // const responsePartyName = await window.electron.exportAndCreatePartyNameEntry(purchaserName, gst)
-        // if (responsePartyName.success) {
-        //   const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
-        //   if (purchaserLedgerResponse?.success) {
-        //     const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
-        //     if (allLedgerResponse?.success) {
-        //       const unitResponse = await window.electron.exportUnit(updatedUnits);
-        //       if (unitResponse?.success) {
-        //         const itemResponse = await window.electron.exportItem(updatedItemsForExport);
-        //         console.log(itemResponse, "here is item response")
-        //         if (itemResponse?.success) {
-        //           const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, "Purchase", updatedPurchaseEntryItem, true);
-        //           console.log(response, "response for purchaser")
-        //           if (response?.success) {
-        //             alert("Purchase Entry Create")
-        //           } else {
-        //             alert("Error: while create purchaser entry")
-        //           }
-        //         } else {
-        //           alert("Error: while creating item")
-        //         }
-        //       } else {
-        //         alert("Error: while creating unit ")
-        //       }
-        //     }
-        //   }
-        // }
-
         const responsePartyName = await window.electron.createPartyName(ledgerXmlData, purchaserName, {
           name: purchaserName,
           parent: "Sundry Creditors",
@@ -1089,12 +943,12 @@ export default function BillWorkflow() {
           state: "",
           mobile: "",
           gstin: gst || "",
-        })
+        });
 
         if (responsePartyName.success) {
-          const responsePurchase = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase")
+          const responsePurchase = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase");
           if (responsePurchase.success) {
-            const responseTaxLedger = await window.electron.getTaxLedgerData(ledgerXmlData)
+            const responseTaxLedger = await window.electron.getTaxLedgerData(ledgerXmlData);
             if (responseTaxLedger.success) {
               const responseUnit = await window.electron.createUnit(updatedUnits);
               if (responseUnit?.success) {
@@ -1102,26 +956,24 @@ export default function BillWorkflow() {
                 if (responseItems.success) {
                   const responsePurchase = window.electron.createPurchaseEntry(
                     purchaseVoucherPayload
-                  )
-                  console.log(responsePurchase, "kxmkjmk")
+                  );
                 } else {
-                  alert("Error: while creating Items")
+                  alert("Error: while creating Items");
                 }
               } else {
-                alert("Error: while creating Unit")
+                alert("Error: while creating Unit");
               }
             } else {
-              alert("Error: while creating Tax Ledger")
+              alert("Error: while creating Tax Ledger");
             }
           } else {
-            alert("Error: while creating Purchase Ledger")
+            alert("Error: while creating Purchase Ledger");
           }
         } else {
-          alert("Error: while creating Party Ledger")
+          alert("Error: while creating Party Ledger");
         }
       }
     } else if (billData && billData.length === 1) {
-      // If there is only one bill, process it using the existing approach
       const bill = billData[0];
       const purchaserName =
         role === "Purchaser"
@@ -1138,17 +990,6 @@ export default function BillWorkflow() {
       const updatedPurchaseEntryItem = extractPurchaserEntries(items);
       const invoiceNumber = bill.invoiceNumber;
 
-      console.log(
-        {
-          invoiceNumber,
-          date,
-          purchaserName,
-          updatedItemsForExport,
-          updatedPurchaseEntryItem,
-          updatedUnits
-        }
-      );
-
       const purchaseVoucherPayload = {
         invoiceNumber: invoiceNumber,
         invoiceDate: date,
@@ -1163,37 +1004,6 @@ export default function BillWorkflow() {
         isWithinState: false,
       };
 
-      //   const responsePartyName = await window.electron.exportAndCreatePartyNameEntry(purchaserName, gst)
-      //   if (responsePartyName.success) {
-      //     const purchaserLedgerResponse = await window.electron.exportAndCreateLedger("Purchase", "purchase accounts")
-      //     if (purchaserLedgerResponse?.success) {
-      //       const allLedgerResponse = await window.electron.exportAndCreateLedger(ledgerNames, "ledger")
-      //       if (allLedgerResponse?.success) {
-      //         const unitResponse = await window.electron.exportUnit(updatedUnits);
-      //         if (unitResponse?.success) {
-      //           const itemResponse = await window.electron.exportItem(updatedItemsForExport);
-      //           console.log(itemResponse, "here is item response")
-      //           if (itemResponse?.success) {
-      //             const response = await window.electron.createPurchaseEntry(invoiceNumber, "01-04-2025", purchaserName, "Purchase", updatedPurchaseEntryItem, true);
-      //             console.log(response, "response for purchaser")
-      //             if (response?.success) {
-      //               alert("Purchase Entry Create")
-      //             } else {
-      //               alert("Error: while create purchaser entry")
-      //             }
-      //           } else {
-      //             alert("Error: while creating item")
-      //           }
-      //         } else {
-      //           alert("Error: while creating unit ")
-      //         }
-      //       }
-      //     }
-      //   }
-      // } else {
-      //   console.log("No bill data found");
-      // }
-
       const responsePartyName = await window.electron.createPartyName(ledgerXmlData, purchaserName, {
         name: purchaserName,
         parent: "Sundry Creditors",
@@ -1202,12 +1012,12 @@ export default function BillWorkflow() {
         state: "",
         mobile: "",
         gstin: gst || "",
-      })
+      });
 
       if (responsePartyName.success) {
-        const responsePurchase = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase")
+        const responsePurchase = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase");
         if (responsePurchase.success) {
-          const responseTaxLedger = await window.electron.getTaxLedgerData(ledgerXmlData)
+          const responseTaxLedger = await window.electron.getTaxLedgerData(ledgerXmlData);
           if (responseTaxLedger.success) {
             const responseUnit = await window.electron.createUnit(updatedUnits);
             if (responseUnit?.success) {
@@ -1215,137 +1025,158 @@ export default function BillWorkflow() {
               if (responseItems.success) {
                 const responsePurchaseVoucher = window.electron.createPurchaseEntry(
                   purchaseVoucherPayload
-                )
+                );
                 if (responsePurchaseVoucher.success) {
-                  console.log("Created")
-                } else {
-
-                  console.log(responsePurchaseVoucher, "Purchase Error")
+                  console.log("Created");
                 }
               } else {
-                console.log(responseItems, " responseItems error")
-                alert("Error: while creating Items")
+                alert("Error: while creating Items");
               }
             } else {
-              console.log(responseUnit, "responseUnit error")
-              alert("Error: while creating Unit")
+              alert("Error: while creating Unit");
             }
           } else {
-            console.log(responseTaxLedger, "responseTaxLedger error")
-            alert("Error: while creating Tax Ledger")
+            alert("Error: while creating Tax Ledger");
           }
         } else {
-          console.log(responsePurchase, "responsePurchase error")
-          alert("Error: while creating Purchase Ledger")
+          alert("Error: while creating Purchase Ledger");
         }
       } else {
-        console.log(responsePartyName, "responsePartyName Error")
-        alert("Error: while creating Party Ledger")
+        alert("Error: while creating Party Ledger");
       }
     }
   };
 
-  // Calculate all values when specific fields change
-  useEffect(() => {
-    if (billData.length > 0 && billData[currentBillIndex]?.items?.length > 0) {
-      recalculateBillTotals();
-    }
-  }, [billData, currentBillIndex]);
-
-  // Function to recalculate all items and totals
-  const recalculateBillTotals = () => {
+  const recalculateBillTotals = (billIndex: number, itemIndex: number, field: string, value: any) => {
     const updatedBillData = [...billData];
 
-    // Recalculate each item
-    updatedBillData[currentBillIndex].items = updatedBillData[currentBillIndex].items.map((item) => {
-      const qty = parseFloat(item.QTY) || 0;
-      const rate = parseFloat(item.RATE) || 0;
-      const discount = parseFloat(item.DIS) || 0;
+    updatedBillData[billIndex].items = updatedBillData[billIndex].items.map((item, idx) => {
+      if (itemIndex === idx) {
+        console.log({ value })
+        const qty = field === "QTY" ? parseFloat(value) : parseFloat(item.QTY) || 0;
+        const rate = field === "RATE" ? parseFloat(value) : parseFloat(item.RATE) || 0;
+        const discount = field === "DIS" ? parseFloat(value) : parseFloat(item.DIS) || 0;
 
-      const sgstPerUnit = parseFloat(item.SGST) || 0;
-      const cgstPerUnit = sgstPerUnit;
-      const productPrice = rate * qty;
-      const totalGST = (sgstPerUnit + cgstPerUnit);
-      const gstAmount = productPrice * (totalGST / 100);
+        const sgstPerUnit = field === "SGST" ? parseFloat(value) : parseFloat(item.SGST) || 0;
+        const cgstPerUnit = sgstPerUnit;
+        const productPrice = rate * qty;
+        const totalGST = (sgstPerUnit + cgstPerUnit);
+        const gstAmount = productPrice * (totalGST / 100);
 
-      const newNetAmt = productPrice + gstAmount;
+        const newNetAmt = productPrice + gstAmount;
 
+        return {
+          ...item,
+          SGST: sgstPerUnit,
+          CGST: cgstPerUnit,
+          "G AMT": productPrice,
+          "NET AMT": newNetAmt
+        };
+      }
 
-      return {
-        ...item,
-        SGST: sgstPerUnit.toFixed(2),
-        CGST: cgstPerUnit.toFixed(2),
-        "NET AMT": newNetAmt.toFixed(2)
-      };
+      return item;
     });
 
-    // Calculate the total NET AMT
-    const totalNetAmount = updatedBillData[currentBillIndex].items.reduce((total, item) => {
+    // Calculate NET AMT total
+    const totalNetAmount = updatedBillData[billIndex].items.reduce((total, item) => {
       return total + (parseFloat(item["NET AMT"]) || 0);
     }, 0);
 
-    setOurNetTotalAmount(totalNetAmount)
-    // Store the total in the bill data
-    // updatedBillData[currentBillIndex].totalNetAmount = totalNetAmount.toFixed(2);
+    // Calculate GST totals by rate
+    const gstRateTotals: { [key: string]: number } = {};
 
-    // Update state without triggering infinite loop
+    updatedBillData[billIndex].items.forEach(item => {
+      const gstRate = (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
+      const gAmount = parseFloat(item["NET AMT"]) || 0;
+      const gstAmount = (gAmount *gstRate ) / 100;
+
+      if (gstRate > 0) {
+        const rateKey = `${gstRate}%`;
+        if (!gstRateTotals[rateKey]) {
+          gstRateTotals[rateKey] = 0;
+        }
+        gstRateTotals[rateKey] += gstAmount;
+      }
+    });
+
+    setNetAmountTotal(totalNetAmount);
+    setGstTotals(gstRateTotals);
     setBillData(updatedBillData);
   };
 
   useEffect(() => {
-    // Fetch companies when component mounts
     fetchCompanies();
   }, []);
-  
-  // If no company is selected and companies are loaded, set the first one as default
+
   useEffect(() => {
     if (!selectedCompanyName && selectedCompanyName.length > 0) {
       setSelectedCompanyName(selectedCompanyName[0]);
     }
-  }, [selectedCompanyName, selectedCompanyName]);
+  }, [selectedCompanyName]);
+
+  // Add this useEffect to initialize totals when bill data changes
+  useEffect(() => {
+    if (billData.length > 0 && billData[currentBillIndex]?.items?.length > 0) {
+      // Calculate initial totals
+      const totalNetAmount = billData[currentBillIndex].items.reduce((total, item) => {
+        console.log(item["NET AMT"],'net amount')
+        return total + (parseFloat(item["NET AMT"]) || 0);
+      }, 0);
+
+      // Calculate GST totals by rate
+      const gstRateTotals: { [key: string]: number } = {};
+
+      billData[currentBillIndex].items.forEach(item => {
+        const gstRate = (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
+        const gAmount = parseFloat(item["NET AMT"]) || 0;
+        const gstAmount = gAmount * (gstRate / 100);
+        if (gstRate > 0) {
+          const rateKey = `${gstRate}%`;
+          if (!gstRateTotals[rateKey]) {
+            gstRateTotals[rateKey] = 0;
+          }
+          gstRateTotals[rateKey] += gstAmount;
+        }
+      });
+
+      setNetAmountTotal(totalNetAmount);
+      setGstTotals(gstRateTotals);
+    }
+  }, [billData, currentBillIndex]);
 
   const fetchCompanies = async () => {
     setIsLoading(true);
 
     const xmlData = `<ENVELOPE>
-          <HEADER>
-            <VERSION>1</VERSION>
-            <TALLYREQUEST>Export</TALLYREQUEST>
-            <TYPE>Collection</TYPE>
-            <ID>List of Companies</ID>
-          </HEADER>
-          <BODY>
-            <DESC>
-              <STATICVARIABLES>
-                <SVIsSimpleCompany>No</SVIsSimpleCompany>
-              </STATICVARIABLES>
-              <TDL>
-                <TDLMESSAGE>
-                  <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="List of Companies">
-                    <TYPE>Company</TYPE>
-                    <NATIVEMETHOD>Name</NATIVEMETHOD>
-                  </COLLECTION>
-                  <ExportHeader>EmpId:5989</ExportHeader>
-                </TDLMESSAGE>
-              </TDL>
-            </DESC>
-          </BODY>
-        </ENVELOPE>`
+      <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>List of Companies</ID>
+      </HEADER>
+      <BODY>
+        <DESC>
+          <STATICVARIABLES>
+            <SVIsSimpleCompany>No</SVIsSimpleCompany>
+          </STATICVARIABLES>
+          <TDL>
+            <TDLMESSAGE>
+              <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="List of Companies">
+                <TYPE>Company</TYPE>
+                <NATIVEMETHOD>Name</NATIVEMETHOD>
+              </COLLECTION>
+              <ExportHeader>EmpId:5989</ExportHeader>
+            </TDLMESSAGE>
+          </TDL>
+        </DESC>
+      </BODY>
+    </ENVELOPE>`;
 
     try {
-       // Calculate content length (in bytes) from the XML data.
-
-       const response = await window.electron.getCompanyData(xmlData)
-
-      console.log(response,"responseeee")
-      
-      const data =response.data
-      // Parse the XML response to extract company names
-      // This is a simplified example - you'll need to parse the actual XML response
-    const companyList=await  extractCompanyNames(data)
+      const response = await window.electron.getCompanyData(xmlData);
+      const data = response.data;
+      const companyList = await extractCompanyNames(data);
       setSelectedCompanyName(companyList);
-      console.log(companyList)
-
     } catch (error) {
       console.error("Error fetching companies:", error);
     } finally {
@@ -1353,91 +1184,64 @@ export default function BillWorkflow() {
     }
   };
 
+  // Add the BillTotals component
+  const BillTotals = () => {
+    const gstTotalAmount = Object.values(gstTotals).reduce((sum, amount) => sum + amount, 0);
+    console.log({ gstTotals })
+    return (
+      <div className="mt-6 bg-white rounded-xl shadow-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Bill Totals</h3>
 
-  // console.log(billData)
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="text-sm font-medium text-gray-600 mb-3">GST Breakup</h4>
 
-  // Role selection UI if no role is selected yet
+            {Object.keys(gstTotals).length === 0 ? (
+              <p className="text-gray-500 text-sm">No GST data available</p>
+            ) : (
+              <div className="space-y-2">
+                {Object.entries(gstTotals).map(([rate, amount]) => (
+                  <div key={rate} className="flex justify-between items-center text-sm">
+                    <div className="flex items-center">
+                      <span className="font-medium">{rate} GST</span>
+                      <span className="text-gray-500 ml-2">
+                        (CGST: {parseFloat(rate) / 2}%, SGST: {parseFloat(rate) / 2}%)
+                      </span>
+                    </div>
+                    <span className="font-medium text-black">₹{amount.toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="pt-2 mt-2 border-t border-gray-200 flex justify-between items-center">
+                  <span className="font-medium text-black">Total GST Amount</span>
+                  <span className="font-bold text-black">₹{gstTotalAmount.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium text-gray-600 mb-3">Bill Summary</h4>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-700">Taxable Amount</span>
+                <span className="font-medium text-black">₹{(netAmountTotal).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-700">Total GST</span>
+                <span className="font-medium  text-black">₹{gstTotalAmount.toFixed(2)}</span>
+              </div>
+              <div className="pt-2 mt-2 border-t border-gray-200 flex justify-between items-center">
+                <span className="font-medium">Gross Amount Total</span>
+                <span className="text-xl font-bold text-blue-700">₹{(netAmountTotal+gstTotalAmount).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (currentStep === 0 && !role) {
-    // return (
-    //   <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
-    //     <header className="py-6 px-8 border-b border-gray-200 bg-white shadow-sm">
-    //       <div className=" mx-auto flex items-center">
-    //         <button
-    //           onClick={() => window.history.back()}
-    //           className="flex items-center text-gray-600 hover:text-blue-600 transition-colors"
-    //         >
-    //           <ChevronLeft className="h-5 w-5 mr-1" />
-    //           <span className="font-medium">Back</span>
-    //         </button>
-    //         <h1 className="text-2xl font-bold text-gray-800 ml-6">Bill Management System</h1>
-    //       </div>
-    //     </header>
-
-    //     <main className="flex-1 flex items-center justify-center p-8">
-    //       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden">
-    //         <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-    //           <h2 className="text-2xl font-bold text-gray-800">
-    //             Select Document Type
-    //           </h2>
-    //           <p className="text-gray-600 mt-1">
-    //             Choose the type of bills you want to manage
-    //           </p>
-    //         </div>
-
-    //         <div className="p-8 space-y-6">
-    //           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-    //             {/* Purchase Bills Option */}
-    //             <button
-    //               onClick={() => {
-    //                 setRole("Purchaser");
-    //                 setCurrentStep(1);
-    //               }}
-    //               className="group relative flex flex-col items-center p-8 border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 overflow-hidden"
-    //             >
-    //               <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-    //               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-5 group-hover:bg-blue-200 transition-colors duration-200 relative z-10">
-    //                 <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    //                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-    //                 </svg>
-    //               </div>
-    //               <h3 className="text-xl font-semibold text-gray-900 mb-1 relative z-10">Purchase Bills</h3>
-    //               <p className="text-gray-500 text-center mx-auto max-w-xs relative z-10">
-    //                 Enter and manage bills for items or services you've purchased
-    //               </p>
-    //               <div className="mt-6 bg-blue-500 text-white px-5 py-2 rounded-full font-medium text-sm relative z-10 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200">
-    //                 Select
-    //               </div>
-    //             </button>
-
-    //             {/* Sales Bills Option */}
-    //             <button
-    //               onClick={() => {
-    //                 setRole("Seller");
-    //                 setCurrentStep(1);
-    //               }}
-    //               className="group relative flex flex-col items-center p-8 border border-gray-200 rounded-xl hover:border-green-500 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 overflow-hidden"
-    //             >
-    //               <div className="absolute inset-0 bg-gradient-to-b from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-    //               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-5 group-hover:bg-green-200 transition-colors duration-200 relative z-10">
-    //                 <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    //                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-    //                 </svg>
-    //               </div>
-    //               <h3 className="text-xl font-semibold text-gray-900 mb-1 relative z-10">Sales Bills</h3>
-    //               <p className="text-gray-500 text-center mx-auto max-w-xs relative z-10">
-    //                 Create and manage bills for products or services you've sold
-    //               </p>
-    //               <div className="mt-6 bg-green-500 text-white px-5 py-2 rounded-full font-medium text-sm relative z-10 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200">
-    //                 Select
-    //               </div>
-    //             </button>
-    //           </div>
-    //         </div>
-    //       </div>
-    //     </main>
-    //   </div>
-    // );
-
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
         <header className="py-6 px-8 border-b border-gray-200 bg-white shadow-sm">
@@ -1528,11 +1332,9 @@ export default function BillWorkflow() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {/* Purchase Bills Option */}
                   <button
                     onClick={() => {
                       setRole("Purchaser");
-                      // Navigate to next step or perform action
                     }}
                     className="group relative flex flex-col items-center p-8 border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 overflow-hidden"
                   >
@@ -1551,11 +1353,9 @@ export default function BillWorkflow() {
                     </div>
                   </button>
 
-                  {/* Sales Bills Option */}
                   <button
                     onClick={() => {
                       setRole("Seller");
-                      // Navigate to next step or perform action
                     }}
                     className="group relative flex flex-col items-center p-8 border border-gray-200 rounded-xl hover:border-green-500 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 overflow-hidden"
                   >
@@ -1580,7 +1380,6 @@ export default function BillWorkflow() {
         </main>
       </div>
     );
-
   }
 
   return (
@@ -1588,7 +1387,7 @@ export default function BillWorkflow() {
       <LoadingScreen isLoading={isLoading} />
 
       <header className="py-6 px-8 border-b border-gray-200 bg-white shadow-sm sticky top-0 z-20">
-        <div className=" mx-auto flex items-center justify-between">
+        <div className="mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6">
             <button
               onClick={() => window.history.back()}
@@ -1610,22 +1409,19 @@ export default function BillWorkflow() {
         </div>
       </header>
 
-      <main className=" mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <main className="mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <Stepper
           steps={["Role Selection", "Upload Files", "Verify Data", "Confirm"]}
           currentStep={currentStep}
         />
 
-        {/* Step 1: File Upload */}
         {currentStep === 1 && (
           <div className="space-y-8">
             <div
               onDragOver={handleDragOverFiles}
               onDragLeave={handleDragLeaveFiles}
               onDrop={handleDropFiles}
-              className={`group relative bg-white rounded-2xl border-2 border-dashed ${isDraggingFile
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-300 hover:border-gray-400"
+              className={`group relative bg-white rounded-2xl border-2 border-dashed ${isDraggingFile ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
                 } transition-all duration-200 py-16 px-6 text-center cursor-pointer shadow-lg hover:shadow-xl`}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -1722,14 +1518,11 @@ export default function BillWorkflow() {
           </div>
         )}
 
-        {/* Step 2: Data Verification / Editing */}
         {currentStep === 2 && (
           <div className="space-y-6">
             <div className="bg-white p-6 shadow-lg rounded-xl mb-6">
               <div className="gap-6">
-
                 <div className="flex gap-6">
-                  {/* Column 1: Image Preview */}
                   <div className="w-1/2">
                     <div
                       className="bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center"
@@ -1751,7 +1544,7 @@ export default function BillWorkflow() {
 
                     <div className="flex items-center justify-between mt-4">
                       <button
-                        onClick={() => setCurrentBillIndex((prev) => Math.max(0, prev - 1))}
+                        onClick={() => handleBillChange(Math.max(0, currentBillIndex - 1))}
                         disabled={currentBillIndex === 0}
                         className={`flex items-center justify-center p-2 rounded-full ${currentBillIndex === 0
                           ? "text-gray-300 cursor-not-allowed"
@@ -1765,7 +1558,7 @@ export default function BillWorkflow() {
                         {files.map((_, idx) => (
                           <button
                             key={idx}
-                            onClick={() => setCurrentBillIndex(idx)}
+                            onClick={() => handleBillChange(idx)}
                             className={`w-2.5 h-2.5 rounded-full transition-all ${currentBillIndex === idx
                               ? "bg-blue-600 w-6"
                               : "bg-gray-300 hover:bg-gray-400"
@@ -1778,7 +1571,7 @@ export default function BillWorkflow() {
                       <button
                         onClick={() => {
                           if (currentBillIndex === files.length - 1) setCurrentStep(3);
-                          else setCurrentBillIndex((prev) => prev + 1);
+                          else handleBillChange(currentBillIndex + 1);
                         }}
                         className="flex items-center justify-center p-2 rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                       >
@@ -1787,9 +1580,8 @@ export default function BillWorkflow() {
                     </div>
                   </div>
 
-                  {/* Column 2: Cross-check Table */}
                   <div className="w-1/2">
-                    <div className=" space-y-6">
+                    <div className="space-y-6">
                       <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                         <FileDigit className="w-5 h-5" />
                         Bill Information
@@ -1872,15 +1664,9 @@ export default function BillWorkflow() {
                     </div>
                   </div>
                 </div>
-
-
-                {/* Column 3: Bill Information */}
-
               </div>
-
             </div>
 
-            {/* Items Section */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -1904,14 +1690,13 @@ export default function BillWorkflow() {
                       {[
                         "Product",
                         "QTY",
-                        // "FREE",
                         "HSN",
                         "MRP",
                         "RATE",
                         "DIS",
                         "SGST",
                         "CGST",
-                        "NET AMT",
+                        "G AMT",
                         "Actions"
                       ].map((head) => (
                         <th
@@ -1925,45 +1710,11 @@ export default function BillWorkflow() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {billData[currentBillIndex]?.items?.map((item: any, idx: number) => {
-                      // const qty = parseFloat(item.QTY);
-                      // const rate = parseFloat(item.RATE);
-                      // // const gAmt = parseFloat(item["G AMT"]);
-                      // const discount = parseFloat(item.DIS) || 0;
-                      // // const netAmt = parseFloat(item["NET AMT"]);
-                      // // const calcGross = item.QTY && item.RATE ? qty * rate - qty * discount : null;
-                      // // const calcNet =
-                      // //   item["G AMT"] && (item["NET AMT"] || item["NET AMT"] === 0)
-                      // //     ? gAmt + qty * (parseFloat(item.SGST) + parseFloat(item.CGST))
-                      // //     : null;
-                      // // const grossValid =
-                      // //   item.QTY && item.RATE && item["G AMT"]
-                      // //     ? calcGross !== null && Math.abs(calcGross - gAmt) < 0.01
-                      // //     : true;
-                      // // const netValid =
-                      // //   item["G AMT"] &&
-                      // //     (item["NET AMT"] || item["NET AMT"] === 0)
-                      // //     ? calcNet !== null && Math.abs(calcNet - netAmt) < 0.01
-                      // //     : true;
-
-                      // const sgstPerUnit = parseFloat(item.SGST) || 0;
-                      // const cgstPerUnit = sgstPerUnit;
-                      // const productPrice = rate * qty
-                      // const totalGST = (sgstPerUnit + cgstPerUnit);
-                      // const gstAmount = productPrice * (totalGST / 100);
-
-                      // const newNetAmt = productPrice + gstAmount;
-
-                      // // item["G AMT"] = standardGross.toFixed(2);
-                      // item.SGST = sgstPerUnit.toFixed(2);
-                      // item.CGST = cgstPerUnit.toFixed(2);
-                      // item["NET AMT"] = newNetAmt.toFixed(2);
                       return (
                         <>
                           <tr
                             key={idx}
-                            className={`transition-colors mt-10
-                              ${item.Qty == 0 || item.RATE == 0 ? "bg-red-300" : ""} 
-                            `}
+                            className={`transition-colors mt-10 ${item.Qty == 0 || item.RATE == 0 ? "bg-red-300" : ""}`}
                           >
                             <td
                               className="px-3 py-2.5 w-72 relative"
@@ -1990,14 +1741,6 @@ export default function BillWorkflow() {
                                 className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                             </td>
-                            {/* <td className="px-3 py-2 w-20">
-                              <input
-                                type="text"
-                                value={item.FREE || ""}
-                                onChange={(e) => handleItemChange(currentBillIndex, idx, "FREE", e.target.value)}
-                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td> */}
                             <td className="px-3 py-2 w-28">
                               <input
                                 type="text"
@@ -2047,17 +1790,8 @@ export default function BillWorkflow() {
                               />
                             </td>
                             <td className="px-3 py-2 w-28">
-                              {/* <input
-                                type="number"
-                                value={item["NET AMT"] || ""}
-                                disabled
-                                onChange={(e) => handleItemChange(currentBillIndex, idx, "NET AMT", e.target.value)}
-                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              /> */}
-                              <p
-                                className="w-full  rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              >
-                                {item["NET AMT"]}
+                              <p className="w-full rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                {item["G AMT"]}
                               </p>
                             </td>
                             <td className="px-3 py-2 w-10">
@@ -2069,23 +1803,14 @@ export default function BillWorkflow() {
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
-
-                                {/* {(!grossValid || !netValid) && (
-                                  <button
-                                    onClick={() => fixRowCalculation(currentBillIndex, idx)}
-                                    className="text-green-600 hover:text-green-800 p-1.5 hover:bg-green-50 rounded transition-colors"
-                                    title="Fix calculation"
-                                  >
-                                    <Check className="w-4 h-4" />
-                                  </button>
-                                )} */}
                               </div>
                             </td>
                           </tr>
+                          {console.log(billData[currentBillIndex].invoice_items_cropped_images.cell_images.length, billData[currentBillIndex]?.items?.length)}
                           <tr className="pb-10">
-                            <td className={`px-3 py-2.5 text-center border-b-8 border-gray-300  ${item.Qty == 0 || item.RATE == 0 ? "bg-red-300" : ""} `} colSpan={11}>
+                            <td className={`px-3 py-2.5 text-center border-b-8 border-gray-300 ${item.Qty == 0 || item.RATE == 0 ? "bg-red-300" : ""}`} colSpan={11}>
                               <div className="gap-2 mx-auto w-[fit-content]">
-                                {billData[currentBillIndex].invoice_items_cropped_images.cell_images.filter((item, index) => index === 0 || index === idx + 1).map(
+                                {billData[currentBillIndex].invoice_items_cropped_images.cell_images.filter((item, index) => index === 0 || index === idx + 1 || index === idx + 2).map(
                                   (row: any, rowIndex: number) => (
                                     <div key={rowIndex} className="flex flex-wrap gap-2">
                                       {row.map((img: string, colIndex: number) =>
@@ -2139,9 +1864,9 @@ export default function BillWorkflow() {
               </div>
             </div>
 
+            {/* Add the BillTotals component here, right after the items table */}
+            <BillTotals />
 
-
-            {/* Totals Section */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Financial Summary</h3>
 
@@ -2167,36 +1892,7 @@ export default function BillWorkflow() {
                 </div>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <h4 className="text-md font-semibold text-gray-700 mb-4">Tax Details</h4>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {[
-                    { label: "SGST", key: "SGST" },
-                    { label: "CGST", key: "CGST" },
-                    { label: "CESS", key: "CESS" },
-                    { label: "GST 5%", key: "GST_5" },
-                    { label: "GST 12%", key: "GST_12" },
-                    { label: "GST 18%", key: "GST_18" },
-                    { label: "GST 28%", key: "GST_28" }
-                  ].map(({ label, key }) => (
-                    <div key={key} className="space-y-1.5">
-                      <label className="block text-xs font-medium text-gray-600">{label}</label>
-                      <input
-                        type="number"
-                        value={billData[currentBillIndex]?.taxDetails?.[key] || ""}
-                        onChange={(e) =>
-                          handleDataChange("taxDetails", {
-                            ...billData[currentBillIndex]?.taxDetails,
-                            [key]: e.target.value
-                          })
-                        }
-                        className="block w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white hover:bg-gray-50 focus:bg-white"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
 
             <div className="flex justify-between pt-6">
@@ -2213,7 +1909,7 @@ export default function BillWorkflow() {
                   if (currentBillIndex === files.length - 1) {
                     setCurrentStep(3);
                   } else {
-                    setCurrentBillIndex(prev => prev + 1);
+                    handleBillChange(currentBillIndex + 1);
                   }
                 }}
                 className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 shadow-md"
@@ -2225,7 +1921,6 @@ export default function BillWorkflow() {
           </div>
         )}
 
-        {/* Step 3: Confirmation */}
         {currentStep === 3 && (
           <div className="space-y-8">
             <div className="bg-white rounded-xl shadow-lg p-6">
@@ -2333,7 +2028,6 @@ export default function BillWorkflow() {
           </div>
         )}
       </main>
-
     </div>
   );
 }
