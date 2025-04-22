@@ -25,6 +25,31 @@ import {
 import { toast } from "react-toastify";
 import { ZoomOut, RotateCcw, Move, Maximize, Minimize, Minus } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { parseStringPromise } from 'xml2js';
+
+
+export async function extractCompanyNames(xmlString) {
+  // parse without forcing arrays, but still capture attributes
+  const doc = await parseStringPromise(xmlString, { explicitArray: false });
+
+  // dive to COMPANY node(s)
+  let companies = doc.ENVELOPE.BODY.DATA.COLLECTION.COMPANY;
+  if (!companies) return [];
+
+  // normalize to array
+  if (!Array.isArray(companies)) companies = [companies];
+
+  // pull out the text in the <NAME> node
+  return companies.map(c => {
+    const nameNode = c.NAME;
+    // if xml2js saw attributes on <NAME>, it'll be { _: "text", $: { … } }
+    if (nameNode && typeof nameNode === 'object' && '_' in nameNode) {
+      return nameNode._;
+    }
+    // otherwise it was just text
+    return nameNode;
+  });
+}
 
 declare global {
   interface Window {
@@ -1314,20 +1339,13 @@ export default function BillWorkflow() {
 
       console.log(response,"responseeee")
       
-      const data = await response.text();
+      const data =response.data
       // Parse the XML response to extract company names
       // This is a simplified example - you'll need to parse the actual XML response
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(data, "text/xml");
-      const companyNodes = xmlDoc.getElementsByTagName("COMPANY");
-      
-      const companyList = Array.from(companyNodes).map(node => node.textContent);
-      console.log(companyList,"companyList")
+    const companyList=await  extractCompanyNames(data)
       setSelectedCompanyName(companyList);
-      
-      if(companyList.length > 0) {
-        setSelectedCompanyName(companyList[0]);
-      }
+      console.log(companyList)
+
     } catch (error) {
       console.error("Error fetching companies:", error);
     } finally {
@@ -1470,7 +1488,7 @@ export default function BillWorkflow() {
                           {selectedCompanyName.length === 0 && (
                             <option value="">No companies available</option>
                           )}
-                          {selectedCompanyName && selectedCompanyName.map((company, index) => (
+                          {selectedCompanyName && selectedCompanyName?.map((company, index) => (
                             <option key={index} value={company}>
                               {company}
                             </option>
