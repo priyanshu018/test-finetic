@@ -1769,9 +1769,9 @@ ${optionalFields}          </LEDGER>
           price: number;
           unit?: string;
         }[];
-        sgst: { percentage: string; amount: number };
-        cgst: { percentage: string; amount: number };
-        igst: { percentage: string; amount: number };
+        sgst?: { percentage: string; amount: number };
+        cgst?: { percentage: string; amount: number };
+        igst?: { percentage: string; amount: number };
         gstNumber: string;
         isWithinState: boolean;
       }
@@ -1819,10 +1819,30 @@ ${optionalFields}          </LEDGER>
         // Call the voucher generator to create the voucher XML.
         const voucherXml = createVoucher(voucherPayload);
 
+
         console.log(voucherXml, "voucherXml");
 
-        // Optionally, persist or further process the voucher.
-        // return { success: true, voucherXml };
+        const contentLength = Buffer.byteLength(voucherXml, "utf8");
+
+        const response = await axios({
+          method: "POST",
+          url: "http://localhost:9000", // Replace or make configurable as needed.
+          headers: {
+            "Content-Type": "application/xml",
+            "Content-Length": contentLength, // Setting the Content-Length header.
+          },
+          data: voucherXml,
+        });
+
+        const data = parseResponse(response?.data);
+
+
+        console.log(data,"here is the voucher data")
+        // if (data?.created === filterResponse?.length) {
+        //   return { success: true, isExist: filterResponse, data: itemData };
+        // } else {
+        //   return { success: false, data: itemData };
+        // }
       } catch (error: any) {
         console.error("Error creating purchase entry:", error);
         return { success: false, error: error.message };

@@ -780,9 +780,9 @@ export interface VoucherPayload {
   companyName: string;
   purchaseLedger: string;
   items: Item[];
-  sgst: { percentage: string, amount: number }; // e.g., "10%"
-  cgst: { percentage: string, amount: number }; // e.g., "10%"
-  igst: { percentage: string, amount: number }; // e.g., "10%"
+  sgst?: { percentage: string, amount: number }; // e.g., "10%"
+  cgst?: { percentage: string, amount: number }; // e.g., "10%"
+  igst?: { percentage: string, amount: number }; // e.g., "10%"
   gstNumber: string;
   isWithinState: boolean;
 }
@@ -991,7 +991,7 @@ export function createVoucher(payload) {
                             </OLDAUDITENTRYIDS.LIST>
                             <APPROPRIATEFOR>&#4; Not Applicable</APPROPRIATEFOR>
                             <ROUNDTYPE>&#4; Not Applicable</ROUNDTYPE>
-                            <LEDGERNAME>ut/sgst${payload.sgst.percentage}%</LEDGERNAME>
+                            <LEDGERNAME>ut/sgst${payload.sgst.percentage}</LEDGERNAME>
                             <GSTCLASS>&#4; Not Applicable</GSTCLASS>
                             <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
                             <AMOUNT>-${payload.sgst.amount}.00</AMOUNT>
@@ -1004,7 +1004,7 @@ export function createVoucher(payload) {
                             </OLDAUDITENTRYIDS.LIST>
                             <APPROPRIATEFOR>&#4; Not Applicable</APPROPRIATEFOR>
                             <ROUNDTYPE>&#4; Not Applicable</ROUNDTYPE>
-                            <LEDGERNAME>igst${payload.igst.percentage}%</LEDGERNAME>
+                            <LEDGERNAME>igst${payload.igst.percentage}</LEDGERNAME>
                             <GSTCLASS>&#4; Not Applicable</GSTCLASS>
                             <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
                             <AMOUNT>-${payload.igst.amount}.00</AMOUNT>

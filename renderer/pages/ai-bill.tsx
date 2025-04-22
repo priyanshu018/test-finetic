@@ -869,6 +869,34 @@ export default function BillWorkflow() {
     return uniqueUnits;
   }
 
+  function splitIgstSingleFirstRate(igstBreakdown) {
+    const entries = Object.entries(igstBreakdown);
+    if (entries.length === 0) {
+      return {
+        cgst: { percentage: "0%", amount: 0 },
+        sgst: { percentage: "0%", amount: 0 }
+      };
+    }
+  
+    // take only the first IGST entry
+    const [firstPct, firstAmt] = entries[0];       // e.g. ["12%", 1587.6]
+    const halfRate     = parseFloat(firstPct) / 2; // 6
+    const halfRateStr  = `${halfRate}%`;           // "6%"
+  
+    // total amount is still sum of all halves
+    const totalHalfAmt = entries
+      .map(([_, amt]) => amt / 2)
+      .reduce((sum, v) => sum + v, 0);
+  
+    return {
+      cgst: { percentage: halfRateStr, amount: totalHalfAmt },
+      sgst: { percentage: halfRateStr, amount: totalHalfAmt }
+    };
+  }
+
+
+  console.log({ billData })
+
   const handleExport = async () => {
     const ledgerNames = [
       'Cgst0', 'Cgst2.5', 'Cgst6', 'Cgst9', 'Cgst14',
@@ -920,20 +948,26 @@ export default function BillWorkflow() {
         const updatedUnits = extractUnitsFromItems(items);
         const updatedPurchaseEntryItem = extractPurchaserEntries(items);
         const invoiceNumber = bill.invoiceNumber;
+        const { cgst, sgst } = splitIgstSingleFirstRate(gstTotals);
 
+       
+
+        // 2) Build the base payload
         const purchaseVoucherPayload = {
-          invoiceNumber: invoiceNumber,
-          invoiceDate: date,
+          invoiceNumber,
+          invoiceDate: "01-04-2025",
           companyName: "PrimeDepth Labs",
           partyName: purchaserName,
           purchaseLedger: "Purchase",
           items: updatedPurchaseEntryItem,
-          sgst: { percentage: "6%", amount: 500 },
-          cgst: { percentage: "9%", amount: 500 },
-          igst: { percentage: "18%", amount: 500 },
           gstNumber: "ABCDE1234F",
-          isWithinState: false,
+          isWithinState : true,
+          cgst,
+          sgst
         };
+
+        
+
 
         const responsePartyName = await window.electron.createPartyName(ledgerXmlData, purchaserName, {
           name: purchaserName,
@@ -945,6 +979,10 @@ export default function BillWorkflow() {
           gstin: gst || "",
         });
 
+
+        console.log(
+          { purchaserName }, { updatedUnits }, { updatedItemsForExport }, { purchaseVoucherPayload }, { updatedItemsForExport })
+
         if (responsePartyName.success) {
           const responsePurchase = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase");
           if (responsePurchase.success) {
@@ -952,7 +990,7 @@ export default function BillWorkflow() {
             if (responseTaxLedger.success) {
               const responseUnit = await window.electron.createUnit(updatedUnits);
               if (responseUnit?.success) {
-                const responseItems = await window.electron.createItem(items);
+                const responseItems = await window.electron.createItem(updatedItemsForExport);
                 if (responseItems.success) {
                   const responsePurchase = window.electron.createPurchaseEntry(
                     purchaseVoucherPayload
@@ -989,20 +1027,25 @@ export default function BillWorkflow() {
       const updatedUnits = extractUnitsFromItems(items);
       const updatedPurchaseEntryItem = extractPurchaserEntries(items);
       const invoiceNumber = bill.invoiceNumber;
+      const { cgst, sgst } = splitIgstSingleFirstRate(gstTotals);
 
+
+      // 2) Build the base payload
       const purchaseVoucherPayload = {
-        invoiceNumber: invoiceNumber,
-        invoiceDate: date,
+        invoiceNumber,
+        invoiceDate: "01-04-2025",
         companyName: "PrimeDepth Labs",
         partyName: purchaserName,
         purchaseLedger: "Purchase",
         items: updatedPurchaseEntryItem,
-        sgst: { percentage: "6%", amount: 500 },
-        cgst: { percentage: "9%", amount: 500 },
-        igst: { percentage: "18%", amount: 500 },
         gstNumber: "ABCDE1234F",
-        isWithinState: false,
+        isWithinState:true,
+        sgst,
+        cgst
       };
+
+      console.log(
+        { purchaserName }, { updatedUnits }, { updatedItemsForExport }, { purchaseVoucherPayload }, { updatedItemsForExport })
 
       const responsePartyName = await window.electron.createPartyName(ledgerXmlData, purchaserName, {
         name: purchaserName,
@@ -1021,7 +1064,7 @@ export default function BillWorkflow() {
           if (responseTaxLedger.success) {
             const responseUnit = await window.electron.createUnit(updatedUnits);
             if (responseUnit?.success) {
-              const responseItems = await window.electron.createItem(items);
+              const responseItems = await window.electron.createItem(updatedItemsForExport);
               if (responseItems.success) {
                 const responsePurchaseVoucher = window.electron.createPurchaseEntry(
                   purchaseVoucherPayload
@@ -1088,7 +1131,7 @@ export default function BillWorkflow() {
     updatedBillData[billIndex].items.forEach(item => {
       const gstRate = (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
       const gAmount = parseFloat(item["NET AMT"]) || 0;
-      const gstAmount = (gAmount *gstRate ) / 100;
+      const gstAmount = (gAmount * gstRate) / 100;
 
       if (gstRate > 0) {
         const rateKey = `${gstRate}%`;
@@ -1119,7 +1162,7 @@ export default function BillWorkflow() {
     if (billData.length > 0 && billData[currentBillIndex]?.items?.length > 0) {
       // Calculate initial totals
       const totalNetAmount = billData[currentBillIndex].items.reduce((total, item) => {
-        console.log(item["NET AMT"],'net amount')
+        console.log(item["NET AMT"], 'net amount')
         return total + (parseFloat(item["NET AMT"]) || 0);
       }, 0);
 
@@ -1184,6 +1227,8 @@ export default function BillWorkflow() {
     }
   };
 
+  console.log(gstTotals,"gst total")
+
   // Add the BillTotals component
   const BillTotals = () => {
     const gstTotalAmount = Object.values(gstTotals).reduce((sum, amount) => sum + amount, 0);
@@ -1232,7 +1277,7 @@ export default function BillWorkflow() {
               </div>
               <div className="pt-2 mt-2 border-t border-gray-200 flex justify-between items-center">
                 <span className="font-medium">Gross Amount Total</span>
-                <span className="text-xl font-bold text-blue-700">₹{(netAmountTotal+gstTotalAmount).toFixed(2)}</span>
+                <span className="text-xl font-bold text-blue-700">₹{(netAmountTotal + gstTotalAmount).toFixed(2)}</span>
               </div>
             </div>
           </div>
