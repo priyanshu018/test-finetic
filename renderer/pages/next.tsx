@@ -74,8 +74,8 @@ export default function IndexPage() {
 
   const handleCreatePartyLedger = async () => {
 
-    const response = await window.electron.createPartyName(ledgerXmlData, "EVERYDAY STORE-WAVE", {
-      name: "EVERYDAY STORE-WAVE",
+    const response = await window.electron.createPartyName(ledgerXmlData, "Bright Traders", {
+      name: "Bright Traders",
       parent: "Sundry Creditors",
       address: "",
       country: "",

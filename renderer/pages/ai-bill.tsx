@@ -979,7 +979,7 @@ export default function BillWorkflow() {
           gstin: gst || "",
         });
 
-        console.log({ purchaserName }, {
+        console.log({
           name: purchaserName,
           parent: "Sundry Creditors",
           address: "",
@@ -991,7 +991,7 @@ export default function BillWorkflow() {
 
 
         console.log(
-          { purchaserName }, { updatedUnits }, { updatedItemsForExport }, { purchaseVoucherPayload }, { updatedItemsForExport })
+          { purchaserName, updatedUnits, updatedItemsForExport, purchaseVoucherPayload })
 
         // if (responsePartyName.success) {
         //   const responsePurchase = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase");

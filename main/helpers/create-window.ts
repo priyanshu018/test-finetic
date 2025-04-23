@@ -1540,6 +1540,7 @@ ${optionalFields}          </LEDGER>
   ipcMain.handle(
     "create-purchaser-ledger",
     async (_, xmlData: string, purchaserName: string) => {
+
       try {
         // Calculate content length (in bytes) from the XML data.
         const contentLength = Buffer.byteLength(xmlData, "utf8");
