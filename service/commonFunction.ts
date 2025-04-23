@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from 'uuid';
+
 /**
 * Generates XML for multiple tax ledgers.
 * @param taxLedgers - Array of tax ledger names.
@@ -859,7 +861,7 @@ export function createVoucher(payload) {
           </REQUESTDESC>
           <REQUESTDATA>
             <TALLYMESSAGE xmlns:UDF="TallyUDF">
-              <VOUCHER REMOTEID="bf911d27-633e-4ad7-ba7c-a871d6f9461e-00000005" VCHKEY="bf911d27-633e-4ad7-ba7c-a871d6f9461e-0000b2b3:00000008" VCHTYPE="Purchase" ACTION="Create" OBJVIEW="Invoice Voucher View">
+              <VOUCHER REMOTEID="${uuidv4()}" VCHKEY="${uuidv4()}" VCHTYPE="Purchase" ACTION="Create" OBJVIEW="Invoice Voucher View">
                 <OLDAUDITENTRYIDS.LIST TYPE="Number">
                   <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
                 </OLDAUDITENTRYIDS.LIST>

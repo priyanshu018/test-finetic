@@ -877,17 +877,17 @@ export default function BillWorkflow() {
         sgst: { percentage: "0%", amount: 0 }
       };
     }
-  
+
     // take only the first IGST entry
     const [firstPct, firstAmt] = entries[0];       // e.g. ["12%", 1587.6]
-    const halfRate     = parseFloat(firstPct) / 2; // 6
-    const halfRateStr  = `${halfRate}%`;           // "6%"
-  
+    const halfRate = parseFloat(firstPct) / 2; // 6
+    const halfRateStr = `${halfRate}%`;           // "6%"
+
     // total amount is still sum of all halves
     const totalHalfAmt = entries
       .map(([_, amt]) => amt / 2)
       .reduce((sum, v) => sum + v, 0);
-  
+
     return {
       cgst: { percentage: halfRateStr, amount: totalHalfAmt },
       sgst: { percentage: halfRateStr, amount: totalHalfAmt }
@@ -950,7 +950,7 @@ export default function BillWorkflow() {
         const invoiceNumber = bill.invoiceNumber;
         const { cgst, sgst } = splitIgstSingleFirstRate(gstTotals);
 
-       
+
 
         // 2) Build the base payload
         const purchaseVoucherPayload = {
@@ -961,12 +961,12 @@ export default function BillWorkflow() {
           purchaseLedger: "Purchase",
           items: updatedPurchaseEntryItem,
           gstNumber: "ABCDE1234F",
-          isWithinState : true,
+          isWithinState: true,
           cgst,
           sgst
         };
 
-        
+
 
 
         const responsePartyName = await window.electron.createPartyName(ledgerXmlData, purchaserName, {
@@ -979,37 +979,47 @@ export default function BillWorkflow() {
           gstin: gst || "",
         });
 
+        console.log({ purchaserName }, {
+          name: purchaserName,
+          parent: "Sundry Creditors",
+          address: "",
+          country: "",
+          state: "",
+          mobile: "",
+          gstin: gst || "",
+        })
+
 
         console.log(
           { purchaserName }, { updatedUnits }, { updatedItemsForExport }, { purchaseVoucherPayload }, { updatedItemsForExport })
 
-        if (responsePartyName.success) {
-          const responsePurchase = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase");
-          if (responsePurchase.success) {
-            const responseTaxLedger = await window.electron.getTaxLedgerData(ledgerXmlData);
-            if (responseTaxLedger.success) {
-              const responseUnit = await window.electron.createUnit(updatedUnits);
-              if (responseUnit?.success) {
-                const responseItems = await window.electron.createItem(updatedItemsForExport);
-                if (responseItems.success) {
-                  const responsePurchase = window.electron.createPurchaseEntry(
-                    purchaseVoucherPayload
-                  );
-                } else {
-                  alert("Error: while creating Items");
-                }
-              } else {
-                alert("Error: while creating Unit");
-              }
-            } else {
-              alert("Error: while creating Tax Ledger");
-            }
-          } else {
-            alert("Error: while creating Purchase Ledger");
-          }
-        } else {
-          alert("Error: while creating Party Ledger");
-        }
+        // if (responsePartyName.success) {
+        //   const responsePurchase = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase");
+        //   if (responsePurchase.success) {
+        //     const responseTaxLedger = await window.electron.getTaxLedgerData(ledgerXmlData);
+        //     if (responseTaxLedger.success) {
+        //       const responseUnit = await window.electron.createUnit(updatedUnits);
+        //       if (responseUnit?.success) {
+        //         const responseItems = await window.electron.createItem(updatedItemsForExport);
+        //         if (responseItems.success) {
+        //           const responsePurchase = window.electron.createPurchaseEntry(
+        //             purchaseVoucherPayload
+        //           );
+        //         } else {
+        //           alert("Error: while creating Items");
+        //         }
+        //       } else {
+        //         alert("Error: while creating Unit");
+        //       }
+        //     } else {
+        //       alert("Error: while creating Tax Ledger");
+        //     }
+        //   } else {
+        //     alert("Error: while creating Purchase Ledger");
+        //   }
+        // } else {
+        //   alert("Error: while creating Party Ledger");
+        // }
       }
     } else if (billData && billData.length === 1) {
       const bill = billData[0];
@@ -1039,7 +1049,7 @@ export default function BillWorkflow() {
         purchaseLedger: "Purchase",
         items: updatedPurchaseEntryItem,
         gstNumber: "ABCDE1234F",
-        isWithinState:true,
+        isWithinState: true,
         sgst,
         cgst
       };
@@ -1227,7 +1237,7 @@ export default function BillWorkflow() {
     }
   };
 
-  console.log(gstTotals,"gst total")
+  console.log(gstTotals, "gst total")
 
   // Add the BillTotals component
   const BillTotals = () => {

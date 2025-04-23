@@ -148,26 +148,15 @@ export default function IndexPage() {
     </BODY>
   </ENVELOPE>`
 
-  try {
-    // Calculate content length (in bytes) from the XML data.
+    try {
+      // Calculate content length (in bytes) from the XML data.
 
-    const response = await window.electron.getCompanyData(xmlData)
+      const response = await window.electron.getCompanyData(xmlData)
+      console.log(response, "responseeee")
 
-   console.log(response,"responseeee")
-   
-   const data = await response.text();
-   // Parse the XML response to extract company names
-   // This is a simplified example - you'll need to parse the actual XML response
-   const parser = new DOMParser();
-   const xmlDoc = parser.parseFromString(data, "text/xml");
-   const companyNodes = xmlDoc.getElementsByTagName("COMPANY");
-   
-   const companyList = Array.from(companyNodes).map(node => node.textContent);
-   console.log(companyList,"companyList")
-
- } catch (error) {
-   console.error("Error fetching companies:", error);
- } 
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+    }
   }
 
   const handleExportItems = async () => {
@@ -689,7 +678,7 @@ export default function IndexPage() {
       </div>
 
       <div>
-      <button className="text-black bg-red-400 p-4" onClick={handleGetComapnyData}>Get Company Data</button>
+        <button className="text-black bg-red-400 p-4" onClick={handleGetComapnyData}>Get Company Data</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreateCgstIgstSgstLedger}>Create IGST/CGST/SGST ledger</button>

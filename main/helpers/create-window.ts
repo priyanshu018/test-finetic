@@ -1401,10 +1401,31 @@ ${optionalFields}          </LEDGER>
         data: xmlData,
       });
 
-      return {
-        success: true,
-        data: response.data,
-      };
+    // Parse the returned 
+    const result = await parseStringPromise(response.data);
+
+    // Navigate to the COMPANY nodes
+    // Depending on your XML, adjust these indexes if needed
+    const companiesXml =
+      result?.ENVELOPE?.BODY?.[0]?.DATA?.[0]?.COLLECTION?.[0]?.COMPANY || [];
+
+    // Extract the company names
+    const companyNames = companiesXml.map((companyNode: any) => {
+      // Try the <NAME> element first
+      if (companyNode.NAME && companyNode.NAME[0]) {
+        return companyNode.NAME[0]._;
+      }
+      // Fallback to the COMPANY@NAME attribute
+      if (companyNode.$ && companyNode.$.NAME) {
+        return companyNode.$.NAME;
+      }
+      return null;
+    }).filter((name: string | null) => name !== null);
+
+    return {
+      success: true,
+      data: companyNames,
+    };
     } catch (error: any) {
       console.error("Error in send-tally-xml IPC handler:", error);
       return { success: false, error: error.message };
@@ -1628,8 +1649,6 @@ ${optionalFields}          </LEDGER>
       if (filterResponse?.length > 0) {
         const xmlResponse = await createUnits(filterResponse);
 
-        console.log(xmlResponse, "xml response");
-
         const contentLength = Buffer.byteLength(xmlResponse, "utf8");
 
         const response = await axios({
@@ -1641,6 +1660,8 @@ ${optionalFields}          </LEDGER>
           },
           data: xmlResponse,
         });
+
+        console.log("api response UNIT:",response)
 
         const data = parseResponse(response?.data);
 
@@ -1696,6 +1717,9 @@ ${optionalFields}          </LEDGER>
         },
         data: xmlData,
       });
+
+      console.log("api response ITEM:",response)
+
 
       const xmlResponse = await getStockItemNames(response?.data);
 
@@ -1814,13 +1838,11 @@ ${optionalFields}          </LEDGER>
           isWithinState,
         };
 
-        console.log(voucherPayload, "voucherPayload");
-
         // Call the voucher generator to create the voucher XML.
         const voucherXml = createVoucher(voucherPayload);
 
 
-        console.log(voucherXml, "voucherXml");
+        console.log("VOUCHEER XML DATA:",voucherXml);
 
         const contentLength = Buffer.byteLength(voucherXml, "utf8");
 
@@ -1834,10 +1856,11 @@ ${optionalFields}          </LEDGER>
           data: voucherXml,
         });
 
+        console.log("api response VOUCHER:",response)
+
+
         const data = parseResponse(response?.data);
 
-
-        console.log(data,"here is the voucher data")
         // if (data?.created === filterResponse?.length) {
         //   return { success: true, isExist: filterResponse, data: itemData };
         // } else {
