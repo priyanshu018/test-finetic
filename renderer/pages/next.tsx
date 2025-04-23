@@ -163,148 +163,94 @@ export default function IndexPage() {
 
     const items = [
       {
-        Product: "VEBA BLISS CRAHEL",
-        HSN: "21069010",
-        SGST: "9.00",
-        CGST: "9.00",
+        Product: "Dell Inspiron 1050",
+        HSN: "84713010",
+        SGST: 9,
+        CGST: 9,
         gst: 18,
         decimal: 0.18,
-        symbol: "GM"
-      },
-      {
-        Product: "VEBA MAYONNAISE MINT",
-        HSN: "21039030",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "GM"
-      },
-      {
-        Product: "VEBA MAYONNAISE OLIVE OIL",
-        HSN: "21039030",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "GM"
-      },
-      {
-        Product: "VEBA PSTA N PIZZA HRBY TOMATO",
-        HSN: "21039090",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "GM"
-      },
-      {
-        Product: "VEBA PSTA CHESSY SAUCES ALFRDO",
-        HSN: "21039090",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "GM"
-      },
-      {
-        Product: "VEBA DIP SALSA",
-        HSN: "21032000",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
         symbol: "PCS"
       },
       {
-        Product: "VEBA SNDWCH SPRD CRT N.CUCMBR",
-        HSN: "21039030",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "GM"
+        Product: "Lenovo 5125-I",
+        HSN: "84713010",
+        SGST: 9,
+        CGST: 9,
+        gst: 18,
+        decimal: 0.18,
+        symbol: "PCS"
       },
       {
-        Product: "VERA HOT SAUCES SRIRCHA CHILLI",
-        HSN: "21039030",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "GM"
+        Product: "Logitech Mouse Wireless",
+        HSN: "847330",
+        SGST: 9,
+        CGST: 9,
+        gst: 18,
+        decimal: 0.18,
+        symbol: "PCS"
       },
       {
-        Product: "VEBASWEET SAUCES OINION",
-        HSN: "21039090",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "M"
+        Product: "Logitech Keyboard",
+        HSN: "847330",
+        SGST: 9,
+        CGST: 9,
+        gst: 18,
+        decimal: 0.18,
+        symbol: "PCS"
       },
       {
-        Product: "VEGATHAI-STYLESWEET CHILLI",
-        HSN: "21039020",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "GM"
+        Product: "Zebronics Keyboard",
+        HSN: "847330",
+        SGST: 9,
+        CGST: 9,
+        gst: 18,
+        decimal: 0.18,
+        symbol: "PCS"
       },
       {
-        Product: "VEBA KETCHUP TOMATO NONGARLIC",
-        HSN: "21032000",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "KG"
+        Product: "Logitech Mouse",
+        HSN: "847330",
+        SGST: 9,
+        CGST: 9,
+        gst: 18,
+        decimal: 0.18,
+        symbol: "PCS"
       },
       {
-        Product: "VEBA KETCHUP TOMATO CHEPS SPL",
-        HSN: "21032000",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "KG"
+        Product: "Zebronics Keyboard Wireless",
+        HSN: "847330",
+        SGST: 9,
+        CGST: 9,
+        gst: 18,
+        decimal: 0.18,
+        symbol: "PCS"
       },
       {
-        Product: "VEBA KETCHUP TOMATO NO AD SUGP",
-        HSN: "21032000",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "G"
+        Product: "Dell Monitor 5684",
+        HSN: "84733099",
+        SGST: 9,
+        CGST: 9,
+        gst: 18,
+        decimal: 0.18,
+        symbol: "PCS"
       },
       {
-        Product: "VEBA NAYONNAISETANDOORI",
-        HSN: "21039030",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "GM"
+        Product: "Zebronics Mouse",
+        HSN: "847330",
+        SGST: 9,
+        CGST: 9,
+        gst: 18,
+        decimal: 0.18,
+        symbol: "PCS"
       },
       {
-        Product: "VEBA WHOLE GRAIN MUSTRD",
-        HSN: "21039090",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "GM"
-      },
-      {
-        Product: "VEBA SALAD SAUCE TOKYO STYL",
-        HSN: "21039000",
-        SGST: "6.00",
-        CGST: "6.00",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "GM"
+        Product: "Mouse Pad",
+        HSN: "847330",
+        SGST: 9,
+        CGST: 9,
+        gst: 18,
+        decimal: 0.18,
+        symbol: "PCS"
       }
     ]
     const response = await window.electron.createItem(items);
@@ -313,25 +259,33 @@ export default function IndexPage() {
 
   const handleCheckUnit = async () => {
 
+    // const units = [
+    //   {
+    //     name: "GM",
+    //     decimal: 3
+    //   },
+    //   {
+    //     name: "PCS",
+    //     decimal: 3
+    //   },
+    //   {
+    //     name: "M",
+    //     decimal: 3
+    //   },
+    //   {
+    //     name: "KG",
+    //     decimal: 3
+    //   },
+    //   {
+    //     name: "G",
+    //     decimal: 3
+    //   }
+    // ]
+
+
     const units = [
       {
-        name: "GM",
-        decimal: 3
-      },
-      {
         name: "PCS",
-        decimal: 3
-      },
-      {
-        name: "M",
-        decimal: 3
-      },
-      {
-        name: "KG",
-        decimal: 3
-      },
-      {
-        name: "G",
         decimal: 3
       }
     ]

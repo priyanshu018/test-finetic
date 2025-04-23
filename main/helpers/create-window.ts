@@ -183,7 +183,7 @@ export const createWindow = (
           const exePath = `${path}\\TallyPrime.exe`;
           execSync(`dir "${exePath}"`);
           return exePath;
-        } catch (e) {}
+        } catch (e) { }
       }
     }
     return null;
@@ -1401,31 +1401,31 @@ ${optionalFields}          </LEDGER>
         data: xmlData,
       });
 
-    // Parse the returned 
-    const result = await parseStringPromise(response.data);
+      // Parse the returned 
+      const result = await parseStringPromise(response.data);
 
-    // Navigate to the COMPANY nodes
-    // Depending on your XML, adjust these indexes if needed
-    const companiesXml =
-      result?.ENVELOPE?.BODY?.[0]?.DATA?.[0]?.COLLECTION?.[0]?.COMPANY || [];
+      // Navigate to the COMPANY nodes
+      // Depending on your XML, adjust these indexes if needed
+      const companiesXml =
+        result?.ENVELOPE?.BODY?.[0]?.DATA?.[0]?.COLLECTION?.[0]?.COMPANY || [];
 
-    // Extract the company names
-    const companyNames = companiesXml.map((companyNode: any) => {
-      // Try the <NAME> element first
-      if (companyNode.NAME && companyNode.NAME[0]) {
-        return companyNode.NAME[0]._;
-      }
-      // Fallback to the COMPANY@NAME attribute
-      if (companyNode.$ && companyNode.$.NAME) {
-        return companyNode.$.NAME;
-      }
-      return null;
-    }).filter((name: string | null) => name !== null);
+      // Extract the company names
+      const companyNames = companiesXml.map((companyNode: any) => {
+        // Try the <NAME> element first
+        if (companyNode.NAME && companyNode.NAME[0]) {
+          return companyNode.NAME[0]._;
+        }
+        // Fallback to the COMPANY@NAME attribute
+        if (companyNode.$ && companyNode.$.NAME) {
+          return companyNode.$.NAME;
+        }
+        return null;
+      }).filter((name: string | null) => name !== null);
 
-    return {
-      success: true,
-      data: companyNames,
-    };
+      return {
+        success: true,
+        data: companyNames,
+      };
     } catch (error: any) {
       console.error("Error in send-tally-xml IPC handler:", error);
       return { success: false, error: error.message };
@@ -1662,7 +1662,7 @@ ${optionalFields}          </LEDGER>
           data: xmlResponse,
         });
 
-        console.log("api response UNIT:",response)
+        console.log("api response UNIT:", response)
 
         const data = parseResponse(response?.data);
 
@@ -1719,14 +1719,22 @@ ${optionalFields}          </LEDGER>
         data: xmlData,
       });
 
-      console.log("api response ITEM:",response)
+      console.log("api response ITEM:", response?.data)
 
 
       const xmlResponse = await getStockItemNames(response?.data);
 
       const filterResponse = await checkItemNames(xmlResponse, itemData);
 
-      if (xmlResponse?.length === 0) {
+      const xmlDataToCreate = await createStockItems(filterResponse);
+
+      console.log({ xmlResponse, filterResponse }, xmlResponse?.length)
+
+      if (xmlResponse?.length == 0) {
+console.log("inside")
+
+        const contentLength =  Buffer.byteLength(xmlDataToCreate, "utf8");
+
         const response = await axios({
           method: "GET",
           url: "http://localhost:9000", // Replace or make configurable as needed.
@@ -1734,10 +1742,13 @@ ${optionalFields}          </LEDGER>
             "Content-Type": "application/xml",
             "Content-Length": contentLength, // Setting the Content-Length header.
           },
-          data: xmlResponse,
+          data: xmlDataToCreate,
         });
 
+        console.log({ response })
         const data = parseResponse(response?.data);
+
+        console.log({ data })
 
         if (data?.created === filterResponse?.length) {
           return { success: true, isExist: filterResponse, data: itemData };
@@ -1843,7 +1854,7 @@ ${optionalFields}          </LEDGER>
         const voucherXml = createVoucher(voucherPayload);
 
 
-        console.log("VOUCHEER XML DATA:",voucherXml);
+        console.log("VOUCHEER XML DATA:", voucherXml);
 
         const contentLength = Buffer.byteLength(voucherXml, "utf8");
 
@@ -1857,7 +1868,7 @@ ${optionalFields}          </LEDGER>
           data: voucherXml,
         });
 
-        console.log("api response VOUCHER:",response)
+        console.log("api response VOUCHER:", response)
 
 
         const data = parseResponse(response?.data);
