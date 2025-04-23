@@ -888,10 +888,16 @@ export default function BillWorkflow() {
       .map(([_, amt]) => amt / 2)
       .reduce((sum, v) => sum + v, 0);
 
+    // return {
+    //   cgst: { percentage: halfRateStr, amount: totalHalfAmt },
+    //   sgst: { percentage: halfRateStr, amount: totalHalfAmt }
+    // };
+
     return {
-      cgst: { percentage: halfRateStr, amount: totalHalfAmt },
-      sgst: { percentage: halfRateStr, amount: totalHalfAmt }
+      cgst: { percentage: "2.5%", amount: totalHalfAmt },
+      sgst: { percentage: "2.5%", amount: totalHalfAmt }
     };
+
   }
 
 
