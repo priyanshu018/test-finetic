@@ -74,8 +74,8 @@ export default function IndexPage() {
 
   const handleCreatePartyLedger = async () => {
 
-    const response = await window.electron.createPartyName(ledgerXmlData, "Bright Traders", {
-      name: "Bright Traders",
+    const response = await window.electron.createPartyName(ledgerXmlData, "SUNRISE ENTERPRISE", {
+      name: "SUNRISE ENTERPRISE",
       parent: "Sundry Creditors",
       address: "",
       country: "",
@@ -159,133 +159,19 @@ export default function IndexPage() {
     }
   }
 
-  const handleExportItems = async () => {
-
-    const items = [
-      {
-        Product: "Dell Inspiron 1050",
-        HSN: "84713010",
-        SGST: 9,
-        CGST: 9,
-        gst: 18,
-        decimal: 0.18,
-        symbol: "PCS"
-      },
-      {
-        Product: "Lenovo 5125-I",
-        HSN: "84713010",
-        SGST: 9,
-        CGST: 9,
-        gst: 18,
-        decimal: 0.18,
-        symbol: "PCS"
-      },
-      {
-        Product: "Logitech Mouse Wireless",
-        HSN: "847330",
-        SGST: 9,
-        CGST: 9,
-        gst: 18,
-        decimal: 0.18,
-        symbol: "PCS"
-      },
-      {
-        Product: "Logitech Keyboard",
-        HSN: "847330",
-        SGST: 9,
-        CGST: 9,
-        gst: 18,
-        decimal: 0.18,
-        symbol: "PCS"
-      },
-      {
-        Product: "Zebronics Keyboard",
-        HSN: "847330",
-        SGST: 9,
-        CGST: 9,
-        gst: 18,
-        decimal: 0.18,
-        symbol: "PCS"
-      },
-      {
-        Product: "Logitech Mouse",
-        HSN: "847330",
-        SGST: 9,
-        CGST: 9,
-        gst: 18,
-        decimal: 0.18,
-        symbol: "PCS"
-      },
-      {
-        Product: "Zebronics Keyboard Wireless",
-        HSN: "847330",
-        SGST: 9,
-        CGST: 9,
-        gst: 18,
-        decimal: 0.18,
-        symbol: "PCS"
-      },
-      {
-        Product: "Dell Monitor 5684",
-        HSN: "84733099",
-        SGST: 9,
-        CGST: 9,
-        gst: 18,
-        decimal: 0.18,
-        symbol: "PCS"
-      },
-      {
-        Product: "Zebronics Mouse",
-        HSN: "847330",
-        SGST: 9,
-        CGST: 9,
-        gst: 18,
-        decimal: 0.18,
-        symbol: "PCS"
-      },
-      {
-        Product: "Mouse Pad",
-        HSN: "847330",
-        SGST: 9,
-        CGST: 9,
-        gst: 18,
-        decimal: 0.18,
-        symbol: "PCS"
-      }
-    ]
-    const response = await window.electron.createItem(items);
-    console.log(response);
-  };
-
   const handleCheckUnit = async () => {
-
-    // const units = [
-    //   {
-    //     name: "GM",
-    //     decimal: 3
-    //   },
-    //   {
-    //     name: "PCS",
-    //     decimal: 3
-    //   },
-    //   {
-    //     name: "M",
-    //     decimal: 3
-    //   },
-    //   {
-    //     name: "KG",
-    //     decimal: 3
-    //   },
-    //   {
-    //     name: "G",
-    //     decimal: 3
-    //   }
-    // ]
-
 
     const units = [
       {
-        name: "PCS",
+        name: "Nos",
+        decimal: 3
+      },
+      {
+        name: "Box",
+        decimal: 3
+      },
+      {
+        name: "Pkt",
         decimal: 3
       }
     ]
@@ -294,25 +180,159 @@ export default function IndexPage() {
     console.log(response, "here is ");
   };
 
+  const handleExportItems = async () => {
+
+    const items = [
+      {
+        Product: "Best Ball Pen",
+        HSN: "1495",
+        SGST: "6%",
+        CGST: "6%",
+        gst: 12,
+        decimal: 0.12,
+        symbol: "Nos"
+      },
+      {
+        Product: "Executive Diary",
+        HSN: "1256",
+        SGST: "6%",
+        CGST: "6%",
+        gst: 12,
+        decimal: 0.12,
+        symbol: "Box"
+      },
+      {
+        Product: "Leather Portfolio Folder",
+        HSN: "1258",
+        SGST: "6%",
+        CGST: "6%",
+        gst: 12,
+        decimal: 0.12,
+        symbol: "Box"
+      },
+      {
+        Product: "Wireless Mouse",
+        HSN: "4589",
+        SGST: "9%",
+        CGST: "9%",
+        gst: 18,
+        decimal: 0.18,
+        symbol: "Nos"
+      },
+      {
+        Product: "A4 Document File",
+        HSN: "4587",
+        SGST: "6%",
+        CGST: "6%",
+        gst: 12,
+        decimal: 0.12,
+        symbol: "Pkt"
+      },
+      {
+        Product: "Power Bank 10000mAh",
+        HSN: "1248",
+        SGST: "6%",
+        CGST: "6%",
+        gst: 12,
+        decimal: 0.12,
+        symbol: "Nos"
+      },
+      {
+        Product: "USB Flash Drive",
+        HSN: "1256",
+        SGST: "9%",
+        CGST: "9%",
+        gst: 18,
+        decimal: 0.18,
+        symbol: "Pkt"
+      },
+      {
+        Product: "Bluetooth Keyboard",
+        HSN: "2536",
+        SGST: "9%",
+        CGST: "9%",
+        gst: 18,
+        decimal: 0.18,
+        symbol: "Box"
+      }
+    ]
+    const response = await window.electron.createItem(items);
+    console.log(response);
+  };
+
+
   const handlePurchaseEntry = async () => {
     const payload = {
-      invoiceNumber: "A006784",
+      invoiceNumber: "Inv-5",
       invoiceDate: "01-04-2025",
       companyName: "PrimeDepth Labs",
-      partyName: "abc",
+      partyName: "SUNRISE ENTERPRISE",
       purchaseLedger: "Purchase",
       items: [
-        { name: "CRAMEL 230GM", price: 71.2, quantity: 3, unit: "PCS" },
-        { name: "VEBA BLISS VEBA MAYONNAISE MINT", price: 105, quantity: 1, unit: "PCS" },
-        { name: "MAYONNAISE OLIVE OIL", price: 156.45, quantity: 1, unit: "PCS" },
-        // ...other items
+        {
+          name: "Best Ball Pen",
+          price: 10,
+          quantity: 2,
+          unit: "Nos"
+        },
+        {
+          name: "Executive Diary",
+          price: 590,
+          quantity: 8,
+          unit: "Box"
+        },
+        {
+          name: "Leather Portfolio Folder",
+          price: 630,
+          quantity: 2,
+          unit: "Box"
+        },
+        {
+          name: "Wireless Mouse",
+          price: 520,
+          quantity: 9,
+          unit: "Nos"
+        },
+        {
+          name: "A4 Document File",
+          price: 420,
+          quantity: 5,
+          unit: "Pkt"
+        },
+        {
+          name: "Power Bank 10000mAh",
+          price: 570,
+          quantity: 9,
+          unit: "Nos"
+        },
+        {
+          name: "USB Flash Drive",
+          price: 999,
+          quantity: 12,
+          unit: "Pkt"
+        },
+        {
+          name: "Bluetooth Keyboard",
+          price: 750,
+          quantity: 4,
+          unit: "Box"
+        }
       ],
-      sgst: { percentage: "6%", amount: 500 },
-      cgst: { percentage: "9%", amount: 500 },
-      igst: { percentage: "18%", amount: 500 },
       gstNumber: "ABCDE1234F",
-      isWithinState: false,
-    };
+      isWithinState: true,
+      cgst: {
+        percentage: "6%",
+        amount: 2563.92
+      },
+      sgst: {
+        percentage: "6%",
+        amount: 2563.92
+      }
+    }
+
+
+
+
     // [
     //   {
     //     name: "CRAMEL 230GM",
@@ -429,11 +449,13 @@ export default function IndexPage() {
       payload
 
     ).then(response => {
-      if (response.success) {
-        console.log("Voucher XML:", response.voucherXml);
-      } else {
-        console.error("Error:", response.error);
-      }
+
+      console.log({ response })
+      // if (response.success) {
+      //   console.log("Voucher XML:", response.voucherXml);
+      // } else {
+      //   console.error("Error:", response.error);
+      // }
     });
   }
 

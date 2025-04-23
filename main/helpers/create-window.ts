@@ -1448,8 +1448,12 @@ ${optionalFields}          </LEDGER>
         data: xmlData,
       });
 
+      console.log({ response, xmlData })
+
       const filterResponse = await getLedgerNames(response.data);
       const missingLedgerResponse = getMissingLedgers(filterResponse);
+
+      console.log({ filterResponse, missingLedgerResponse })
 
       if (missingLedgerResponse?.length > 0) {
         const createLawLedgerResponse = await createLawLedger(
@@ -1457,7 +1461,10 @@ ${optionalFields}          </LEDGER>
         );
         const responseData = parseResponse(createLawLedgerResponse?.data?.data);
 
-        if (responseData?.created === missingLedgerResponse?.length + 1) {
+
+        console.log({ createLawLedgerResponse, responseData })
+
+        if (responseData?.created === missingLedgerResponse?.length) {
           return {
             success: true,
             data: responseData,
@@ -1719,8 +1726,6 @@ ${optionalFields}          </LEDGER>
         data: xmlData,
       });
 
-      console.log("api response ITEM:", response?.data)
-
 
       const xmlResponse = await getStockItemNames(response?.data);
 
@@ -1728,12 +1733,9 @@ ${optionalFields}          </LEDGER>
 
       const xmlDataToCreate = await createStockItems(filterResponse);
 
-      console.log({ xmlResponse, filterResponse }, xmlResponse?.length)
-
       if (xmlResponse?.length == 0) {
-console.log("inside")
 
-        const contentLength =  Buffer.byteLength(xmlDataToCreate, "utf8");
+        const contentLength = Buffer.byteLength(xmlDataToCreate, "utf8");
 
         const response = await axios({
           method: "GET",
@@ -1745,10 +1747,7 @@ console.log("inside")
           data: xmlDataToCreate,
         });
 
-        console.log({ response })
         const data = parseResponse(response?.data);
-
-        console.log({ data })
 
         if (data?.created === filterResponse?.length) {
           return { success: true, isExist: filterResponse, data: itemData };
@@ -1873,11 +1872,11 @@ console.log("inside")
 
         const data = parseResponse(response?.data);
 
-        // if (data?.created === filterResponse?.length) {
-        //   return { success: true, isExist: filterResponse, data: itemData };
-        // } else {
-        //   return { success: false, data: itemData };
-        // }
+        console.log(data, "data hetre")
+
+        if (data?.created > 0) {
+          return { success: true, data: response?.data };
+        }
       } catch (error: any) {
         console.error("Error creating purchase entry:", error);
         return { success: false, error: error.message };

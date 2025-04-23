@@ -679,7 +679,7 @@ export function createVoucher(payload) {
           </REQUESTDESC>
           <REQUESTDATA>
             <TALLYMESSAGE xmlns:UDF="TallyUDF">
-              <VOUCHER REMOTEID="${uuidv4()}" VCHKEY="${uuidv4()}" VCHTYPE="Purchase" ACTION="Create" OBJVIEW="Invoice Voucher View">
+              <VOUCHER REMOTEID="${uuidv4()}" VCHKEY="${uuidv4()}:00001" VCHTYPE="Purchase" ACTION="Create" OBJVIEW="Invoice Voucher View">
                 <OLDAUDITENTRYIDS.LIST TYPE="Number">
                   <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
                 </OLDAUDITENTRYIDS.LIST>

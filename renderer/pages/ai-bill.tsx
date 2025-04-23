@@ -993,33 +993,38 @@ export default function BillWorkflow() {
         console.log(
           { purchaserName, updatedUnits, updatedItemsForExport, purchaseVoucherPayload })
 
-        // if (responsePartyName.success) {
-        //   const responsePurchase = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase");
-        //   if (responsePurchase.success) {
-        //     const responseTaxLedger = await window.electron.getTaxLedgerData(ledgerXmlData);
-        //     if (responseTaxLedger.success) {
-        //       const responseUnit = await window.electron.createUnit(updatedUnits);
-        //       if (responseUnit?.success) {
-        //         const responseItems = await window.electron.createItem(updatedItemsForExport);
-        //         if (responseItems.success) {
-        //           const responsePurchase = window.electron.createPurchaseEntry(
-        //             purchaseVoucherPayload
-        //           );
-        //         } else {
-        //           alert("Error: while creating Items");
-        //         }
-        //       } else {
-        //         alert("Error: while creating Unit");
-        //       }
-        //     } else {
-        //       alert("Error: while creating Tax Ledger");
-        //     }
-        //   } else {
-        //     alert("Error: while creating Purchase Ledger");
-        //   }
-        // } else {
-        //   alert("Error: while creating Party Ledger");
-        // }
+        if (responsePartyName.success) {
+          const responsePurchase = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase");
+          if (responsePurchase.success) {
+            const responseTaxLedger = await window.electron.getTaxLedgerData(ledgerXmlData);
+            if (responseTaxLedger.success) {
+              const responseUnit = await window.electron.createUnit(updatedUnits);
+              if (responseUnit?.success) {
+                const responseItems = await window.electron.createItem(updatedItemsForExport);
+                if (responseItems.success) {
+                  const responsePurchaseVoucher = await window.electron.createPurchaseEntry(
+                    purchaseVoucherPayload
+                  );
+
+                  console.log({ responsePurchaseVoucher })
+                  if (responsePurchaseVoucher.success) {
+                    alert("Success: Voucher Created ")
+                  }
+                } else {
+                  alert("Error: while creating Items");
+                }
+              } else {
+                alert("Error: while creating Unit");
+              }
+            } else {
+              alert("Error: while creating Tax Ledger");
+            }
+          } else {
+            alert("Error: while creating Purchase Ledger");
+          }
+        } else {
+          alert("Error: while creating Party Ledger");
+        }
       }
     } else if (billData && billData.length === 1) {
       const bill = billData[0];
@@ -1076,11 +1081,13 @@ export default function BillWorkflow() {
             if (responseUnit?.success) {
               const responseItems = await window.electron.createItem(updatedItemsForExport);
               if (responseItems.success) {
-                const responsePurchaseVoucher = window.electron.createPurchaseEntry(
+                const responsePurchaseVoucher = await window.electron.createPurchaseEntry(
                   purchaseVoucherPayload
                 );
+
+                console.log({ responsePurchaseVoucher })
                 if (responsePurchaseVoucher.success) {
-                  console.log("Created");
+                  alert("Success: Voucher Created ")
                 }
               } else {
                 alert("Error: while creating Items");
