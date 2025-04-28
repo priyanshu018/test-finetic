@@ -74,8 +74,8 @@ export default function IndexPage() {
 
   const handleCreatePartyLedger = async () => {
 
-    const response = await window.electron.createPartyName(ledgerXmlData, "SUNRISE ENTERPRISE", {
-      name: "SUNRISE ENTERPRISE",
+    const response = await window.electron.createPartyName(ledgerXmlData, "RAJ SUPER WHOLESALE BAZAR", {
+      name: "RAJ SUPER WHOLESALE BAZAR",
       parent: "Sundry Creditors",
       address: "",
       country: "",
@@ -163,18 +163,23 @@ export default function IndexPage() {
 
     const units = [
       {
-        name: "Nos",
+        name: "LTR",
         decimal: 3
       },
       {
-        name: "Box",
+        name: "KG",
         decimal: 3
       },
       {
-        name: "Pkt",
+        name: "GM",
+        decimal: 3
+      },
+      {
+        name: "PCS",
         decimal: 3
       }
     ]
+
 
     const response = await window.electron.createUnit(units);
     console.log(response, "here is ");
@@ -184,78 +189,88 @@ export default function IndexPage() {
 
     const items = [
       {
-        Product: "Best Ball Pen",
-        HSN: "1495",
-        SGST: "6%",
-        CGST: "6%",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "Nos"
+        Product: "SWADIST SOYA OIL 1LTR (POUCH) SPECIAL POUCH PACKING MFG BY AVI AGRO MARKETED BY DAMMANI",
+        HSN: null,
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "LTR"
       },
       {
-        Product: "Executive Diary",
-        HSN: "1256",
-        SGST: "6%",
-        CGST: "6%",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "Box"
+        Product: "BALAJI BASMATI RICE 1 KG",
+        HSN: null,
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "KG"
       },
       {
-        Product: "Leather Portfolio Folder",
-        HSN: "1258",
-        SGST: "6%",
-        CGST: "6%",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "Box"
+        Product: "LIFEBUOY SOAP (LEMON) 125GM*4 94/-",
+        HSN: null,
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "GM"
       },
       {
-        Product: "Wireless Mouse",
-        HSN: "4589",
-        SGST: "9%",
-        CGST: "9%",
-        gst: 18,
-        decimal: 0.18,
-        symbol: "Nos"
+        Product: "CAMEL TEA 500GM",
+        HSN: null,
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "GM"
       },
       {
-        Product: "A4 Document File",
-        HSN: "4587",
-        SGST: "6%",
-        CGST: "6%",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "Pkt"
+        Product: "DABUR HONEY 50GM 37/-",
+        HSN: null,
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "GM"
       },
       {
-        Product: "Power Bank 10000mAh",
-        HSN: "1248",
-        SGST: "6%",
-        CGST: "6%",
-        gst: 12,
-        decimal: 0.12,
-        symbol: "Nos"
+        Product: "GOLD COIN BREAD 33/-",
+        HSN: null,
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "PCS"
       },
       {
-        Product: "USB Flash Drive",
-        HSN: "1256",
-        SGST: "9%",
-        CGST: "9%",
-        gst: 18,
-        decimal: 0.18,
-        symbol: "Pkt"
+        Product: "KISSAN TOMATO KETCHUP REFILL 450GM 50/-2ND",
+        HSN: null,
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "GM"
       },
       {
-        Product: "Bluetooth Keyboard",
-        HSN: "2536",
-        SGST: "9%",
-        CGST: "9%",
-        gst: 18,
-        decimal: 0.18,
-        symbol: "Box"
+        Product: "BRITANIA MUFFILLS CAKE 10/-",
+        HSN: null,
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "PCS"
+      },
+      {
+        Product: "KHARAK SAKHARIYA (SPECIAL) 1KG",
+        HSN: null,
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "KG"
       }
     ]
+
     const response = await window.electron.createItem(items);
     console.log(response);
   };
@@ -263,72 +278,79 @@ export default function IndexPage() {
 
   const handlePurchaseEntry = async () => {
     const payload = {
-      invoiceNumber: "Inv-5",
+      invoiceNumber: "2254",
       invoiceDate: "01-04-2025",
       companyName: "PrimeDepth Labs",
-      partyName: "SUNRISE ENTERPRISE",
+      partyName: "RAJ SUPER WHOLESALE BAZAR",
       purchaseLedger: "Purchase",
       items: [
         {
-          name: "Best Ball Pen",
-          price: 10,
-          quantity: 2,
-          unit: "Nos"
+          name: "SWADIST SOYA OIL 1LTR (POUCH) SPECIAL POUCH PACKING MFG BY AVI AGRO MARKETED BY DAMMANI",
+          price: 78.1,
+          quantity: 10,
+          unit: "LTR"
         },
         {
-          name: "Executive Diary",
-          price: 590,
-          quantity: 8,
-          unit: "Box"
-        },
-        {
-          name: "Leather Portfolio Folder",
-          price: 630,
-          quantity: 2,
-          unit: "Box"
-        },
-        {
-          name: "Wireless Mouse",
-          price: 520,
-          quantity: 9,
-          unit: "Nos"
-        },
-        {
-          name: "A4 Document File",
-          price: 420,
-          quantity: 5,
-          unit: "Pkt"
-        },
-        {
-          name: "Power Bank 10000mAh",
-          price: 570,
-          quantity: 9,
-          unit: "Nos"
-        },
-        {
-          name: "USB Flash Drive",
-          price: 999,
+          name: "BALAJI BASMATI RICE 1 KG",
+          price: 45.71,
           quantity: 12,
-          unit: "Pkt"
+          unit: "KG"
         },
         {
-          name: "Bluetooth Keyboard",
-          price: 750,
-          quantity: 4,
-          unit: "Box"
+          name: "LIFEBUOY SOAP (LEMON) 125GM*4 94/-",
+          price: 76.27,
+          quantity: 12,
+          unit: "GM"
+        },
+        {
+          name: "CAMEL TEA 500GM",
+          price: 94.29,
+          quantity: 6,
+          unit: "GM"
+        },
+        {
+          name: "DABUR HONEY 50GM 37/-",
+          price: 34.29,
+          quantity: 2,
+          unit: "GM"
+        },
+        {
+          name: "GOLD COIN BREAD 33/-",
+          price: 30,
+          quantity: 3,
+          unit: "PCS"
+        },
+        {
+          name: "KISSAN TOMATO KETCHUP REFILL 450GM 50/-2ND",
+          price: 40.68,
+          quantity: 2,
+          unit: "GM"
+        },
+        {
+          name: "BRITANIA MUFFILLS CAKE 10/-",
+          price: 8.48,
+          quantity: 1,
+          unit: "PCS"
+        },
+        {
+          name: "KHARAK SAKHARIYA (SPECIAL) 1KG",
+          price: 120.54,
+          quantity: 1,
+          unit: "KG"
         }
       ],
       gstNumber: "ABCDE1234F",
       isWithinState: true,
-      cgst: {
-        percentage: "6%",
-        amount: 2563.92
-      },
       sgst: {
-        percentage: "6%",
-        amount: 2563.92
+        percentage: "0%",
+        amount: 0
+      },
+      cgst: {
+        percentage: "0%",
+        amount: 0
       }
     }
+
 
 
 
@@ -653,7 +675,7 @@ export default function IndexPage() {
         </div> */}
       </div>
 
-      <div>
+      {/* <div>
         <button className="text-black bg-red-400 p-4" onClick={handleGetComapnyData}>Get Company Data</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
@@ -661,7 +683,7 @@ export default function IndexPage() {
         <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create unit</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
         <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create purchase</button>
-      </div>
+      </div> */}
 
       {/* Footer - professional touch */}
       <footer className="bg-white absolute bottom-0 left-0 w-full border-t border-gray-200 py-4 mt-auto">

@@ -1,6 +1,6 @@
 // Option 1: If your API service is running locally
 // export const BackendLink = "https://fineticai-881756922441.us-central1.run.app"
-export const BackendLink = "https://f91b-223-178-208-94.ngrok-free.app"
+export const BackendLink = "https://d958-2409-40d1-89-2a2a-397c-1ce3-e5da-1df1.ngrok-free.app"
 export const localUrl = "http://localhost:9000"
 // export const localUrl = "https://3d08-223-178-208-94.ngrok-free.app"
 

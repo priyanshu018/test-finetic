@@ -1749,6 +1749,8 @@ ${optionalFields}          </LEDGER>
 
         const data = parseResponse(response?.data);
 
+        console.log({ xmlDataToCreate, data })
+
         if (data?.created === filterResponse?.length) {
           return { success: true, isExist: filterResponse, data: itemData };
         } else {
@@ -1772,6 +1774,9 @@ ${optionalFields}          </LEDGER>
           });
 
           const data = parseResponse(response?.data);
+
+          console.log({ xmlDataToCreate, data })
+
 
           if (data?.created === filterResponse?.length) {
             return { success: true, isExist: filterResponse, data: itemData };

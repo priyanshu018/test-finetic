@@ -1874,11 +1874,11 @@ export default function BillWorkflow() {
                               </div>
                             </td>
                           </tr>
-                          {console.log(billData[currentBillIndex].invoice_items_cropped_images.cell_images.length, billData[currentBillIndex]?.items?.length)}
+                        
                           <tr className="pb-10">
                             <td className={`px-3 py-2.5 text-center border-b-8 border-gray-300 ${item.Qty == 0 || item.RATE == 0 ? "bg-red-300" : ""}`} colSpan={11}>
                               <div className="gap-2 mx-auto w-[fit-content]">
-                                {billData[currentBillIndex].invoice_items_cropped_images.cell_images.filter((item, index) => index === 0 || index === idx + 1 || index === idx + 2).map(
+                                {billData[currentBillIndex].invoice_items_cropped_images?.cell_images.filter((item, index) => index === 0 || index === idx + 1 || index === idx + 2).map(
                                   (row: any, rowIndex: number) => (
                                     <div key={rowIndex} className="flex flex-wrap gap-2">
                                       {row.map((img: string, colIndex: number) =>
