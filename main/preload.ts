@@ -29,7 +29,7 @@ contextBridge.exposeInMainWorld('electron', {
     address?: string;
     country?: string;
     state?: string;
-    mobile?: string;
+    date?: string;
     gstin?: string;
   }) => ipcRenderer.invoke('create-party-ledger', xmlData, partyName, ledgerDetails),
 

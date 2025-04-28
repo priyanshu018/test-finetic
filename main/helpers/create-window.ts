@@ -1179,27 +1179,26 @@ export const createWindow = (
     address?: string;
     country?: string;
     state?: string;
-    mobile?: string;
+    date?: string;
     gstin?: string;
   }): Promise<any> {
     try {
       // Build XML for optional fields only if their value is present.
       let optionalFields = "";
-      if (ledgerDetails.address) {
-        optionalFields += `            <ADDRESS>${ledgerDetails.address}</ADDRESS>\n`;
+      if (ledgerDetails.date && ledgerDetails.country && ledgerDetails.gstin) {
+        optionalFields += `            <LEDGSTREGDETAILS.LIST>
+                            <APPLICABLEFROM>${ledgerDetails?.date}</APPLICABLEFROM>
+                            <GSTREGISTRATIONTYPE>Regular</GSTREGISTRATIONTYPE>
+                            <GSTIN>${ledgerDetails?.gstin}</GSTIN>
+                        </LEDGSTREGDETAILS.LIST>
+                        <LEDMAILINGDETAILS.LIST>
+                            <APPLICABLEFROM>${ledgerDetails?.date}</APPLICABLEFROM>
+                            <STATE>${ledgerDetails.state}</STATE>
+                            <COUNTRY>${ledgerDetails.country}</COUNTRY>
+                        </LEDMAILINGDETAILS.LIST>`;
       }
-      if (ledgerDetails.country) {
-        optionalFields += `            <COUNTRYOFRESIDENCE>${ledgerDetails.country}</COUNTRYOFRESIDENCE>\n`;
-      }
-      if (ledgerDetails.state) {
-        optionalFields += `            <LEDSTATENAME>${ledgerDetails.state}</LEDSTATENAME>\n`;
-      }
-      if (ledgerDetails.mobile) {
-        optionalFields += `            <LEDGERMOBILE>${ledgerDetails.mobile}</LEDGERMOBILE>\n`;
-      }
-      if (ledgerDetails.gstin) {
-        optionalFields += `            <PARTYGSTIN>${ledgerDetails.gstin}</PARTYGSTIN>\n`;
-      }
+
+
 
       // Build the complete XML payload.
       const xmlPayload = `<ENVELOPE>

@@ -74,14 +74,14 @@ export default function IndexPage() {
 
   const handleCreatePartyLedger = async () => {
 
-    const response = await window.electron.createPartyName(ledgerXmlData, "RAJ SUPER WHOLESALE BAZAR", {
-      name: "RAJ SUPER WHOLESALE BAZAR",
+    const response = await window.electron.createPartyName(ledgerXmlData, "code test", {
+      name: "code test",
       parent: "Sundry Creditors",
       address: "",
-      country: "",
-      state: "",
-      mobile: "",
-      gstin: "",
+      country: "India",
+      state: "Punjab",
+      date: "01-04-2025",
+      gstin: "04AAACI7952A1ZZ",
     })
       .then((result) => {
         if (result.success) {
@@ -675,9 +675,9 @@ export default function IndexPage() {
         </div> */}
       </div>
 
+      <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
       {/* <div>
         <button className="text-black bg-red-400 p-4" onClick={handleGetComapnyData}>Get Company Data</button>
-        <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreateCgstIgstSgstLedger}>Create IGST/CGST/SGST ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create unit</button>

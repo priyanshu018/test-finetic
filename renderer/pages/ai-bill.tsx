@@ -513,6 +513,7 @@ export default function BillWorkflow() {
   const [netAmountTotal, setNetAmountTotal] = useState<number>(0);
   const [gstTotals, setGstTotals] = useState<{ [key: string]: number }>({});
   const [selectedCompanyName, setSelectedCompanyName] = useState(['Prime Depth Labs']);
+  const [gstNumber, setGstNumber] = useState('');
 
   const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
   const MAX_FILE_SIZE_MB = 50;
@@ -979,20 +980,20 @@ export default function BillWorkflow() {
           name: purchaserName,
           parent: "Sundry Creditors",
           address: "",
-          country: "",
-          state: "",
-          mobile: "",
-          gstin: gst || "",
+          country: "India",
+          state: "Punjab",
+          date: "01-04-2025",
+          gstin: gst || "04AAACI7952A1ZZ",
         });
 
         console.log({
           name: purchaserName,
           parent: "Sundry Creditors",
           address: "",
-          country: "",
-          state: "",
-          mobile: "",
-          gstin: gst || "",
+          country: "India",
+          state: "Punjab",
+          date: "01-04-2025",
+          gstin: gst || "04AAACI7952A1ZZ",
         })
 
 
@@ -1072,10 +1073,10 @@ export default function BillWorkflow() {
         name: purchaserName,
         parent: "Sundry Creditors",
         address: "",
-        country: "",
-        state: "",
-        mobile: "",
-        gstin: gst || "",
+        country: "India",
+        state: "Punjab",
+        date: "01-04-2025",
+        gstin: gst || "04AAACI7952A1ZZ",
       });
 
       if (responsePartyName.success) {
@@ -1369,18 +1370,7 @@ export default function BillWorkflow() {
                       </div>
                     </div>
 
-                    <div className="flex justify-end mt-6">
-                      <button
-                        onClick={() => setCurrentStep(1)}
-                        disabled={!selectedCompanyName}
-                        className={`px-6 py-2 rounded-md text-white font-medium transition-all 
-                        ${!selectedCompanyName
-                            ? 'bg-gray-300 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'}`}
-                      >
-                        Continue
-                      </button>
-                    </div>
+
                   </>
                 )}
               </div>
@@ -1398,7 +1388,6 @@ export default function BillWorkflow() {
                     </button>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <button
                     onClick={() => {
@@ -1444,6 +1433,38 @@ export default function BillWorkflow() {
                 </div>
               </div>
             )}
+
+            {/* --- GST Number Field --- */}
+            <div className="mb-6 px-8 text-black">
+
+              <div>
+                <label htmlFor="gstNumber" className="block text-sm font-medium text-black">
+                  GST Number
+                </label>
+                <input
+                  type="text"
+                  id="gstNumber"
+                  value={gstNumber}
+                  onChange={(e) => setGstNumber(e.target.value)}
+                  placeholder="Enter GST Number"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+
+            </div>
+
+            <div className="flex justify-end my-6 px-4">
+              <button
+                onClick={() => setCurrentStep(1)}
+                disabled={!selectedCompanyName}
+                className={`px-6 py-2 rounded-md text-white font-medium transition-all 
+                        ${!selectedCompanyName
+                    ? 'bg-gray-300 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'}`}
+              >
+                Continue
+              </button>
+            </div>
           </div>
         </main>
       </div>
@@ -1874,7 +1895,7 @@ export default function BillWorkflow() {
                               </div>
                             </td>
                           </tr>
-                        
+
                           <tr className="pb-10">
                             <td className={`px-3 py-2.5 text-center border-b-8 border-gray-300 ${item.Qty == 0 || item.RATE == 0 ? "bg-red-300" : ""}`} colSpan={11}>
                               <div className="gap-2 mx-auto w-[fit-content]">
