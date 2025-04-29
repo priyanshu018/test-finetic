@@ -1173,7 +1173,8 @@ export default function BillWorkflow() {
 
   useEffect(() => {
     fetchCompanies();
-  }, []);
+    fetchGstDetails()
+  }, [selectedCompanyName]);
 
   useEffect(() => {
     if (!selectedCompanyName && selectedCompanyName.length > 0) {
@@ -1251,7 +1252,43 @@ export default function BillWorkflow() {
     }
   };
 
-  console.log(gstTotals, "gst total")
+  const fetchGstDetails = async () => {
+    const xmlData = `<ENVELOPE>
+    <HEADER>
+      <VERSION>1</VERSION>
+      <TALLYREQUEST>Export</TALLYREQUEST>
+      <TYPE>Collection</TYPE>
+      <ID>Ledgers</ID>
+    </HEADER>
+    <BODY>
+      <DESC>
+        <STATICVARIABLES>
+          <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+          <SVCURRENTCOMPANY>${selectedCompanyName}</SVCURRENTCOMPANY>
+        </STATICVARIABLES>
+        <TDL>
+          <TDLMESSAGE>
+            <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
+              <TYPE>Ledger</TYPE>
+              <NATIVEMETHOD>Address</NATIVEMETHOD>
+              <NATIVEMETHOD>Masterid</NATIVEMETHOD>
+              <NATIVEMETHOD>*</NATIVEMETHOD>
+            </COLLECTION>
+          </TDLMESSAGE>
+        </TDL>
+      </DESC>
+    </BODY>
+  </ENVELOPE>`;
+
+    try {
+      const response = await window.electron.getGSTData(xmlData);
+      setGstNumber(response?.[0]?.gst)
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   // Add the BillTotals component
   const BillTotals = () => {

@@ -1088,6 +1088,46 @@ export const createWindow = (
     };
   }
 
+
+  /**
+   * Extracts name + GSTIN for every <LEDGER> in a Tally XML string.
+   * @param {string} xmlString - Raw XML containing multiple <LEDGER> elements.
+   * @returns {Promise<Array<{ name: string, gst: string }>>}
+   */
+  const extractLedgerNameAndGST = async (xmlString) => {
+    // Parse XML into JS object
+    const parsed = await parseStringPromise(xmlString, { explicitArray: false });
+
+    // Navigate into the LEDGER collection
+    const collection = parsed?.ENVELOPE?.BODY?.DATA?.COLLECTION;
+    if (!collection) {
+      throw new Error('Cannot find COLLECTION element in the XML.');
+    }
+
+    // Normalize to array
+    const allLedgers = Array.isArray(collection.LEDGER)
+      ? collection.LEDGER
+      : [collection.LEDGER];
+
+    // Use a Set to track seen GSTINs
+    const seenGST = new Set();
+    const uniqueEntries = [];
+
+    for (const ledger of allLedgers) {
+      const name = ledger.$?.NAME || '';
+      const gst = ledger['LEDGSTREGDETAILS.LIST']?.GSTIN?.trim() || '';
+
+      // Only include non-empty GSTIN and skip duplicates
+      if (gst && !seenGST.has(gst)) {
+        seenGST.add(gst);
+        uniqueEntries.push({ name, gst });
+      }
+    }
+
+    return uniqueEntries;
+  }
+
+
   /**
    * Asynchronously generates an XML payload from the provided ledger names,
    * sends it to the Tally server via HTTP POST, and returns the server response.
@@ -1430,6 +1470,35 @@ ${optionalFields}          </LEDGER>
       return { success: false, error: error.message };
     }
   });
+
+
+  ipcMain.handle("get-gst-data", async (_, xmlData: string) => {
+    try {
+      // Calculate content length (in bytes) from the XML data.
+      const contentLength = Buffer.byteLength(xmlData, "utf8");
+
+      // Make the HTTP request to your endpoint.
+      const response = await axios({
+        method: "POST",
+        url: "http://localhost:9000", // Replace or make configurable as needed.
+        headers: {
+          "Content-Type": "application/xml",
+          "Content-Length": contentLength, // Setting the Content-Length header.
+        },
+        data: xmlData,
+      });
+
+      console.log({ response, xmlData })
+
+      const extractGST = await extractLedgerNameAndGST(response.data)
+
+      return extractGST
+
+    } catch (error: any) {
+      console.error("Error in GET GST DATA IPC handler:", error);
+      return { success: false, error: error.message };
+    }
+  })
 
   ipcMain.handle("get-tax-ledger-data", async (_, xmlData: string) => {
     try {

@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('electron', {
 
   getCompanyData: (xmlData: string) => ipcRenderer.invoke('get-company-data', xmlData),
 
+  getGSTData: (xmlData: string) => ipcRenderer.invoke('get-gst-data', xmlData),
+
   createPartyName: (xmlData: string, partyName: string, ledgerDetails: {
     name: string;
     parent: string;

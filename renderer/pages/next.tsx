@@ -72,6 +72,39 @@ export default function IndexPage() {
 </ENVELOPE>
   `
 
+
+  const handleGetGstData = async () => {
+
+    const xmlData = `<ENVELOPE>
+	<HEADER>
+		<VERSION>1</VERSION>
+		<TALLYREQUEST>Export</TALLYREQUEST>
+		<TYPE>Collection</TYPE>
+		<ID>Ledgers</ID>
+	</HEADER>
+	<BODY>
+		<DESC>
+			<STATICVARIABLES>
+				<SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+				<SVCURRENTCOMPANY>PrimeDepth Labs</SVCURRENTCOMPANY>
+			</STATICVARIABLES>
+			<TDL>
+				<TDLMESSAGE>
+					<COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
+						<TYPE>Ledger</TYPE>
+						<NATIVEMETHOD>Address</NATIVEMETHOD>
+						<NATIVEMETHOD>Masterid</NATIVEMETHOD>
+						<NATIVEMETHOD>*</NATIVEMETHOD>
+					</COLLECTION>
+				</TDLMESSAGE>
+			</TDL>
+		</DESC>
+	</BODY>
+</ENVELOPE>`;
+
+    const response = await window.electron.getGSTData(xmlData);
+  }
+
   const handleCreatePartyLedger = async () => {
 
     const response = await window.electron.createPartyName(ledgerXmlData, "code test", {
@@ -676,6 +709,9 @@ export default function IndexPage() {
       </div>
 
       <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
+
+      <button className="text-black bg-blue-400 p-4" onClick={handleGetGstData}>GST DATA</button>
+
       {/* <div>
         <button className="text-black bg-red-400 p-4" onClick={handleGetComapnyData}>Get Company Data</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
