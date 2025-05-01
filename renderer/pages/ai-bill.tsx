@@ -21,12 +21,25 @@ import {
   Calendar,
   FileDigit,
   Building,
-  PlusCircle
+  PlusCircle,
+  Smartphone,
+  CheckCircle,
+  RefreshCw,
+  AlertCircle,
+  Play,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { ZoomOut, RotateCcw, Move, Maximize, Minimize, Minus } from "lucide-react";
+import {
+  ZoomOut,
+  RotateCcw,
+  Move,
+  Maximize,
+  Minimize,
+  Minus,
+} from "lucide-react";
 import { supabase } from "../lib/supabase";
-import { parseStringPromise } from 'xml2js';
+import { parseStringPromise } from "xml2js";
+import QRCode from "react-qr-code";
 
 export async function extractCompanyNames(xmlString) {
   const doc = await parseStringPromise(xmlString, { explicitArray: false });
@@ -36,9 +49,9 @@ export async function extractCompanyNames(xmlString) {
 
   if (!Array.isArray(companies)) companies = [companies];
 
-  return companies.map(c => {
+  return companies.map((c) => {
     const nameNode = c.NAME;
-    if (nameNode && typeof nameNode === 'object' && '_' in nameNode) {
+    if (nameNode && typeof nameNode === "object" && "_" in nameNode) {
       return nameNode._;
     }
     return nameNode;
@@ -48,21 +61,46 @@ export async function extractCompanyNames(xmlString) {
 declare global {
   interface Window {
     electronAPI: {
-      createCgstLedger: (ledgerName: string) => Promise<{ success: boolean; ledgerName?: string; error?: string }>;
+      createCgstLedger: (
+        ledgerName: string
+      ) => Promise<{ success: boolean; ledgerName?: string; error?: string }>;
     };
     electron: {
-      exportAndCreatePartyNameEntry: (purchaserName: string, gst: string) => Promise<{ success: boolean; partyName: string }>
-      exportLedger: (ledgerNames: string[] | string, ledgerType: string) => Promise<any>;
-      exportAndCreateLedger: (ledgerName: string | string[], ledgerType: string) => Promise<{ success: boolean; ledgerName: string }>
+      exportAndCreatePartyNameEntry: (
+        purchaserName: string,
+        gst: string
+      ) => Promise<{ success: boolean; partyName: string }>;
+      exportLedger: (
+        ledgerNames: string[] | string,
+        ledgerType: string
+      ) => Promise<any>;
+      exportAndCreateLedger: (
+        ledgerName: string | string[],
+        ledgerType: string
+      ) => Promise<{ success: boolean; ledgerName: string }>;
       exportUnit: (unit: any) => Promise<any>;
       exportItem: (items: any) => Promise<any>;
-      createPurchaseEntry: (invoiceNumber: string, date: string, purchaserName: string, purchaseName: string, updatedPurchaseEntryItem: any, isWithinState: boolean) => Promise<any>
-      getCompanyData: (xmlData: string) => Promise<any>
-      createPartyName: (xmlData: string, purchaserName: string, partyDetails: any) => Promise<any>
-      createPurchaserLedger: (xmlData: string, ledgerName: string) => Promise<any>
-      getTaxLedgerData: (xmlData: string) => Promise<any>
-      createUnit: (units: any) => Promise<any>
-      createItem: (items: any) => Promise<any>
+      createPurchaseEntry: (
+        invoiceNumber: string,
+        date: string,
+        purchaserName: string,
+        purchaseName: string,
+        updatedPurchaseEntryItem: any,
+        isWithinState: boolean
+      ) => Promise<any>;
+      getCompanyData: (xmlData: string) => Promise<any>;
+      createPartyName: (
+        xmlData: string,
+        purchaserName: string,
+        partyDetails: any
+      ) => Promise<any>;
+      createPurchaserLedger: (
+        xmlData: string,
+        ledgerName: string
+      ) => Promise<any>;
+      getTaxLedgerData: (xmlData: string) => Promise<any>;
+      createUnit: (units: any) => Promise<any>;
+      createItem: (items: any) => Promise<any>;
     };
   }
 }
@@ -79,7 +117,7 @@ interface Product {
   SGST: number;
   CGST: number;
   "NET AMT": number;
-  UNIT: string
+  UNIT: string;
 }
 
 interface GSTData {
@@ -165,7 +203,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
       setIsDragging(true);
       setDragStart({
         x: e.clientX - position.x,
-        y: e.clientY - position.y
+        y: e.clientY - position.y,
       });
       if (containerRef.current) {
         containerRef.current.style.cursor = "grabbing";
@@ -177,7 +215,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
     if (isDragging) {
       setPosition({
         x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
+        y: e.clientY - dragStart.y,
       });
     }
   };
@@ -206,7 +244,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
       setZoom(2);
       setPosition({
         x: (centerX - clickX) * 2,
-        y: (centerY - clickY) * 2
+        y: (centerY - clickY) * 2,
       });
     }
   };
@@ -234,8 +272,8 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
       className="relative overflow-hidden rounded-xl bg-gray-50"
       style={{
         ...style,
-        cursor: isDragging ? 'grabbing' : zoom > 1 ? 'grab' : 'default',
-        userSelect: 'none'
+        cursor: isDragging ? "grabbing" : zoom > 1 ? "grab" : "default",
+        userSelect: "none",
       }}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
@@ -250,12 +288,12 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
         alt={alt}
         style={{
           transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
-          transformOrigin: 'center',
-          transition: isDragging ? 'none' : 'transform 0.2s ease-out',
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain',
-          pointerEvents: 'none'
+          transformOrigin: "center",
+          transition: isDragging ? "none" : "transform 0.2s ease-out",
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          pointerEvents: "none",
         }}
       />
 
@@ -327,13 +365,17 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
       {showGuide && (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center transition-opacity">
           <div className="bg-white rounded-xl p-5 max-w-md shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Image Controls</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              Image Controls
+            </h3>
             <ul className="space-y-3">
               <li className="flex items-center gap-3">
                 <div className="bg-blue-100 rounded-full p-1.5">
                   <Move className="w-5 h-5 text-blue-700" />
                 </div>
-                <span className="text-gray-600">Drag to pan when zoomed in</span>
+                <span className="text-gray-600">
+                  Drag to pan when zoomed in
+                </span>
               </li>
               <li className="flex items-center gap-3">
                 <div className="bg-blue-100 rounded-full p-1.5">
@@ -345,7 +387,9 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
                 <div className="bg-blue-100 rounded-full p-1.5">
                   <Maximize className="w-5 h-5 text-blue-700" />
                 </div>
-                <span className="text-gray-600">Double-click to toggle zoom</span>
+                <span className="text-gray-600">
+                  Double-click to toggle zoom
+                </span>
               </li>
             </ul>
             <button
@@ -371,7 +415,10 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, style }) => {
 function formatTime(ms: number) {
   const totalSeconds = Math.floor(ms / 1000);
   const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
-  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(
+    2,
+    "0"
+  );
   const seconds = String(totalSeconds % 60).padStart(2, "0");
   return `${hours}:${minutes}:${seconds}`;
 }
@@ -381,7 +428,7 @@ export function LoadingScreen({ isLoading }: { isLoading: boolean }) {
     "Extracting Necessary Data...",
     "Processing Image with AI Model...",
     "Converting Data into Text...",
-    "Finalizing Results..."
+    "Finalizing Results...",
   ];
   const [currentStep, setCurrentStep] = useState(0);
   const [elapsed, setElapsed] = useState(0);
@@ -411,7 +458,10 @@ export function LoadingScreen({ isLoading }: { isLoading: boolean }) {
       <div className="flex flex-col items-center space-y-6 p-8 bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
         <div className="relative w-24 h-24 flex items-center justify-center">
           <div className="absolute inset-0 w-full h-full border-4 border-t-transparent border-blue-500/20 rounded-full animate-spin" />
-          <div className="absolute inset-0 w-full h-full border-4 border-t-transparent border-l-transparent border-r-blue-500 border-b-blue-500 rounded-full animate-spin" style={{ animationDuration: '1.5s' }} />
+          <div
+            className="absolute inset-0 w-full h-full border-4 border-t-transparent border-l-transparent border-r-blue-500 border-b-blue-500 rounded-full animate-spin"
+            style={{ animationDuration: "1.5s" }}
+          />
           <CloudCog className="w-10 h-10 text-blue-600" />
         </div>
 
@@ -420,7 +470,12 @@ export function LoadingScreen({ isLoading }: { isLoading: boolean }) {
             {steps[currentStep]}
           </p>
           <div className="text-gray-500 font-medium flex items-center gap-2 justify-center">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <circle cx="12" cy="12" r="10" strokeWidth="2" stroke="#CBD5E0" />
               <path
                 strokeLinecap="round"
@@ -434,7 +489,10 @@ export function LoadingScreen({ isLoading }: { isLoading: boolean }) {
         </div>
 
         <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-          <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: `${(currentStep + 1) * 25}%` }}></div>
+          <div
+            className="h-full bg-blue-500 rounded-full animate-pulse"
+            style={{ width: `${(currentStep + 1) * 25}%` }}
+          ></div>
         </div>
       </div>
     </div>
@@ -453,14 +511,28 @@ const Stepper = ({ steps, currentStep }: StepperProps) => {
         {steps.map((step, index) => (
           <div key={step} className="flex-1 relative">
             <div className="flex flex-col items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${currentStep >= index ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-gray-200 text-gray-500"
-                }`}>
-                {currentStep > index ? <Check className="w-5 h-5" /> : index + 1}
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${
+                  currentStep >= index
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                    : "bg-gray-200 text-gray-500"
+                }`}
+              >
+                {currentStep > index ? (
+                  <Check className="w-5 h-5" />
+                ) : (
+                  index + 1
+                )}
               </div>
-              <div className={`mt-2 text-center ${currentStep >= index ? "text-gray-800 font-medium" : "text-gray-400"
-                }`}>
+              <div
+                className={`mt-2 text-center ${
+                  currentStep >= index
+                    ? "text-gray-800 font-medium"
+                    : "text-gray-400"
+                }`}
+              >
                 <span className="hidden md:block">{step}</span>
-                <span className="md:hidden">{step.split(' ')[0]}</span>
+                <span className="md:hidden">{step.split(" ")[0]}</span>
               </div>
             </div>
           </div>
@@ -472,9 +544,7 @@ const Stepper = ({ steps, currentStep }: StepperProps) => {
 
 const TextField = ({ label, value, onChange, style = {} }) => (
   <div className="space-y-1.5">
-    <label className="block text-sm font-medium text-gray-700">
-      {label}
-    </label>
+    <label className="block text-sm font-medium text-gray-700">{label}</label>
     <input
       type="text"
       value={value || ""}
@@ -487,9 +557,7 @@ const TextField = ({ label, value, onChange, style = {} }) => (
 
 const NumberField = ({ label, value, onChange, style = {} }) => (
   <div className="space-y-1.5">
-    <label className="block text-sm font-medium text-gray-700">
-      {label}
-    </label>
+    <label className="block text-sm font-medium text-gray-700">{label}</label>
     <input
       type="number"
       value={value || ""}
@@ -509,12 +577,19 @@ export default function BillWorkflow() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [status, setStatus] = useState('Ready to export');
+  const [status, setStatus] = useState("Ready to export");
   const [error, setError] = useState<string | null>(null);
   const [netAmountTotal, setNetAmountTotal] = useState<number>(0);
   const [gstTotals, setGstTotals] = useState<{ [key: string]: number }>({});
-  const [selectedCompanyName, setSelectedCompanyName] = useState(['Prime Depth Labs']);
-  const [gstNumber, setGstNumber] = useState('');
+  const [selectedCompanyName, setSelectedCompanyName] = useState([
+    "Prime Depth Labs",
+  ]);
+  const [gstNumber, setGstNumber] = useState("");
+
+  const [qrSession, setQRSession] = useState(null);
+  const [qrSessionLoading, setQRSessionLoading] = useState(false);
+  const [mobileFiles, setMobileFiles] = useState([]);
+  const [receivedFiles, setReceivedFiles] = useState(0);
 
   const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
   const MAX_FILE_SIZE_MB = 50;
@@ -550,7 +625,7 @@ export default function BillWorkflow() {
         id: Math.random().toString(36).substr(2, 9),
         name: file.name,
         dataUrl: await readFile(file),
-        file
+        file,
       }))
     );
     setFiles((prev) => [...prev, ...filesWithPreview]);
@@ -578,9 +653,9 @@ export default function BillWorkflow() {
   const getUserDataByEmail = async (email: string) => {
     try {
       const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email);
+        .from("users")
+        .select("*")
+        .eq("email", email);
 
       if (error) {
         throw error;
@@ -588,42 +663,103 @@ export default function BillWorkflow() {
 
       return data;
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error("Error fetching user data:", error);
       return null;
     }
   };
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      const email = session?.user?.user_metadata?.email;
-      if (email) {
-        const fetchUserData = async () => {
-          const userData = await getUserDataByEmail(email);
-        };
-        fetchUserData();
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        const email = session?.user?.user_metadata?.email;
+        if (email) {
+          const fetchUserData = async () => {
+            const userData = await getUserDataByEmail(email);
+          };
+          fetchUserData();
+        }
       }
-    });
+    );
   }, []);
+
+  // const handleNextStep = async () => {
+  //   setIsLoading(true);
+  //   try {
+  //     const requests = files.map(async (fileObj) => {
+  //       const formData = new FormData();
+  //       formData.append("file", fileObj.file);
+  //       formData.append("user_id", "2");
+  //       const response = await axios.post(
+  //         `${BackendLink}/extract-bill-details/`,
+  //         formData,
+  //         {
+  //           headers: {
+  //             "Content-Type":
+  //               "multipart/form-data; boundary=---011000010111000001101001",
+  //           },
+  //         }
+  //       );
+  //       return response.data;
+  //     });
+
+  //     const results = await Promise.all(requests);
+  //     setBillData(results);
+  //     setCurrentStep(2);
+  //   } catch (error: any) {
+  //     console.error("Error extracting bill details:", error);
+  //     toast.error("Error extracting bill details. Please try again.");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
 
   const handleNextStep = async () => {
     setIsLoading(true);
     try {
-      const requests = files.map(async (fileObj) => {
+      const allFiles = [...files];
+  
+      for (const file of mobileFiles) {
+        const res = await fetch(file.url);
+        const blob = await res.blob();
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+  
+        const fileObj = {
+          id: Math.random().toString(36).substr(2, 9),
+          name: file.key.split('/').pop(),
+          dataUrl, // for preview
+          file: new File([blob], file.key.split('/').pop(), { type: blob.type }),
+          isMobile: true,
+        };
+  
+        allFiles.push(fileObj);
+      }
+  
+      setFiles(allFiles); // 👈 this enables preview
+      setMobileFiles([]); // optional: clear mobileFiles state if now in `files`
+  
+      // Send files to backend
+      const requests = allFiles.map(async (fileObj) => {
         const formData = new FormData();
         formData.append("file", fileObj.file);
         formData.append("user_id", "2");
+  
         const response = await axios.post(
           `${BackendLink}/extract-bill-details/`,
           formData,
           {
             headers: {
-              "Content-Type": "multipart/form-data; boundary=---011000010111000001101001"
-            }
+              "Content-Type": "multipart/form-data",
+            },
           }
         );
         return response.data;
       });
-
+  
       const results = await Promise.all(requests);
       setBillData(results);
       setCurrentStep(2);
@@ -639,12 +775,17 @@ export default function BillWorkflow() {
     const newData = [...billData];
     newData[currentBillIndex] = {
       ...newData[currentBillIndex],
-      [field]: value
+      [field]: value,
     };
     setBillData(newData);
   };
 
-  const handleItemChange = (billIndex: number, itemIndex: number, field: string, value: any) => {
+  const handleItemChange = (
+    billIndex: number,
+    itemIndex: number,
+    field: string,
+    value: any
+  ) => {
     const newData = [...billData];
     const updatedItems = [...newData[billIndex].items];
 
@@ -652,7 +793,7 @@ export default function BillWorkflow() {
     updatedItems[itemIndex] = { ...updatedItems[itemIndex], [field]: value };
 
     // If changing GST-related fields (QTY, RATE, SGST, CGST), recalculate derived values
-    if (['QTY', 'RATE', 'SGST', 'CGST'].includes(field)) {
+    if (["QTY", "RATE", "SGST", "CGST"].includes(field)) {
       const item = updatedItems[itemIndex];
       const qty = parseFloat(item.QTY) || 0;
       const rate = parseFloat(item.RATE) || 0;
@@ -692,7 +833,7 @@ export default function BillWorkflow() {
       SGST: "",
       CGST: "",
       "NET AMT": "",
-      UNIT: "PCS"
+      UNIT: "PCS",
     };
     const newData = [...billData];
     if (!newData[billIndex].items) {
@@ -711,7 +852,11 @@ export default function BillWorkflow() {
     recalculateBillTotals(billIndex, itemIndex, "", "");
   };
 
-  const handleProductDragStart = (e: React.DragEvent<HTMLTableCellElement>, billIndex: number, itemIndex: number) => {
+  const handleProductDragStart = (
+    e: React.DragEvent<HTMLTableCellElement>,
+    billIndex: number,
+    itemIndex: number
+  ) => {
     e.dataTransfer.setData("text/plain", itemIndex.toString());
   };
 
@@ -719,7 +864,11 @@ export default function BillWorkflow() {
     e.preventDefault();
   };
 
-  const handleProductDrop = (e: React.DragEvent<HTMLTableCellElement>, billIndex: number, dropIndex: number) => {
+  const handleProductDrop = (
+    e: React.DragEvent<HTMLTableCellElement>,
+    billIndex: number,
+    dropIndex: number
+  ) => {
     e.preventDefault();
     const draggedIndex = Number(e.dataTransfer.getData("text/plain"));
     if (draggedIndex === dropIndex) return;
@@ -752,11 +901,12 @@ export default function BillWorkflow() {
       // Calculate GST totals by rate
       const gstRateTotals: { [key: string]: number } = {};
 
-      billData[newIndex].items.forEach(item => {
-        const gstRate = (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
+      billData[newIndex].items.forEach((item) => {
+        const gstRate =
+          (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
         const gAmount = parseFloat(item["NET AMT"]) || 0;
         const gstAmount = (gAmount * gstRate) / 100;
-        console.log({ gstRate, gAmount })
+        console.log({ gstRate, gAmount });
         if (gstRate > 0) {
           const rateKey = `${gstRate}%`;
           if (!gstRateTotals[rateKey]) {
@@ -781,8 +931,8 @@ export default function BillWorkflow() {
     if (dateInput instanceof Date) {
       date = dateInput;
     } else {
-      if (dateInput?.includes('/')) {
-        const parts = dateInput.split('/');
+      if (dateInput?.includes("/")) {
+        const parts = dateInput.split("/");
         if (parts.length === 3) {
           const [part1, part2, part3] = parts;
           const num1 = parseInt(part1, 10);
@@ -811,8 +961,8 @@ export default function BillWorkflow() {
       }
     }
 
-    const dd = date.getDate().toString().padStart(2, '0');
-    const mm = (date.getMonth() + 1).toString().padStart(2, '0');
+    const dd = date.getDate().toString().padStart(2, "0");
+    const mm = (date.getMonth() + 1).toString().padStart(2, "0");
     const yyyy = date.getFullYear();
 
     return `${dd}-${mm}-${yyyy}`;
@@ -828,7 +978,8 @@ export default function BillWorkflow() {
       }
       seenProducts.add(item.Product);
 
-      const gstValue = (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
+      const gstValue =
+        (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
       const productName = item.Product.replace(/['"]/g, "");
       const unit = item.UNIT?.replace(/\d+/g, "").trim() || "PCS";
 
@@ -839,7 +990,7 @@ export default function BillWorkflow() {
         CGST: item.CGST,
         gst: gstValue,
         decimal: gstValue / 100,
-        symbol: unit
+        symbol: unit,
       });
     }
 
@@ -847,7 +998,7 @@ export default function BillWorkflow() {
   }
 
   function extractPurchaserEntries(data: Product[]): PurchaserEntry[] {
-    return data.map(product => {
+    return data.map((product) => {
       const productName = product.Product.replace(/['"]/g, "");
       const unit = product.UNIT?.replace(/\d+/g, "").trim() || "PCS";
 
@@ -855,16 +1006,16 @@ export default function BillWorkflow() {
         name: productName,
         price: product.RATE === 0 ? 1 : product.RATE,
         quantity: product.QTY === 0 ? 1 : product.QTY,
-        unit: unit
+        unit: unit,
       };
     });
   }
 
   function extractUnitsFromItems(rawItems) {
     const uniqueUnits = [];
-    rawItems.forEach(item => {
+    rawItems.forEach((item) => {
       const unit = item?.UNIT?.replace(/\d+/g, "").trim() || "PCS";
-      if (!uniqueUnits.some(u => u.name === unit)) {
+      if (!uniqueUnits.some((u) => u.name === unit)) {
         uniqueUnits.push({ name: unit, decimal: 3 });
       }
     });
@@ -876,14 +1027,14 @@ export default function BillWorkflow() {
     if (entries.length === 0) {
       return {
         cgst: { percentage: "0%", amount: 0 },
-        sgst: { percentage: "0%", amount: 0 }
+        sgst: { percentage: "0%", amount: 0 },
       };
     }
 
     // take only the first IGST entry
-    const [firstPct, firstAmt] = entries[0];       // e.g. ["12%", 1587.6]
+    const [firstPct, firstAmt] = entries[0]; // e.g. ["12%", 1587.6]
     const halfRate = parseFloat(firstPct) / 2; // 6
-    const halfRateStr = `${halfRate}%`;           // "6%"
+    const halfRateStr = `${halfRate}%`; // "6%"
 
     // total amount is still sum of all halves
     const totalHalfAmt = entries
@@ -897,19 +1048,99 @@ export default function BillWorkflow() {
 
     return {
       cgst: { percentage: "2.5%", amount: totalHalfAmt },
-      sgst: { percentage: "2.5%", amount: totalHalfAmt }
+      sgst: { percentage: "2.5%", amount: totalHalfAmt },
     };
-
   }
 
+  // Create a new QR session
+  const createQRSession = async () => {
+    setQRSessionLoading(true);
+    try {
+      const response = await fetch("http://localhost:3001/create-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
 
-  console.log({ billData })
+      if (!response.ok) throw new Error("Failed to create session");
+
+      const session = await response.json();
+      console.log(session, "here is ression");
+      setQRSession(session);
+
+      // Start polling for new files
+      startPollingForFiles(session.sessionId);
+    } catch (error) {
+      console.error("Error creating session:", error);
+    } finally {
+      setQRSessionLoading(false);
+    }
+  };
+
+  // Reset the QR session
+  const resetQRSession = () => {
+    setQRSession(null);
+    setReceivedFiles(0);
+  };
+
+  // Poll for new files uploaded from mobile
+  const startPollingForFiles = (sessionId) => {
+    const pollInterval = setInterval(async () => {
+      if (!sessionId) {
+        clearInterval(pollInterval);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `http://localhost:3001/check-uploads/${sessionId}`
+        );
+        if (!response.ok) throw new Error("Failed to check uploads");
+
+        const { files: newFiles } = await response.json();
+
+        if (newFiles.length > 0) {
+          // Update files only if there are new ones
+          setMobileFiles((prevFiles) => {
+            const existingKeys = new Set(prevFiles.map((f) => f.key));
+            const filteredNewFiles = newFiles.filter(
+              (f) => !existingKeys.has(f.key)
+            );
+
+            if (filteredNewFiles.length > 0) {
+              setReceivedFiles((prev) => prev + filteredNewFiles.length);
+              return [...prevFiles, ...filteredNewFiles];
+            }
+
+            return prevFiles;
+          });
+        }
+      } catch (error) {
+        console.error("Error polling for files:", error);
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval);
+  };
+
+  console.log({ billData });
 
   const handleExport = async () => {
     const ledgerNames = [
-      'Cgst0', 'Cgst2.5', 'Cgst6', 'Cgst9', 'Cgst14',
-      'Igst0', 'Igst5', 'Igst12', 'Igst18', 'Igst28',
-      'Ut/Sgst0', 'Ut/Sgst2.5', 'Ut/Sgst6', 'Ut/Sgst9', 'Ut/Sgst14'
+      "Cgst0",
+      "Cgst2.5",
+      "Cgst6",
+      "Cgst9",
+      "Cgst14",
+      "Igst0",
+      "Igst5",
+      "Igst12",
+      "Igst18",
+      "Igst28",
+      "Ut/Sgst0",
+      "Ut/Sgst2.5",
+      "Ut/Sgst6",
+      "Ut/Sgst9",
+      "Ut/Sgst14",
     ];
 
     const ledgerXmlData = `
@@ -958,8 +1189,6 @@ export default function BillWorkflow() {
         const invoiceNumber = bill.invoiceNumber;
         const { cgst, sgst } = splitIgstSingleFirstRate(gstTotals);
 
-
-
         // 2) Build the base payload
         const purchaseVoucherPayload = {
           invoiceNumber,
@@ -971,13 +1200,24 @@ export default function BillWorkflow() {
           gstNumber: "ABCDE1234F",
           isWithinState: true,
           cgst,
-          sgst
+          sgst,
         };
 
+        const responsePartyName = await window.electron.createPartyName(
+          ledgerXmlData,
+          purchaserName,
+          {
+            name: purchaserName,
+            parent: "Sundry Creditors",
+            address: "",
+            country: "India",
+            state: "Punjab",
+            date: "01-04-2025",
+            gstin: gst || "04AAACI7952A1ZZ",
+          }
+        );
 
-
-
-        const responsePartyName = await window.electron.createPartyName(ledgerXmlData, purchaserName, {
+        console.log({
           name: purchaserName,
           parent: "Sundry Creditors",
           address: "",
@@ -988,35 +1228,38 @@ export default function BillWorkflow() {
         });
 
         console.log({
-          name: purchaserName,
-          parent: "Sundry Creditors",
-          address: "",
-          country: "India",
-          state: "Punjab",
-          date: "01-04-2025",
-          gstin: gst || "04AAACI7952A1ZZ",
-        })
-
-
-        console.log(
-          { purchaserName, updatedUnits, updatedItemsForExport, purchaseVoucherPayload })
+          purchaserName,
+          updatedUnits,
+          updatedItemsForExport,
+          purchaseVoucherPayload,
+        });
 
         if (responsePartyName.success) {
-          const responsePurchase = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase");
+          const responsePurchase = await window.electron.createPurchaserLedger(
+            ledgerXmlData,
+            "Purchase"
+          );
           if (responsePurchase.success) {
-            const responseTaxLedger = await window.electron.getTaxLedgerData(ledgerXmlData);
+            const responseTaxLedger = await window.electron.getTaxLedgerData(
+              ledgerXmlData
+            );
             if (responseTaxLedger.success) {
-              const responseUnit = await window.electron.createUnit(updatedUnits);
+              const responseUnit = await window.electron.createUnit(
+                updatedUnits
+              );
               if (responseUnit?.success) {
-                const responseItems = await window.electron.createItem(updatedItemsForExport);
+                const responseItems = await window.electron.createItem(
+                  updatedItemsForExport
+                );
                 if (responseItems.success) {
-                  const responsePurchaseVoucher = await window.electron.createPurchaseEntry(
-                    purchaseVoucherPayload
-                  );
+                  const responsePurchaseVoucher =
+                    await window.electron.createPurchaseEntry(
+                      purchaseVoucherPayload
+                    );
 
-                  console.log({ responsePurchaseVoucher })
+                  console.log({ responsePurchaseVoucher });
                   if (responsePurchaseVoucher.success) {
-                    alert("Success: Voucher Created ")
+                    alert("Success: Voucher Created ");
                   }
                 } else {
                   alert("Error: while creating Items");
@@ -1052,7 +1295,6 @@ export default function BillWorkflow() {
       const invoiceNumber = bill.invoiceNumber;
       const { cgst, sgst } = splitIgstSingleFirstRate(gstTotals);
 
-
       // 2) Build the base payload
       const purchaseVoucherPayload = {
         invoiceNumber,
@@ -1064,38 +1306,55 @@ export default function BillWorkflow() {
         gstNumber: "ABCDE1234F",
         isWithinState: true,
         sgst,
-        cgst
+        cgst,
       };
 
       console.log(
-        { purchaserName }, { updatedUnits }, { updatedItemsForExport }, { purchaseVoucherPayload }, { updatedItemsForExport })
+        { purchaserName },
+        { updatedUnits },
+        { updatedItemsForExport },
+        { purchaseVoucherPayload },
+        { updatedItemsForExport }
+      );
 
-      const responsePartyName = await window.electron.createPartyName(ledgerXmlData, purchaserName, {
-        name: purchaserName,
-        parent: "Sundry Creditors",
-        address: "",
-        country: "India",
-        state: "Punjab",
-        date: "01-04-2025",
-        gstin: gst || "04AAACI7952A1ZZ",
-      });
+      const responsePartyName = await window.electron.createPartyName(
+        ledgerXmlData,
+        purchaserName,
+        {
+          name: purchaserName,
+          parent: "Sundry Creditors",
+          address: "",
+          country: "India",
+          state: "Punjab",
+          date: "01-04-2025",
+          gstin: gst || "04AAACI7952A1ZZ",
+        }
+      );
 
       if (responsePartyName.success) {
-        const responsePurchase = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase");
+        const responsePurchase = await window.electron.createPurchaserLedger(
+          ledgerXmlData,
+          "Purchase"
+        );
         if (responsePurchase.success) {
-          const responseTaxLedger = await window.electron.getTaxLedgerData(ledgerXmlData);
+          const responseTaxLedger = await window.electron.getTaxLedgerData(
+            ledgerXmlData
+          );
           if (responseTaxLedger.success) {
             const responseUnit = await window.electron.createUnit(updatedUnits);
             if (responseUnit?.success) {
-              const responseItems = await window.electron.createItem(updatedItemsForExport);
+              const responseItems = await window.electron.createItem(
+                updatedItemsForExport
+              );
               if (responseItems.success) {
-                const responsePurchaseVoucher = await window.electron.createPurchaseEntry(
-                  purchaseVoucherPayload
-                );
+                const responsePurchaseVoucher =
+                  await window.electron.createPurchaseEntry(
+                    purchaseVoucherPayload
+                  );
 
-                console.log({ responsePurchaseVoucher })
+                console.log({ responsePurchaseVoucher });
                 if (responsePurchaseVoucher.success) {
-                  alert("Success: Voucher Created ")
+                  alert("Success: Voucher Created ");
                 }
               } else {
                 alert("Error: while creating Items");
@@ -1115,46 +1374,61 @@ export default function BillWorkflow() {
     }
   };
 
-  const recalculateBillTotals = (billIndex: number, itemIndex: number, field: string, value: any) => {
+  const recalculateBillTotals = (
+    billIndex: number,
+    itemIndex: number,
+    field: string,
+    value: any
+  ) => {
     const updatedBillData = [...billData];
 
-    updatedBillData[billIndex].items = updatedBillData[billIndex].items.map((item, idx) => {
-      if (itemIndex === idx) {
-        console.log({ value })
-        const qty = field === "QTY" ? parseFloat(value) : parseFloat(item.QTY) || 0;
-        const rate = field === "RATE" ? parseFloat(value) : parseFloat(item.RATE) || 0;
-        const discount = field === "DIS" ? parseFloat(value) : parseFloat(item.DIS) || 0;
+    updatedBillData[billIndex].items = updatedBillData[billIndex].items.map(
+      (item, idx) => {
+        if (itemIndex === idx) {
+          console.log({ value });
+          const qty =
+            field === "QTY" ? parseFloat(value) : parseFloat(item.QTY) || 0;
+          const rate =
+            field === "RATE" ? parseFloat(value) : parseFloat(item.RATE) || 0;
+          const discount =
+            field === "DIS" ? parseFloat(value) : parseFloat(item.DIS) || 0;
 
-        const sgstPerUnit = field === "SGST" ? parseFloat(value) : parseFloat(item.SGST) || 0;
-        const cgstPerUnit = sgstPerUnit;
-        const productPrice = rate * qty;
-        const totalGST = (sgstPerUnit + cgstPerUnit);
-        const gstAmount = productPrice * (totalGST / 100);
+          const sgstPerUnit =
+            field === "SGST" ? parseFloat(value) : parseFloat(item.SGST) || 0;
+          const cgstPerUnit = sgstPerUnit;
+          const productPrice = rate * qty;
+          const totalGST = sgstPerUnit + cgstPerUnit;
+          const gstAmount = productPrice * (totalGST / 100);
 
-        const newNetAmt = productPrice + gstAmount;
+          const newNetAmt = productPrice + gstAmount;
 
-        return {
-          ...item,
-          SGST: sgstPerUnit,
-          CGST: cgstPerUnit,
-          "G AMT": productPrice,
-          "NET AMT": newNetAmt
-        };
+          return {
+            ...item,
+            SGST: sgstPerUnit,
+            CGST: cgstPerUnit,
+            "G AMT": productPrice,
+            "NET AMT": newNetAmt,
+          };
+        }
+
+        return item;
       }
-
-      return item;
-    });
+    );
 
     // Calculate NET AMT total
-    const totalNetAmount = updatedBillData[billIndex].items.reduce((total, item) => {
-      return total + (parseFloat(item["NET AMT"]) || 0);
-    }, 0);
+    const totalNetAmount = updatedBillData[billIndex].items.reduce(
+      (total, item) => {
+        return total + (parseFloat(item["NET AMT"]) || 0);
+      },
+      0
+    );
 
     // Calculate GST totals by rate
     const gstRateTotals: { [key: string]: number } = {};
 
-    updatedBillData[billIndex].items.forEach(item => {
-      const gstRate = (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
+    updatedBillData[billIndex].items.forEach((item) => {
+      const gstRate =
+        (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
       const gAmount = parseFloat(item["NET AMT"]) || 0;
       const gstAmount = (gAmount * gstRate) / 100;
 
@@ -1174,7 +1448,7 @@ export default function BillWorkflow() {
 
   useEffect(() => {
     fetchCompanies();
-    fetchGstDetails()
+    fetchGstDetails();
   }, [selectedCompanyName]);
 
   useEffect(() => {
@@ -1187,16 +1461,20 @@ export default function BillWorkflow() {
   useEffect(() => {
     if (billData.length > 0 && billData[currentBillIndex]?.items?.length > 0) {
       // Calculate initial totals
-      const totalNetAmount = billData[currentBillIndex].items.reduce((total, item) => {
-        console.log(item["NET AMT"], 'net amount')
-        return total + (parseFloat(item["NET AMT"]) || 0);
-      }, 0);
+      const totalNetAmount = billData[currentBillIndex].items.reduce(
+        (total, item) => {
+          console.log(item["NET AMT"], "net amount");
+          return total + (parseFloat(item["NET AMT"]) || 0);
+        },
+        0
+      );
 
       // Calculate GST totals by rate
       const gstRateTotals: { [key: string]: number } = {};
 
-      billData[currentBillIndex].items.forEach(item => {
-        const gstRate = (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
+      billData[currentBillIndex].items.forEach((item) => {
+        const gstRate =
+          (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
         const gAmount = parseFloat(item["NET AMT"]) || 0;
         const gstAmount = gAmount * (gstRate / 100);
         if (gstRate > 0) {
@@ -1283,63 +1561,88 @@ export default function BillWorkflow() {
 
     try {
       const response = await window.electron.getGSTData(xmlData);
-      setGstNumber(response?.[0]?.gst)
+      setGstNumber(response?.[0]?.gst);
     } catch (error) {
       console.error("Error fetching companies:", error);
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   // Add the BillTotals component
   const BillTotals = () => {
-    const gstTotalAmount = Object.values(gstTotals).reduce((sum, amount) => sum + amount, 0);
-    console.log({ gstTotals })
+    const gstTotalAmount = Object.values(gstTotals).reduce(
+      (sum, amount) => sum + amount,
+      0
+    );
+    console.log({ gstTotals });
     return (
       <div className="mt-6 bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Bill Totals</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          Bill Totals
+        </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="text-sm font-medium text-gray-600 mb-3">GST Breakup</h4>
+            <h4 className="text-sm font-medium text-gray-600 mb-3">
+              GST Breakup
+            </h4>
 
             {Object.keys(gstTotals).length === 0 ? (
               <p className="text-gray-500 text-sm">No GST data available</p>
             ) : (
               <div className="space-y-2">
                 {Object.entries(gstTotals).map(([rate, amount]) => (
-                  <div key={rate} className="flex justify-between items-center text-sm">
+                  <div
+                    key={rate}
+                    className="flex justify-between items-center text-sm"
+                  >
                     <div className="flex items-center">
                       <span className="font-medium">{rate} GST</span>
                       <span className="text-gray-500 ml-2">
-                        (CGST: {parseFloat(rate) / 2}%, SGST: {parseFloat(rate) / 2}%)
+                        (CGST: {parseFloat(rate) / 2}%, SGST:{" "}
+                        {parseFloat(rate) / 2}%)
                       </span>
                     </div>
-                    <span className="font-medium text-black">₹{amount.toFixed(2)}</span>
+                    <span className="font-medium text-black">
+                      ₹{amount.toFixed(2)}
+                    </span>
                   </div>
                 ))}
                 <div className="pt-2 mt-2 border-t border-gray-200 flex justify-between items-center">
-                  <span className="font-medium text-black">Total GST Amount</span>
-                  <span className="font-bold text-black">₹{gstTotalAmount.toFixed(2)}</span>
+                  <span className="font-medium text-black">
+                    Total GST Amount
+                  </span>
+                  <span className="font-bold text-black">
+                    ₹{gstTotalAmount.toFixed(2)}
+                  </span>
                 </div>
               </div>
             )}
           </div>
 
           <div>
-            <h4 className="text-sm font-medium text-gray-600 mb-3">Bill Summary</h4>
+            <h4 className="text-sm font-medium text-gray-600 mb-3">
+              Bill Summary
+            </h4>
             <div className="space-y-3">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-700">Taxable Amount</span>
-                <span className="font-medium text-black">₹{(netAmountTotal).toFixed(2)}</span>
+                <span className="font-medium text-black">
+                  ₹{netAmountTotal.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-700">Total GST</span>
-                <span className="font-medium  text-black">₹{gstTotalAmount.toFixed(2)}</span>
+                <span className="font-medium  text-black">
+                  ₹{gstTotalAmount.toFixed(2)}
+                </span>
               </div>
               <div className="pt-2 mt-2 border-t border-gray-200 flex justify-between items-center">
                 <span className="font-medium">Gross Amount Total</span>
-                <span className="text-xl font-bold text-blue-700">₹{(netAmountTotal + gstTotalAmount).toFixed(2)}</span>
+                <span className="text-xl font-bold text-blue-700">
+                  ₹{(netAmountTotal + gstTotalAmount).toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
@@ -1360,7 +1663,9 @@ export default function BillWorkflow() {
               <ChevronLeft className="h-5 w-5 mr-1" />
               <span className="font-medium">Back</span>
             </button>
-            <h1 className="text-2xl font-bold text-gray-800 ml-6">Bill Management System</h1>
+            <h1 className="text-2xl font-bold text-gray-800 ml-6">
+              Bill Management System
+            </h1>
           </div>
         </header>
 
@@ -1386,29 +1691,33 @@ export default function BillWorkflow() {
                 ) : (
                   <>
                     <div className="space-y-2">
-                      <label htmlFor="company" className="block text-sm font-medium text-gray-700">
+                      <label
+                        htmlFor="company"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         Select Company
                       </label>
                       <div className="relative">
                         <select
                           id="company"
                           value={selectedCompanyName}
-                          onChange={(e) => setSelectedCompanyName(e.target.value)}
+                          onChange={(e) =>
+                            setSelectedCompanyName(e.target.value)
+                          }
                           className="block w-full pl-3 pr-10 py-3 text-black border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border-2"
                         >
                           {selectedCompanyName.length === 0 && (
                             <option value="">No companies available</option>
                           )}
-                          {selectedCompanyName && selectedCompanyName?.map((company, index) => (
-                            <option key={index} value={company}>
-                              {company}
-                            </option>
-                          ))}
+                          {selectedCompanyName &&
+                            selectedCompanyName?.map((company, index) => (
+                              <option key={index} value={company}>
+                                {company}
+                              </option>
+                            ))}
                         </select>
                       </div>
                     </div>
-
-
                   </>
                 )}
               </div>
@@ -1416,8 +1725,12 @@ export default function BillWorkflow() {
               <div className="p-8 space-y-6">
                 <div className="mb-4 pb-4 border-b border-gray-200">
                   <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-500">Selected Company:</span>
-                    <span className="ml-2 text-sm font-semibold text-gray-900">{selectedCompanyName}</span>
+                    <span className="text-sm font-medium text-gray-500">
+                      Selected Company:
+                    </span>
+                    <span className="ml-2 text-sm font-semibold text-gray-900">
+                      {selectedCompanyName}
+                    </span>
                     <button
                       onClick={() => setCurrentStep(0)}
                       className="ml-3 text-sm text-blue-600 hover:text-blue-800"
@@ -1435,13 +1748,26 @@ export default function BillWorkflow() {
                   >
                     <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-5 group-hover:bg-blue-200 transition-colors duration-200 relative z-10">
-                      <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      <svg
+                        className="w-8 h-8 text-blue-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                        />
                       </svg>
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-1 relative z-10">Purchase Bills</h3>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-1 relative z-10">
+                      Purchase Bills
+                    </h3>
                     <p className="text-gray-500 text-center mx-auto max-w-xs relative z-10">
-                      Enter and manage bills for items or services you've purchased
+                      Enter and manage bills for items or services you've
+                      purchased
                     </p>
                     <div className="mt-6 bg-blue-500 text-white px-5 py-2 rounded-full font-medium text-sm relative z-10 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200">
                       Select
@@ -1456,13 +1782,26 @@ export default function BillWorkflow() {
                   >
                     <div className="absolute inset-0 bg-gradient-to-b from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-5 group-hover:bg-green-200 transition-colors duration-200 relative z-10">
-                      <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      <svg
+                        className="w-8 h-8 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
                       </svg>
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-1 relative z-10">Sales Bills</h3>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-1 relative z-10">
+                      Sales Bills
+                    </h3>
                     <p className="text-gray-500 text-center mx-auto max-w-xs relative z-10">
-                      Create and manage bills for products or services you've sold
+                      Create and manage bills for products or services you've
+                      sold
                     </p>
                     <div className="mt-6 bg-green-500 text-white px-5 py-2 rounded-full font-medium text-sm relative z-10 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-200">
                       Select
@@ -1474,9 +1813,11 @@ export default function BillWorkflow() {
 
             {/* --- GST Number Field --- */}
             <div className="mb-6 px-8 text-black">
-
               <div>
-                <label htmlFor="gstNumber" className="block text-sm font-medium text-black">
+                <label
+                  htmlFor="gstNumber"
+                  className="block text-sm font-medium text-black"
+                >
                   GST Number
                 </label>
                 <input
@@ -1488,7 +1829,6 @@ export default function BillWorkflow() {
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
-
             </div>
 
             <div className="flex justify-end my-6 px-4">
@@ -1496,9 +1836,11 @@ export default function BillWorkflow() {
                 onClick={() => setCurrentStep(1)}
                 disabled={!selectedCompanyName}
                 className={`px-6 py-2 rounded-md text-white font-medium transition-all 
-                        ${!selectedCompanyName
-                    ? 'bg-gray-300 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'}`}
+                        ${
+                          !selectedCompanyName
+                            ? "bg-gray-300 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        }`}
               >
                 Continue
               </button>
@@ -1524,7 +1866,9 @@ export default function BillWorkflow() {
               <span className="font-medium">Back</span>
             </button>
             <h1 className="text-xl font-bold text-gray-800 hidden md:block">
-              {role === "Purchaser" ? "Purchase Bill Management" : "Sales Bill Management"}
+              {role === "Purchaser"
+                ? "Purchase Bill Management"
+                : "Sales Bill Management"}
             </h1>
           </div>
 
@@ -1544,12 +1888,16 @@ export default function BillWorkflow() {
 
         {currentStep === 1 && (
           <div className="space-y-8">
+            {/* Drag & Drop Area - Keep original functionality */}
             <div
               onDragOver={handleDragOverFiles}
               onDragLeave={handleDragLeaveFiles}
               onDrop={handleDropFiles}
-              className={`group relative bg-white rounded-2xl border-2 border-dashed ${isDraggingFile ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
-                } transition-all duration-200 py-16 px-6 text-center cursor-pointer shadow-lg hover:shadow-xl`}
+              className={`group relative bg-white rounded-2xl border-2 border-dashed ${
+                isDraggingFile
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-300 hover:border-blue-300"
+              } transition-all duration-200 py-16 px-6 text-center cursor-pointer shadow-lg hover:shadow-xl`}
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="space-y-6 relative z-10">
@@ -1558,11 +1906,12 @@ export default function BillWorkflow() {
                     <Upload className="w-8 h-8 text-blue-600" />
                   </div>
                   <div className="space-y-3">
-                    <h3 className="text-2xl md:text-3xl font-bold text-gray-800">
+                    <h3 className="text-2xl md:text-3xl font-bold text-gray-800 group-hover:text-blue-700 transition-colors">
                       Drag & Drop Bills
                     </h3>
                     <p className="text-gray-500 max-w-md mx-auto">
-                      Supported formats: JPG, PNG, PDF (Max {MAX_FILE_SIZE_MB}MB each)
+                      Supported formats: JPG, PDF (Max {MAX_FILE_SIZE_MB}MB
+                      each)
                     </p>
                     <button className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all mx-auto">
                       <span>Browse Files</span>
@@ -1574,21 +1923,109 @@ export default function BillWorkflow() {
                 type="file"
                 ref={fileInputRef}
                 multiple
-                accept="image/*,application/pdf"
+                accept=".jpg,.jpeg,.pdf,image/jpeg,application/pdf"
                 onChange={handleFileSelect}
                 className="hidden"
               />
+
+              {/* Visual elements for better appearance */}
+              <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                <div className="absolute top-6 left-6 w-16 h-16 bg-blue-100 rounded-full opacity-20"></div>
+                <div className="absolute bottom-6 right-6 w-20 h-20 bg-blue-100 rounded-full opacity-20"></div>
+              </div>
             </div>
 
-            {files.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Uploaded Files ({files.length})
+            {/* QR Code Section - Enhanced with mobile upload functionality */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    Scan Bills with Your Phone
                   </h3>
-                  {files.length > 1 && (
+                  <p className="text-gray-500 mb-4">
+                    Scan this QR code with your phone's camera to upload bills
+                    directly from your mobile device
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {qrSession ? (
+                      <>
+                        <div className="flex items-center text-sm text-green-600 mb-2">
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Mobile session active
+                        </div>
+                        {receivedFiles > 0 && (
+                          <div className="w-full text-sm text-blue-600">
+                            {receivedFiles}{" "}
+                            {receivedFiles === 1 ? "file" : "files"} received
+                            from mobile
+                          </div>
+                        )}
+                        <button
+                          onClick={resetQRSession}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          Reset Session
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-sm text-gray-500 italic mb-2 flex items-center">
+                          <AlertCircle className="w-4 h-4 mr-1 text-amber-500" />
+                          No active session
+                        </div>
+                        <button
+                          onClick={createQRSession}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                        >
+                          <Play className="w-4 h-4" />
+                          Start Mobile Session
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-blue-50 to-white p-3 rounded-xl border border-blue-100 relative">
+                  {qrSessionLoading && (
+                    <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center rounded-xl">
+                      <div className="w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                    </div>
+                  )}
+
+                  {qrSession ? (
+                    <QRCode
+                      value={qrSession.mobileUploadUrl}
+                      size={180}
+                      bgColor={"#FFFFFF"}
+                      fgColor={"#1D4ED8"}
+                      style={{ height: 180, maxWidth: "100%", width: "100%" }}
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center"
+                      style={{ height: 180, width: 180 }}
+                    >
+                      <Smartphone className="w-16 h-16 text-gray-300" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* File List - Original structure with enhanced styling */}
+            {(files.length > 0 || mobileFiles.length > 0) && (
+              <div className="space-y-4 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    Uploaded Files ({files.length + mobileFiles.length})
+                  </h3>
+                  {(files.length > 1 || mobileFiles.length > 0) && (
                     <button
-                      onClick={() => setFiles([])}
+                      onClick={() => {
+                        setFiles([]);
+                        setMobileFiles([]);
+                      }}
                       className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center gap-1"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1598,6 +2035,7 @@ export default function BillWorkflow() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Desktop uploaded files */}
                   {files.map((file) => (
                     <div
                       key={file.id}
@@ -1625,6 +2063,58 @@ export default function BillWorkflow() {
                       </button>
                     </div>
                   ))}
+
+                  {/* Mobile uploaded files */}
+                  {mobileFiles.map((file) => (
+                    <div
+                      key={file.key}
+                      className="bg-white rounded-xl p-4 flex items-start gap-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100 border-l-4 border-l-blue-500"
+                    >
+                      <div className="flex-shrink-0 w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <Smartphone className="text-blue-600 w-6 h-6" />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-800 truncate">
+                          {file.key.split("/").pop()}
+                        </p>
+                        <p className="text-sm text-gray-500 flex items-center gap-1 mb-2">
+                          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">
+                            Mobile Upload
+                          </span>
+                        </p>
+
+                        {file.url.endsWith(".pdf") ? (
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline text-sm"
+                          >
+                            View PDF
+                          </a>
+                        ) : (
+                          <img
+                            src={file.url}
+                            alt="Uploaded Preview"
+                            className="rounded-lg border border-gray-200 max-w-xs max-h-40 object-contain"
+                          />
+                        )}
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMobileFiles((files) =>
+                            files.filter((f) => f.key !== file.key)
+                          );
+                        }}
+                        className="text-gray-400 hover:text-red-600 ml-4 transition-colors rounded-full p-1.5 hover:bg-red-50"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -1632,11 +2122,12 @@ export default function BillWorkflow() {
             <div className="flex justify-end pt-6">
               <button
                 onClick={handleNextStep}
-                disabled={files.length === 0}
-                className={`px-6 py-3 rounded-lg font-medium text-base transition-all flex items-center gap-2 ${files.length
-                  ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
-                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  }`}
+                disabled={files.length === 0 && mobileFiles.length === 0}
+                className={`px-6 py-3 rounded-lg font-medium text-base transition-all flex items-center gap-2 ${
+                  files.length > 0 || mobileFiles.length > 0
+                    ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
+                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                }`}
               >
                 Process Files
                 <ChevronRight className="w-5 h-5" />
@@ -1671,12 +2162,15 @@ export default function BillWorkflow() {
 
                     <div className="flex items-center justify-between mt-4">
                       <button
-                        onClick={() => handleBillChange(Math.max(0, currentBillIndex - 1))}
+                        onClick={() =>
+                          handleBillChange(Math.max(0, currentBillIndex - 1))
+                        }
                         disabled={currentBillIndex === 0}
-                        className={`flex items-center justify-center p-2 rounded-full ${currentBillIndex === 0
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                          } transition-colors`}
+                        className={`flex items-center justify-center p-2 rounded-full ${
+                          currentBillIndex === 0
+                            ? "text-gray-300 cursor-not-allowed"
+                            : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                        } transition-colors`}
                       >
                         <ArrowLeft className="w-5 h-5" />
                       </button>
@@ -1686,10 +2180,11 @@ export default function BillWorkflow() {
                           <button
                             key={idx}
                             onClick={() => handleBillChange(idx)}
-                            className={`w-2.5 h-2.5 rounded-full transition-all ${currentBillIndex === idx
-                              ? "bg-blue-600 w-6"
-                              : "bg-gray-300 hover:bg-gray-400"
-                              }`}
+                            className={`w-2.5 h-2.5 rounded-full transition-all ${
+                              currentBillIndex === idx
+                                ? "bg-blue-600 w-6"
+                                : "bg-gray-300 hover:bg-gray-400"
+                            }`}
                             aria-label={`Go to bill ${idx + 1}`}
                           />
                         ))}
@@ -1697,7 +2192,8 @@ export default function BillWorkflow() {
 
                       <button
                         onClick={() => {
-                          if (currentBillIndex === files.length - 1) setCurrentStep(3);
+                          if (currentBillIndex === files.length - 1)
+                            setCurrentStep(3);
                           else handleBillChange(currentBillIndex + 1);
                         }}
                         className="flex items-center justify-center p-2 rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
@@ -1717,8 +2213,12 @@ export default function BillWorkflow() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <TextField
                           label="Invoice Number"
-                          value={billData[currentBillIndex]?.invoiceNumber || ""}
-                          onChange={(e) => handleDataChange("invoiceNumber", e.target.value)}
+                          value={
+                            billData[currentBillIndex]?.invoiceNumber || ""
+                          }
+                          onChange={(e) =>
+                            handleDataChange("invoiceNumber", e.target.value)
+                          }
                         />
 
                         <div className="space-y-1.5">
@@ -1729,7 +2229,9 @@ export default function BillWorkflow() {
                           <input
                             type="text"
                             value={billData[currentBillIndex]?.billDate || ""}
-                            onChange={(e) => handleDataChange("billDate", e.target.value)}
+                            onChange={(e) =>
+                              handleDataChange("billDate", e.target.value)
+                            }
                             className="block w-full border border-gray-300 rounded-lg p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white hover:bg-gray-50 focus:bg-white"
                             placeholder="DD/MM/YYYY"
                           />
@@ -1739,49 +2241,65 @@ export default function BillWorkflow() {
                       <div className="pt-2">
                         <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
                           <Building className="w-5 h-5" />
-                          {role === "Purchaser" ? "Receiver Details" : "Sender Details"}
+                          {role === "Purchaser"
+                            ? "Receiver Details"
+                            : "Sender Details"}
                         </h3>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <TextField
-                            label={role === "Purchaser" ? "Receiver Name" : "Sender Name"}
+                            label={
+                              role === "Purchaser"
+                                ? "Receiver Name"
+                                : "Sender Name"
+                            }
                             value={
                               role === "Purchaser"
-                                ? billData[currentBillIndex]?.receiverDetails?.name || ""
-                                : billData[currentBillIndex]?.senderDetails?.name || ""
+                                ? billData[currentBillIndex]?.receiverDetails
+                                    ?.name || ""
+                                : billData[currentBillIndex]?.senderDetails
+                                    ?.name || ""
                             }
                             onChange={(e) => {
                               if (role === "Purchaser") {
                                 handleDataChange("receiverDetails", {
-                                  ...billData[currentBillIndex]?.receiverDetails,
-                                  name: e.target.value
+                                  ...billData[currentBillIndex]
+                                    ?.receiverDetails,
+                                  name: e.target.value,
                                 });
                               } else {
                                 handleDataChange("senderDetails", {
                                   ...billData[currentBillIndex]?.senderDetails,
-                                  name: e.target.value
+                                  name: e.target.value,
                                 });
                               }
                             }}
                           />
 
                           <TextField
-                            label={role === "Purchaser" ? "Receiver GST" : "Sender GST"}
+                            label={
+                              role === "Purchaser"
+                                ? "Receiver GST"
+                                : "Sender GST"
+                            }
                             value={
                               role === "Purchaser"
-                                ? billData[currentBillIndex]?.receiverDetails?.gst || ""
-                                : billData[currentBillIndex]?.senderDetails?.gst || ""
+                                ? billData[currentBillIndex]?.receiverDetails
+                                    ?.gst || ""
+                                : billData[currentBillIndex]?.senderDetails
+                                    ?.gst || ""
                             }
                             onChange={(e) => {
                               if (role === "Purchaser") {
                                 handleDataChange("receiverDetails", {
-                                  ...billData[currentBillIndex]?.receiverDetails,
-                                  gst: e.target.value
+                                  ...billData[currentBillIndex]
+                                    ?.receiverDetails,
+                                  gst: e.target.value,
                                 });
                               } else {
                                 handleDataChange("senderDetails", {
                                   ...billData[currentBillIndex]?.senderDetails,
-                                  gst: e.target.value
+                                  gst: e.target.value,
                                 });
                               }
                             }}
@@ -1824,7 +2342,7 @@ export default function BillWorkflow() {
                         "SGST",
                         "CGST",
                         "G AMT",
-                        "Actions"
+                        "Actions",
                       ].map((head) => (
                         <th
                           key={head}
@@ -1836,143 +2354,247 @@ export default function BillWorkflow() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {billData[currentBillIndex]?.items?.map((item: any, idx: number) => {
-                      return (
-                        <>
-                          <tr
-                            key={idx}
-                            className={`transition-colors mt-10 ${item.Qty == 0 || item.RATE == 0 ? "bg-red-300" : ""}`}
-                          >
-                            <td
-                              className="px-3 py-2.5 w-72 relative"
-                              draggable
-                              onDragStart={(e) => handleProductDragStart(e, currentBillIndex, idx)}
-                              onDragOver={handleProductDragOver}
-                              onDrop={(e) => handleProductDrop(e, currentBillIndex, idx)}
+                    {billData[currentBillIndex]?.items?.map(
+                      (item: any, idx: number) => {
+                        return (
+                          <>
+                            <tr
+                              key={idx}
+                              className={`transition-colors mt-10 ${
+                                item.Qty == 0 || item.RATE == 0
+                                  ? "bg-red-300"
+                                  : ""
+                              }`}
                             >
-                              <div className="flex items-center group">
-                                <MoveHorizontal className="w-4 h-4 text-gray-400 mr-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+                              <td
+                                className="px-3 py-2.5 w-72 relative"
+                                draggable
+                                onDragStart={(e) =>
+                                  handleProductDragStart(
+                                    e,
+                                    currentBillIndex,
+                                    idx
+                                  )
+                                }
+                                onDragOver={handleProductDragOver}
+                                onDrop={(e) =>
+                                  handleProductDrop(e, currentBillIndex, idx)
+                                }
+                              >
+                                <div className="flex items-center group">
+                                  <MoveHorizontal className="w-4 h-4 text-gray-400 mr-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+                                  <input
+                                    type="text"
+                                    value={item.Product || ""}
+                                    onChange={(e) =>
+                                      handleItemChange(
+                                        currentBillIndex,
+                                        idx,
+                                        "Product",
+                                        e.target.value
+                                      )
+                                    }
+                                    className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                </div>
+                              </td>
+                              <td className="px-3 py-2 w-20">
                                 <input
                                   type="text"
-                                  value={item.Product || ""}
-                                  onChange={(e) => handleItemChange(currentBillIndex, idx, "Product", e.target.value)}
+                                  value={item.QTY || ""}
+                                  onChange={(e) =>
+                                    handleItemChange(
+                                      currentBillIndex,
+                                      idx,
+                                      "QTY",
+                                      e.target.value
+                                    )
+                                  }
                                   className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
-                              </div>
-                            </td>
-                            <td className="px-3 py-2 w-20">
-                              <input
-                                type="text"
-                                value={item.QTY || ""}
-                                onChange={(e) => handleItemChange(currentBillIndex, idx, "QTY", e.target.value)}
-                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td>
-                            <td className="px-3 py-2 w-28">
-                              <input
-                                type="text"
-                                value={item.HSN || ""}
-                                onChange={(e) => handleItemChange(currentBillIndex, idx, "HSN", e.target.value)}
-                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td>
-                            <td className="px-3 py-2 w-28">
-                              <input
-                                type="number"
-                                value={item.MRP || ""}
-                                onChange={(e) => handleItemChange(currentBillIndex, idx, "MRP", e.target.value)}
-                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td>
-                            <td className="px-3 py-2 w-28">
-                              <input
-                                type="number"
-                                value={item.RATE || ""}
-                                onChange={(e) => handleItemChange(currentBillIndex, idx, "RATE", e.target.value)}
-                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td>
-                            <td className="px-3 py-2 w-24">
-                              <input
-                                type="text"
-                                value={item.DIS || ""}
-                                onChange={(e) => handleItemChange(currentBillIndex, idx, "DIS", e.target.value)}
-                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td>
-                            <td className="px-3 py-2 w-16">
-                              <input
-                                type="text"
-                                value={item.SGST || ""}
-                                onChange={(e) => handleItemChange(currentBillIndex, idx, "SGST", e.target.value)}
-                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td>
-                            <td className="px-3 py-2 w-16">
-                              <input
-                                type="text"
-                                value={item.CGST || ""}
-                                onChange={(e) => handleItemChange(currentBillIndex, idx, "CGST", e.target.value)}
-                                className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td>
-                            <td className="px-3 py-2 w-28">
-                              <p className="w-full rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                {item["G AMT"]}
-                              </p>
-                            </td>
-                            <td className="px-3 py-2 w-10">
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  onClick={() => removeItem(currentBillIndex, idx)}
-                                  className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded transition-colors"
-                                  title="Remove item"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
+                              </td>
+                              <td className="px-3 py-2 w-28">
+                                <input
+                                  type="text"
+                                  value={item.HSN || ""}
+                                  onChange={(e) =>
+                                    handleItemChange(
+                                      currentBillIndex,
+                                      idx,
+                                      "HSN",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </td>
+                              <td className="px-3 py-2 w-28">
+                                <input
+                                  type="number"
+                                  value={item.MRP || ""}
+                                  onChange={(e) =>
+                                    handleItemChange(
+                                      currentBillIndex,
+                                      idx,
+                                      "MRP",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </td>
+                              <td className="px-3 py-2 w-28">
+                                <input
+                                  type="number"
+                                  value={item.RATE || ""}
+                                  onChange={(e) =>
+                                    handleItemChange(
+                                      currentBillIndex,
+                                      idx,
+                                      "RATE",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </td>
+                              <td className="px-3 py-2 w-24">
+                                <input
+                                  type="text"
+                                  value={item.DIS || ""}
+                                  onChange={(e) =>
+                                    handleItemChange(
+                                      currentBillIndex,
+                                      idx,
+                                      "DIS",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </td>
+                              <td className="px-3 py-2 w-16">
+                                <input
+                                  type="text"
+                                  value={item.SGST || ""}
+                                  onChange={(e) =>
+                                    handleItemChange(
+                                      currentBillIndex,
+                                      idx,
+                                      "SGST",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </td>
+                              <td className="px-3 py-2 w-16">
+                                <input
+                                  type="text"
+                                  value={item.CGST || ""}
+                                  onChange={(e) =>
+                                    handleItemChange(
+                                      currentBillIndex,
+                                      idx,
+                                      "CGST",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </td>
+                              <td className="px-3 py-2 w-28">
+                                <p className="w-full rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                  {item["G AMT"]}
+                                </p>
+                              </td>
+                              <td className="px-3 py-2 w-10">
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() =>
+                                      removeItem(currentBillIndex, idx)
+                                    }
+                                    className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded transition-colors"
+                                    title="Remove item"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
 
-                          <tr className="pb-10">
-                            <td className={`px-3 py-2.5 text-center border-b-8 border-gray-300 ${item.Qty == 0 || item.RATE == 0 ? "bg-red-300" : ""}`} colSpan={11}>
-                              <div className="gap-2 mx-auto w-[fit-content]">
-                                {billData[currentBillIndex].invoice_items_cropped_images?.cell_images.filter((item, index) => index === 0 || index === idx + 1 || index === idx + 2).map(
-                                  (row: any, rowIndex: number) => (
-                                    <div key={rowIndex} className="flex flex-wrap gap-2">
-                                      {row.map((img: string, colIndex: number) =>
-                                        img ? (
-                                          <img
-                                            key={colIndex}
-                                            src={`${img}`}
-                                            alt={`Invoice cell ${rowIndex}-${colIndex}`}
-                                            className="w-[90px] h-[30px] object-contain border"
-                                          />
-                                        ) : (
-                                          <div
-                                            key={colIndex}
-                                            className="w-[100px] h-[100px] border flex items-center justify-center text-xs text-gray-500"
-                                          >
-                                            No Image
-                                          </div>
-                                        )
-                                      )}
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        </>
-                      );
-                    })}
+                            <tr className="pb-10">
+                              <td
+                                className={`px-3 py-2.5 text-center border-b-8 border-gray-300 ${
+                                  item.Qty == 0 || item.RATE == 0
+                                    ? "bg-red-300"
+                                    : ""
+                                }`}
+                                colSpan={11}
+                              >
+                                <div className="gap-2 mx-auto w-[fit-content]">
+                                  {billData[
+                                    currentBillIndex
+                                  ].invoice_items_cropped_images?.cell_images
+                                    .filter(
+                                      (item, index) =>
+                                        index === 0 ||
+                                        index === idx + 1 ||
+                                        index === idx + 2
+                                    )
+                                    .map((row: any, rowIndex: number) => (
+                                      <div
+                                        key={rowIndex}
+                                        className="flex flex-wrap gap-2"
+                                      >
+                                        {row.map(
+                                          (img: string, colIndex: number) =>
+                                            img ? (
+                                              <img
+                                                key={colIndex}
+                                                src={`${img}`}
+                                                alt={`Invoice cell ${rowIndex}-${colIndex}`}
+                                                className="w-[90px] h-[30px] object-contain border"
+                                              />
+                                            ) : (
+                                              <div
+                                                key={colIndex}
+                                                className="w-[100px] h-[100px] border flex items-center justify-center text-xs text-gray-500"
+                                              >
+                                                No Image
+                                              </div>
+                                            )
+                                        )}
+                                      </div>
+                                    ))}
+                                </div>
+                              </td>
+                            </tr>
+                          </>
+                        );
+                      }
+                    )}
 
-                    {(!billData[currentBillIndex]?.items || billData[currentBillIndex]?.items.length === 0) && (
+                    {(!billData[currentBillIndex]?.items ||
+                      billData[currentBillIndex]?.items.length === 0) && (
                       <tr>
-                        <td colSpan={12} className="px-6 py-8 text-center text-gray-500">
+                        <td
+                          colSpan={12}
+                          className="px-6 py-8 text-center text-gray-500"
+                        >
                           <div className="flex flex-col items-center">
-                            <svg className="w-12 h-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            <svg
+                              className="w-12 h-12 text-gray-300 mb-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1}
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                              />
                             </svg>
                             <p className="mb-2">No items found in this bill</p>
                             <button
@@ -1995,31 +2617,39 @@ export default function BillWorkflow() {
             <BillTotals />
 
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Financial Summary</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Financial Summary
+              </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">Total Amount</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Total Amount
+                  </label>
                   <input
                     type="number"
                     value={billData[currentBillIndex]?.totalAmount || ""}
-                    onChange={(e) => handleDataChange("totalAmount", e.target.value)}
+                    onChange={(e) =>
+                      handleDataChange("totalAmount", e.target.value)
+                    }
                     className="block w-full border border-gray-300 rounded-lg p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white hover:bg-gray-50 focus:bg-white"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">Grand Total</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Grand Total
+                  </label>
                   <input
                     type="text"
                     value={billData[currentBillIndex]?.grandTotal || ""}
-                    onChange={(e) => handleDataChange("grandTotal", e.target.value)}
+                    onChange={(e) =>
+                      handleDataChange("grandTotal", e.target.value)
+                    }
                     className="block w-full border border-gray-300 rounded-lg p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white hover:bg-gray-50 focus:bg-white font-medium"
                   />
                 </div>
               </div>
-
-
             </div>
 
             <div className="flex justify-between pt-6">
@@ -2041,7 +2671,9 @@ export default function BillWorkflow() {
                 }}
                 className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 shadow-md"
               >
-                {currentBillIndex === files.length - 1 ? 'Proceed to Confirm' : 'Next Bill'}
+                {currentBillIndex === files.length - 1
+                  ? "Proceed to Confirm"
+                  : "Next Bill"}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -2051,7 +2683,9 @@ export default function BillWorkflow() {
         {currentStep === 3 && (
           <div className="space-y-8">
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-6">Bill Summary</h3>
+              <h3 className="text-xl font-semibold text-gray-800 mb-6">
+                Bill Summary
+              </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {files.map((file, index) => (
@@ -2092,8 +2726,14 @@ export default function BillWorkflow() {
                         </p>
                         <p className="text-sm text-gray-600 truncate">
                           {role === "Purchaser"
-                            ? `From: ${billData[index]?.senderDetails?.name || "Unknown"}`
-                            : `To: ${billData[index]?.receiverDetails?.name || "Unknown"}`}
+                            ? `From: ${
+                                billData[index]?.senderDetails?.name ||
+                                "Unknown"
+                              }`
+                            : `To: ${
+                                billData[index]?.receiverDetails?.name ||
+                                "Unknown"
+                              }`}
                         </p>
                         <p className="text-xs text-gray-500">
                           {billData[index]?.items?.length || 0} items
@@ -2121,9 +2761,12 @@ export default function BillWorkflow() {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-full mb-4">
                   <CloudCog className="w-8 h-8 text-blue-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-800">Ready to Export</h3>
+                <h3 className="text-xl font-bold text-gray-800">
+                  Ready to Export
+                </h3>
                 <p className="text-gray-600 mt-2 max-w-md mx-auto">
-                  All bills have been processed and are ready to be exported to your accounting system.
+                  All bills have been processed and are ready to be exported to
+                  your accounting system.
                 </p>
               </div>
 
@@ -2148,7 +2791,9 @@ export default function BillWorkflow() {
               <div className="border-t border-gray-100 mt-8 pt-6">
                 <p className="text-center text-gray-500 text-sm">
                   {status}
-                  {error && <span className="block text-red-500 mt-2">{error}</span>}
+                  {error && (
+                    <span className="block text-red-500 mt-2">{error}</span>
+                  )}
                 </p>
               </div>
             </div>
