@@ -1,5 +1,5 @@
 // @ts-nocheck
-"use client"
+"use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -10,14 +10,20 @@ import {
   FiBarChart2,
   FiChevronRight,
   FiClock,
-  FiShield
+  FiShield,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 
 declare global {
   interface Window {
     electron: {
-      createItem: (name: string, description: string, quantity: number, code: number, taxRate: number) => Promise<any>;
+      createItem: (
+        name: string,
+        description: string,
+        quantity: number,
+        code: number,
+        taxRate: number
+      ) => Promise<any>;
       createIgstLedger: (name: string) => Promise<any>;
       createCgstLedger: (name: string) => Promise<any>;
       createPurchaseEntry: (
@@ -25,7 +31,7 @@ declare global {
         date: string,
         partyName: string,
         type: string,
-        items: { name: string, quantity: number, price: number }[],
+        items: { name: string; quantity: number; price: number }[],
         includeGst: boolean,
         taxRate: number,
         discount: number,
@@ -33,15 +39,18 @@ declare global {
       ) => Promise<any>;
       exportLedger: (name: string) => Promise<{ success: boolean }>;
       exportItem: (name: string) => Promise<any>;
-      exportUnit: (unit: { Name: string, conversionRate: number }) => Promise<any>;
+      exportUnit: (unit: {
+        Name: string;
+        conversionRate: number;
+      }) => Promise<any>;
     };
   }
 }
 
 export default function IndexPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [email, setEmail] = useState("")
-  const router = useRouter()
+  const [email, setEmail] = useState("");
+  const router = useRouter();
   // Keep existing electron functions
 
   const ledgerXmlData = `
@@ -71,11 +80,9 @@ export default function IndexPage() {
   </DESC>
 </BODY>
 </ENVELOPE>
-  `
-
+  `;
 
   const handleGetGstData = async () => {
-
     const xmlData = `<ENVELOPE>
 	<HEADER>
 		<VERSION>1</VERSION>
@@ -104,59 +111,58 @@ export default function IndexPage() {
 </ENVELOPE>`;
 
     const response = await window.electron.getGSTData(xmlData);
-  }
+  };
 
   const handleCreatePartyLedger = async () => {
-
-    const response = await window.electron.createPartyName(ledgerXmlData, "code test", {
-      name: "code test",
-      parent: "Sundry Creditors",
-      address: "",
-      country: "India",
-      state: "Punjab",
-      date: "01-04-2025",
-      gstin: "04AAACI7952A1ZZ",
-    })
+    const response = await window.electron
+      .createPartyName(ledgerXmlData, "code test", {
+        name: "code test",
+        parent: "Sundry Creditors",
+        address: "",
+        country: "India",
+        state: "Punjab",
+        date: "01-04-2025",
+        gstin: "04AAACI7952A1ZZ",
+      })
       .then((result) => {
         if (result.success) {
-          console.log('Response from Tally:', result.data);
-          return result
+          console.log("Response from Tally:", result.data);
+          return result;
         } else {
-          console.error('Error sending XML to Tally:', result.error);
+          console.error("Error sending XML to Tally:", result.error);
         }
       });
 
-
-    console.log(response, "taxLedgerData")
-  }
+    console.log(response, "taxLedgerData");
+  };
 
   useEffect(() => {
-    const email = localStorage.getItem("email")
-    setEmail(email)
-  }, [])
+    const email = localStorage.getItem("email");
+    setEmail(email);
+  }, []);
 
   const handleCreatePurchaseLedger = async () => {
-    const purchaserLedgerResponse = await window.electron.createPurchaserLedger(ledgerXmlData, "Purchase")
-    console.log(purchaserLedgerResponse, "purchaserLedgerResponse")
-
-  }
-
+    const purchaserLedgerResponse = await window.electron.createPurchaserLedger(
+      ledgerXmlData,
+      "Purchase"
+    );
+    console.log(purchaserLedgerResponse, "purchaserLedgerResponse");
+  };
 
   const handleCreateCgstIgstSgstLedger = async () => {
-
-    const response = await window.electron.getTaxLedgerData(ledgerXmlData)
+    const response = await window.electron
+      .getTaxLedgerData(ledgerXmlData)
       .then((result) => {
         if (result.success) {
-          console.log('Response from Tally:', result);
-          return result
+          console.log("Response from Tally:", result);
+          return result;
         } else {
-          console.error('Error sending XML to Tally:', result.error);
+          console.error("Error sending XML to Tally:", result.error);
         }
       });
-  }
+  };
 
   const handleGetComapnyData = async () => {
-
     const xmlData = `<ENVELOPE>
     <HEADER>
       <VERSION>1</VERSION>
@@ -180,56 +186,53 @@ export default function IndexPage() {
         </TDL>
       </DESC>
     </BODY>
-  </ENVELOPE>`
+  </ENVELOPE>`;
 
     try {
       // Calculate content length (in bytes) from the XML data.
 
-      const response = await window.electron.getCompanyData(xmlData)
-      console.log(response, "responseeee")
-
+      const response = await window.electron.getCompanyData(xmlData);
+      console.log(response, "responseeee");
     } catch (error) {
       console.error("Error fetching companies:", error);
     }
-  }
+  };
 
   const handleCheckUnit = async () => {
-
     const units = [
       {
         name: "LTR",
-        decimal: 3
+        decimal: 3,
       },
       {
         name: "KG",
-        decimal: 3
+        decimal: 3,
       },
       {
         name: "GM",
-        decimal: 3
+        decimal: 3,
       },
       {
         name: "PCS",
-        decimal: 3
-      }
-    ]
-
+        decimal: 3,
+      },
+    ];
 
     const response = await window.electron.createUnit(units);
     console.log(response, "here is ");
   };
 
   const handleExportItems = async () => {
-
     const items = [
       {
-        Product: "SWADIST SOYA OIL 1LTR (POUCH) SPECIAL POUCH PACKING MFG BY AVI AGRO MARKETED BY DAMMANI",
+        Product:
+          "SWADIST SOYA OIL 1LTR (POUCH) SPECIAL POUCH PACKING MFG BY AVI AGRO MARKETED BY DAMMANI",
         HSN: null,
         SGST: 0,
         CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "LTR"
+        symbol: "LTR",
       },
       {
         Product: "BALAJI BASMATI RICE 1 KG",
@@ -238,7 +241,7 @@ export default function IndexPage() {
         CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "KG"
+        symbol: "KG",
       },
       {
         Product: "LIFEBUOY SOAP (LEMON) 125GM*4 94/-",
@@ -247,7 +250,7 @@ export default function IndexPage() {
         CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "GM"
+        symbol: "GM",
       },
       {
         Product: "CAMEL TEA 500GM",
@@ -256,7 +259,7 @@ export default function IndexPage() {
         CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "GM"
+        symbol: "GM",
       },
       {
         Product: "DABUR HONEY 50GM 37/-",
@@ -265,7 +268,7 @@ export default function IndexPage() {
         CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "GM"
+        symbol: "GM",
       },
       {
         Product: "GOLD COIN BREAD 33/-",
@@ -274,7 +277,7 @@ export default function IndexPage() {
         CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "PCS"
+        symbol: "PCS",
       },
       {
         Product: "KISSAN TOMATO KETCHUP REFILL 450GM 50/-2ND",
@@ -283,7 +286,7 @@ export default function IndexPage() {
         CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "GM"
+        symbol: "GM",
       },
       {
         Product: "BRITANIA MUFFILLS CAKE 10/-",
@@ -292,7 +295,7 @@ export default function IndexPage() {
         CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "PCS"
+        symbol: "PCS",
       },
       {
         Product: "KHARAK SAKHARIYA (SPECIAL) 1KG",
@@ -301,14 +304,13 @@ export default function IndexPage() {
         CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "KG"
-      }
-    ]
+        symbol: "KG",
+      },
+    ];
 
     const response = await window.electron.createItem(items);
     console.log(response);
   };
-
 
   const handlePurchaseEntry = async () => {
     const payload = {
@@ -322,72 +324,68 @@ export default function IndexPage() {
           name: "SWADIST SOYA OIL 1LTR (POUCH) SPECIAL POUCH PACKING MFG BY AVI AGRO MARKETED BY DAMMANI",
           price: 78.1,
           quantity: 10,
-          unit: "LTR"
+          unit: "LTR",
         },
         {
           name: "BALAJI BASMATI RICE 1 KG",
           price: 45.71,
           quantity: 12,
-          unit: "KG"
+          unit: "KG",
         },
         {
           name: "LIFEBUOY SOAP (LEMON) 125GM*4 94/-",
           price: 76.27,
           quantity: 12,
-          unit: "GM"
+          unit: "GM",
         },
         {
           name: "CAMEL TEA 500GM",
           price: 94.29,
           quantity: 6,
-          unit: "GM"
+          unit: "GM",
         },
         {
           name: "DABUR HONEY 50GM 37/-",
           price: 34.29,
           quantity: 2,
-          unit: "GM"
+          unit: "GM",
         },
         {
           name: "GOLD COIN BREAD 33/-",
           price: 30,
           quantity: 3,
-          unit: "PCS"
+          unit: "PCS",
         },
         {
           name: "KISSAN TOMATO KETCHUP REFILL 450GM 50/-2ND",
           price: 40.68,
           quantity: 2,
-          unit: "GM"
+          unit: "GM",
         },
         {
           name: "BRITANIA MUFFILLS CAKE 10/-",
           price: 8.48,
           quantity: 1,
-          unit: "PCS"
+          unit: "PCS",
         },
         {
           name: "KHARAK SAKHARIYA (SPECIAL) 1KG",
           price: 120.54,
           quantity: 1,
-          unit: "KG"
-        }
+          unit: "KG",
+        },
       ],
       gstNumber: "ABCDE1234F",
       isWithinState: true,
       sgst: {
         percentage: "0%",
-        amount: 0
+        amount: 0,
       },
       cgst: {
         percentage: "0%",
-        amount: 0
-      }
-    }
-
-
-
-
+        amount: 0,
+      },
+    };
 
     // [
     //   {
@@ -501,22 +499,15 @@ export default function IndexPage() {
     // ]
     //   , false);
 
-    window.electron.createPurchaseEntry(
-      payload
-
-    ).then(response => {
-
-      console.log({ response })
+    window.electron.createPurchaseEntry(payload).then((response) => {
+      console.log({ response });
       // if (response.success) {
       //   console.log("Voucher XML:", response.voucherXml);
       // } else {
       //   console.error("Error:", response.error);
       // }
     });
-  }
-
-
-
+  };
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -584,7 +575,9 @@ export default function IndexPage() {
               {isDropdownOpen && (
                 <div className="absolute right-0 top-full mt-1 w-56 bg-white shadow-lg rounded-lg border border-gray-200 overflow-hidden z-10">
                   <div className="p-3 border-b border-gray-100">
-                    <div className="font-medium text-gray-900">User Account</div>
+                    <div className="font-medium text-gray-900">
+                      User Account
+                    </div>
                     <div className="text-xs text-gray-500">{email}</div>
                   </div>
                   <div className="divide-y divide-gray-100">
@@ -600,10 +593,23 @@ export default function IndexPage() {
                     {/* Logout */}
                     <button
                       className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all duration-150"
-                      onClick={() => { localStorage.clear(); window.location.href = '/home'; }}
+                      onClick={() => {
+                        localStorage.clear();
+                        window.location.href = "/home";
+                      }}
                     >
-                      <svg className="w-4 h-4 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      <svg
+                        className="w-4 h-4 mr-3 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        />
                       </svg>
                       Sign out
                     </button>
@@ -618,7 +624,9 @@ export default function IndexPage() {
       {/* Main Content */}
       <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="mb-8 text-center sm:text-left">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">Welcome back</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+            Welcome back
+          </h1>
           <p className="text-gray-600 mt-1">Select an option to get started</p>
         </div>
 
@@ -709,11 +717,9 @@ export default function IndexPage() {
         </div> */}
       </div>
 
-      <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
-
-      <button className="text-black bg-blue-400 p-4" onClick={handleGetGstData}>GST DATA</button>
-
       {/* <div>
+      <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
+      <button className="text-black bg-blue-400 p-4" onClick={handleGetGstData}>GST DATA</button>
         <button className="text-black bg-red-400 p-4" onClick={handleGetComapnyData}>Get Company Data</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreateCgstIgstSgstLedger}>Create IGST/CGST/SGST ledger</button>
