@@ -2350,7 +2350,7 @@ export default function BillWorkflow() {
                         </div>
                       </div>
 
-                      <div className="pt-2">
+                      {/* <div className="pt-2">
                         <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
                           <Building className="w-5 h-5" />
                           {role === "Purchaser"
@@ -2417,6 +2417,72 @@ export default function BillWorkflow() {
                             }}
                           />
                         </div>
+                      </div> */}
+
+                      <div className="pt-2 space-y-6">
+                        {/* Sender Section */}
+                        <section>
+                          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                            <Building className="w-5 h-5" />
+                            Sender Details
+                          </h3>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <TextField
+                              label="Sender Name"
+                              value={senderDetails.name}
+                              onChange={(e) =>
+                                handleDataChange("senderDetails", {
+                                  ...senderDetails,
+                                  name: e.target.value,
+                                })
+                              }
+                            />
+
+                            <TextField
+                              label="Sender GST"
+                              value={senderDetails.gst}
+                              onChange={(e) =>
+                                handleDataChange("senderDetails", {
+                                  ...senderDetails,
+                                  gst: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        </section>
+
+                        {/* Receiver Section */}
+                        <section>
+                          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                            <Building className="w-5 h-5" />
+                            Receiver Details
+                          </h3>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <TextField
+                              label="Receiver Name"
+                              value={receiverDetails.name}
+                              onChange={(e) =>
+                                handleDataChange("receiverDetails", {
+                                  ...receiverDetails,
+                                  name: e.target.value,
+                                })
+                              }
+                            />
+
+                            <TextField
+                              label="Receiver GST"
+                              value={receiverDetails.gst}
+                              onChange={(e) =>
+                                handleDataChange("receiverDetails", {
+                                  ...receiverDetails,
+                                  gst: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        </section>
                       </div>
                     </div>
                   </div>
