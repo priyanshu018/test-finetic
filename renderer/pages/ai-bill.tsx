@@ -677,8 +677,8 @@ export default function BillWorkflow() {
     "Prime Depth Labs", "Test 1", "Test 2"
   ])
   const [selectedCompanyName, setSelectedCompanyName] = useState("");
-  const [gstNumber, setGstNumber] = useState("");
-
+  const [gstNumber, setGstNumber] = useState("07BGUPD3647XXXX");
+  const [zoomSrc, setZoomSrc] = useState<string | null>(null);
   const [qrSession, setQRSession] = useState(null);
   const [qrSessionLoading, setQRSessionLoading] = useState(false);
   const [mobileFiles, setMobileFiles] = useState([]);
@@ -1562,7 +1562,7 @@ export default function BillWorkflow() {
       setSelectedCompanyName(companyList[0]);
     }
   }, [companyList, selectedCompanyName]);
-  
+
 
   // Add this useEffect to initialize totals when bill data changes
   useEffect(() => {
@@ -2660,14 +2660,23 @@ export default function BillWorkflow() {
                                         {row.map(
                                           (img: string, colIndex: number) =>
                                             img ? (
+                                              // <img
+                                              //   key={colIndex}
+                                              //   src={`${img}`}
+                                              //   onClick={() => {
+                                              //     setRowModalIndex(idx)
+                                              //   }}
+                                              //   alt={`Invoice cell ${rowIndex}-${colIndex}`}
+                                              //   className="w-[90px] border-2 border h-[30px] object-contain border"
+                                              // />
                                               <img
                                                 key={colIndex}
-                                                src={`${img}`}
-                                                onClick={() => {
-                                                  setRowModalIndex(idx)
-                                                }}
+                                                src={img}
                                                 alt={`Invoice cell ${rowIndex}-${colIndex}`}
-                                                className="w-[90px] border-2 border h-[30px] object-contain border"
+                                                onClick={() => setZoomSrc(img)}   /* open viewer */
+                                                className="w-[90px] h-[30px] object-contain border-2
+                                                         rounded cursor-zoom-in
+                                                         hover:border-blue-500 transition-colors"
                                               />
                                             ) : (
                                               <div
@@ -2936,6 +2945,31 @@ export default function BillWorkflow() {
         }
         onClose={() => setRowModalIndex(null)}
       />
+
+      {zoomSrc && (
+        <div
+          className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm
+                     flex items-center justify-center"
+          onClick={() => setZoomSrc(null)}           /* click backdrop to close */
+        >
+          <div onClick={e => e.stopPropagation()}>
+            <ZoomableImage
+              src={zoomSrc}
+              alt="Zoom preview"
+              style={{ width: "85vw", height: "85vh" }}
+            />
+          </div>
+
+          {/* close button */}
+          <button
+            onClick={() => setZoomSrc(null)}
+            className="absolute top-5 right-5 text-white/80 hover:text-white
+                       bg-black/50 backdrop-blur rounded-full p-2"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      )}
 
     </div>
   );
