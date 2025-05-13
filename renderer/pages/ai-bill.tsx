@@ -41,6 +41,97 @@ import { supabase } from "../lib/supabase";
 import { parseStringPromise } from "xml2js";
 import QRCode from "react-qr-code";
 
+const toFixed2 = (num: number) => Number(num || 0).toFixed(2);
+const safeNum = (v: any) => parseFloat(v) || 0;
+
+
+
+export const RowDetailModal: React.FC<RowDetailModalProps> = ({
+  open,
+  onClose,
+  item,
+  rowIndex,
+  onUpdate,
+  images,
+}) => {
+  // ESC shortcut
+  useEffect(() => {
+    if (!open) return;
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-5xl mx-4 rounded-2xl bg-white shadow-xl p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
+        <h3 className="text-lg font-semibold mb-6">
+          Row&nbsp;{rowIndex + 1} — detailed view
+        </h3>
+
+        {/* ---------- editable inputs ---------- */}
+        <div className="grid lg:grid-cols-8 sm:grid-cols-2 gap-4 mb-8">
+          {(
+            [
+              ["Product", "Product"],
+              ["QTY", "QTY"],
+              ["HSN", "HSN"],
+              ["MRP", "MRP"],
+              ["RATE", "RATE"],
+              ["DIS", "DIS"],
+              ["SGST", "SGST"],
+              ["CGST", "CGST"],
+            ] as const
+          ).map(([label, key]) => (
+            <label key={key} className="text-sm font-medium text-gray-600">
+              {label}
+              <input
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2"
+                type={key === "Product" ? "text" : "number"}
+                value={item[key] ?? ""}
+                onChange={(e) => onUpdate(key, e.target.value)}
+              />
+            </label>
+          ))}
+        </div>
+
+        {/* ---------- row’s cropped images ---------- */}
+        <div className="flex flex-wrap gap-4 justify-center">
+          {images.length === 0 && (
+            <p className="text-gray-500 text-sm">No images for this row</p>
+          )}
+          {images.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt={`cell ${rowIndex}-${i}`}
+              className="border rounded-lg object-contain w-[100px] h-[120px]"
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+
+
 export async function extractCompanyNames(xmlString) {
   const doc = await parseStringPromise(xmlString, { explicitArray: false });
 
@@ -512,11 +603,10 @@ const Stepper = ({ steps, currentStep }: StepperProps) => {
           <div key={step} className="flex-1 relative">
             <div className="flex flex-col items-center">
               <div
-                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${
-                  currentStep >= index
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-                    : "bg-gray-200 text-gray-500"
-                }`}
+                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${currentStep >= index
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                  : "bg-gray-200 text-gray-500"
+                  }`}
               >
                 {currentStep > index ? (
                   <Check className="w-5 h-5" />
@@ -525,11 +615,10 @@ const Stepper = ({ steps, currentStep }: StepperProps) => {
                 )}
               </div>
               <div
-                className={`mt-2 text-center ${
-                  currentStep >= index
-                    ? "text-gray-800 font-medium"
-                    : "text-gray-400"
-                }`}
+                className={`mt-2 text-center ${currentStep >= index
+                  ? "text-gray-800 font-medium"
+                  : "text-gray-400"
+                  }`}
               >
                 <span className="hidden md:block">{step}</span>
                 <span className="md:hidden">{step.split(" ")[0]}</span>
@@ -569,6 +658,9 @@ const NumberField = ({ label, value, onChange, style = {} }) => (
 );
 
 export default function BillWorkflow() {
+
+  const [rowModalIndex, setRowModalIndex] = useState<number | null>(null);
+
   const [currentStep, setCurrentStep] = useState(0);
   const [role, setRole] = useState("");
   const [files, setFiles] = useState<any[]>([]);
@@ -718,7 +810,7 @@ export default function BillWorkflow() {
     setIsLoading(true);
     try {
       const allFiles = [...files];
-  
+
       for (const file of mobileFiles) {
         const res = await fetch(file.url);
         const blob = await res.blob();
@@ -727,7 +819,7 @@ export default function BillWorkflow() {
           reader.onloadend = () => resolve(reader.result);
           reader.readAsDataURL(blob);
         });
-  
+
         const fileObj = {
           id: Math.random().toString(36).substr(2, 9),
           name: file.key.split('/').pop(),
@@ -735,19 +827,19 @@ export default function BillWorkflow() {
           file: new File([blob], file.key.split('/').pop(), { type: blob.type }),
           isMobile: true,
         };
-  
+
         allFiles.push(fileObj);
       }
-  
+
       setFiles(allFiles); // 👈 this enables preview
       setMobileFiles([]); // optional: clear mobileFiles state if now in `files`
-  
+
       // Send files to backend
       const requests = allFiles.map(async (fileObj) => {
         const formData = new FormData();
         formData.append("file", fileObj.file);
         formData.append("user_id", "2");
-  
+
         const response = await axios.post(
           `${BackendLink}/extract-bill-details/`,
           formData,
@@ -759,7 +851,7 @@ export default function BillWorkflow() {
         );
         return response.data;
       });
-  
+
       const results = await Promise.all(requests);
       setBillData(results);
       setCurrentStep(2);
@@ -789,35 +881,26 @@ export default function BillWorkflow() {
     const newData = [...billData];
     const updatedItems = [...newData[billIndex].items];
 
-    // Update the specific field
+    // mutate edited field
     updatedItems[itemIndex] = { ...updatedItems[itemIndex], [field]: value };
 
-    // If changing GST-related fields (QTY, RATE, SGST, CGST), recalculate derived values
-    if (["QTY", "RATE", "SGST", "CGST"].includes(field)) {
-      const item = updatedItems[itemIndex];
-      const qty = parseFloat(item.QTY) || 0;
-      const rate = parseFloat(item.RATE) || 0;
-      const sgst = parseFloat(item.SGST) || 0;
-      const cgst = parseFloat(item.CGST) || 0;
+    // recompute amounts whenever base or tax fields change
+    if (["QTY", "RATE", "DIS", "SGST", "CGST"].includes(field)) {
+      const itm: Product = updatedItems[itemIndex];
+      const qty = safeNum(itm.QTY);
+      const rate = safeNum(itm.RATE);
 
-      // Calculate G AMT (product price)
-      const productPrice = qty * rate;
-      updatedItems[itemIndex]["G AMT"] = productPrice.toFixed(2);
+      // taxable value (no GST)
+      const taxable = qty * rate;
 
-      // Calculate GST amount
-      const totalGST = sgst + cgst;
-      const gstAmount = productPrice * (totalGST / 100);
-
-      // Calculate NET AMT
-      const netAmount = productPrice + gstAmount;
-      updatedItems[itemIndex]["NET AMT"] = netAmount.toFixed(2);
+      updatedItems[itemIndex]["G AMT"] = toFixed2(taxable); // gross value before tax/discount
+      updatedItems[itemIndex]["NET AMT"] = toFixed2(taxable); // net = taxable ONLY
     }
 
     newData[billIndex].items = updatedItems;
     setBillData(newData);
 
-    // Call recalculateBillTotals to update the totals
-    recalculateBillTotals(billIndex, itemIndex, field, value);
+    recalculateBillTotals(billIndex, newData);
   };
 
   const addItem = (billIndex: number) => {
@@ -881,7 +964,8 @@ export default function BillWorkflow() {
     setBillData(newData);
   };
 
-  const removeFile = (id: string) => {
+  const removeFile = async (id: string) => {
+  
     const indexToRemove = files.findIndex((f) => f.id === id);
     setFiles((prev) => prev.filter((file) => file.id !== id));
     setBillData((prev) => prev.filter((_, i) => i !== indexToRemove));
@@ -1056,7 +1140,7 @@ export default function BillWorkflow() {
   const createQRSession = async () => {
     setQRSessionLoading(true);
     try {
-      const response = await fetch("http://localhost:3001/create-session", {
+      const response = await fetch("https://finetic-ai-mobile.primedepthlabs.com/create-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
@@ -1092,7 +1176,7 @@ export default function BillWorkflow() {
 
       try {
         const response = await fetch(
-          `http://localhost:3001/check-uploads/${sessionId}`
+          `https://finetic-ai-mobile.primedepthlabs.com/check-uploads/${sessionId}`
         );
         if (!response.ok) throw new Error("Failed to check uploads");
 
@@ -1376,74 +1460,30 @@ export default function BillWorkflow() {
 
   const recalculateBillTotals = (
     billIndex: number,
-    itemIndex: number,
-    field: string,
-    value: any
+    dataSource: any[] = billData
   ) => {
-    const updatedBillData = [...billData];
+    const items: Product[] = dataSource[billIndex].items || [];
 
-    updatedBillData[billIndex].items = updatedBillData[billIndex].items.map(
-      (item, idx) => {
-        if (itemIndex === idx) {
-          console.log({ value });
-          const qty =
-            field === "QTY" ? parseFloat(value) : parseFloat(item.QTY) || 0;
-          const rate =
-            field === "RATE" ? parseFloat(value) : parseFloat(item.RATE) || 0;
-          const discount =
-            field === "DIS" ? parseFloat(value) : parseFloat(item.DIS) || 0;
-
-          const sgstPerUnit =
-            field === "SGST" ? parseFloat(value) : parseFloat(item.SGST) || 0;
-          const cgstPerUnit = sgstPerUnit;
-          const productPrice = rate * qty;
-          const totalGST = sgstPerUnit + cgstPerUnit;
-          const gstAmount = productPrice * (totalGST / 100);
-
-          const newNetAmt = productPrice + gstAmount;
-
-          return {
-            ...item,
-            SGST: sgstPerUnit,
-            CGST: cgstPerUnit,
-            "G AMT": productPrice,
-            "NET AMT": newNetAmt,
-          };
-        }
-
-        return item;
-      }
-    );
-
-    // Calculate NET AMT total
-    const totalNetAmount = updatedBillData[billIndex].items.reduce(
-      (total, item) => {
-        return total + (parseFloat(item["NET AMT"]) || 0);
-      },
+    // total taxable
+    const taxableTotal = items.reduce(
+      (sum, itm) => sum + safeNum(itm["NET AMT"]),
       0
     );
 
-    // Calculate GST totals by rate
-    const gstRateTotals: { [key: string]: number } = {};
-
-    updatedBillData[billIndex].items.forEach((item) => {
-      const gstRate =
-        (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
-      const gAmount = parseFloat(item["NET AMT"]) || 0;
-      const gstAmount = (gAmount * gstRate) / 100;
-
-      if (gstRate > 0) {
-        const rateKey = `${gstRate}%`;
-        if (!gstRateTotals[rateKey]) {
-          gstRateTotals[rateKey] = 0;
-        }
-        gstRateTotals[rateKey] += gstAmount;
-      }
+    // GST buckets
+    const buckets: { [k: string]: number } = {};
+    items.forEach((itm) => {
+      const sgst = safeNum(itm.SGST);
+      const cgst = safeNum(itm.CGST);
+      const rate = sgst + cgst;
+      if (!rate) return;
+      const key = `${rate}%`;
+      const gstAmt = safeNum(itm["NET AMT"]) * (rate / 100);
+      buckets[key] = (buckets[key] || 0) + gstAmt;
     });
 
-    setNetAmountTotal(totalNetAmount);
-    setGstTotals(gstRateTotals);
-    setBillData(updatedBillData);
+    setNetAmountTotal(taxableTotal);
+    setGstTotals(buckets);
   };
 
   useEffect(() => {
@@ -1568,6 +1608,10 @@ export default function BillWorkflow() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    createQRSession()
+  }, [])
 
   // Add the BillTotals component
   const BillTotals = () => {
@@ -1836,11 +1880,10 @@ export default function BillWorkflow() {
                 onClick={() => setCurrentStep(1)}
                 disabled={!selectedCompanyName}
                 className={`px-6 py-2 rounded-md text-white font-medium transition-all 
-                        ${
-                          !selectedCompanyName
-                            ? "bg-gray-300 cursor-not-allowed"
-                            : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        }`}
+                        ${!selectedCompanyName
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  }`}
               >
                 Continue
               </button>
@@ -1893,11 +1936,10 @@ export default function BillWorkflow() {
               onDragOver={handleDragOverFiles}
               onDragLeave={handleDragLeaveFiles}
               onDrop={handleDropFiles}
-              className={`group relative bg-white rounded-2xl border-2 border-dashed ${
-                isDraggingFile
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-300 hover:border-blue-300"
-              } transition-all duration-200 py-16 px-6 text-center cursor-pointer shadow-lg hover:shadow-xl`}
+              className={`group relative bg-white rounded-2xl border-2 border-dashed ${isDraggingFile
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300 hover:border-blue-300"
+                } transition-all duration-200 py-16 px-6 text-center cursor-pointer shadow-lg hover:shadow-xl`}
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="space-y-6 relative z-10">
@@ -1960,13 +2002,13 @@ export default function BillWorkflow() {
                             from mobile
                           </div>
                         )}
-                        <button
+                        {/* <button
                           onClick={resetQRSession}
                           className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
                         >
                           <RefreshCw className="w-4 h-4" />
                           Reset Session
-                        </button>
+                        </button> */}
                       </>
                     ) : (
                       <>
@@ -2053,9 +2095,9 @@ export default function BillWorkflow() {
                         </p>
                       </div>
                       <button
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          removeFile(file.id);
+                          await removeFile(file.id);
                         }}
                         className="text-gray-400 hover:text-red-600 ml-4 transition-colors rounded-full p-1.5 hover:bg-red-50"
                       >
@@ -2103,11 +2145,15 @@ export default function BillWorkflow() {
                       </div>
 
                       <button
-                        onClick={(e) => {
+                        onClick={async(e) => {
                           e.stopPropagation();
+                          await axios.post('https://finetic-ai-mobile.primedepthlabs.com/delete-upload/SESSION_ID', {
+                            key: file.key
+                          })
                           setMobileFiles((files) =>
                             files.filter((f) => f.key !== file.key)
                           );
+                         
                         }}
                         className="text-gray-400 hover:text-red-600 ml-4 transition-colors rounded-full p-1.5 hover:bg-red-50"
                       >
@@ -2123,11 +2169,10 @@ export default function BillWorkflow() {
               <button
                 onClick={handleNextStep}
                 disabled={files.length === 0 && mobileFiles.length === 0}
-                className={`px-6 py-3 rounded-lg font-medium text-base transition-all flex items-center gap-2 ${
-                  files.length > 0 || mobileFiles.length > 0
-                    ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
-                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                }`}
+                className={`px-6 py-3 rounded-lg font-medium text-base transition-all flex items-center gap-2 ${files.length > 0 || mobileFiles.length > 0
+                  ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  }`}
               >
                 Process Files
                 <ChevronRight className="w-5 h-5" />
@@ -2166,11 +2211,10 @@ export default function BillWorkflow() {
                           handleBillChange(Math.max(0, currentBillIndex - 1))
                         }
                         disabled={currentBillIndex === 0}
-                        className={`flex items-center justify-center p-2 rounded-full ${
-                          currentBillIndex === 0
-                            ? "text-gray-300 cursor-not-allowed"
-                            : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                        } transition-colors`}
+                        className={`flex items-center justify-center p-2 rounded-full ${currentBillIndex === 0
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                          } transition-colors`}
                       >
                         <ArrowLeft className="w-5 h-5" />
                       </button>
@@ -2180,11 +2224,10 @@ export default function BillWorkflow() {
                           <button
                             key={idx}
                             onClick={() => handleBillChange(idx)}
-                            className={`w-2.5 h-2.5 rounded-full transition-all ${
-                              currentBillIndex === idx
-                                ? "bg-blue-600 w-6"
-                                : "bg-gray-300 hover:bg-gray-400"
-                            }`}
+                            className={`w-2.5 h-2.5 rounded-full transition-all ${currentBillIndex === idx
+                              ? "bg-blue-600 w-6"
+                              : "bg-gray-300 hover:bg-gray-400"
+                              }`}
                             aria-label={`Go to bill ${idx + 1}`}
                           />
                         ))}
@@ -2256,9 +2299,9 @@ export default function BillWorkflow() {
                             value={
                               role === "Purchaser"
                                 ? billData[currentBillIndex]?.receiverDetails
-                                    ?.name || ""
+                                  ?.name || ""
                                 : billData[currentBillIndex]?.senderDetails
-                                    ?.name || ""
+                                  ?.name || ""
                             }
                             onChange={(e) => {
                               if (role === "Purchaser") {
@@ -2285,9 +2328,9 @@ export default function BillWorkflow() {
                             value={
                               role === "Purchaser"
                                 ? billData[currentBillIndex]?.receiverDetails
-                                    ?.gst || ""
+                                  ?.gst || ""
                                 : billData[currentBillIndex]?.senderDetails
-                                    ?.gst || ""
+                                  ?.gst || ""
                             }
                             onChange={(e) => {
                               if (role === "Purchaser") {
@@ -2360,11 +2403,10 @@ export default function BillWorkflow() {
                           <>
                             <tr
                               key={idx}
-                              className={`transition-colors mt-10 ${
-                                item.Qty == 0 || item.RATE == 0
-                                  ? "bg-red-300"
-                                  : ""
-                              }`}
+                              className={`transition-colors mt-10 ${item.Qty == 0 || item.RATE == 0
+                                ? "bg-red-300"
+                                : ""
+                                }`}
                             >
                               <td
                                 className="px-3 py-2.5 w-72 relative"
@@ -2525,11 +2567,10 @@ export default function BillWorkflow() {
 
                             <tr className="pb-10">
                               <td
-                                className={`px-3 py-2.5 text-center border-b-8 border-gray-300 ${
-                                  item.Qty == 0 || item.RATE == 0
-                                    ? "bg-red-300"
-                                    : ""
-                                }`}
+                                className={`px-3 py-2.5 text-center border-b-8 border-gray-300 ${item.Qty == 0 || item.RATE == 0
+                                  ? "bg-red-300"
+                                  : ""
+                                  }`}
                                 colSpan={11}
                               >
                                 <div className="gap-2 mx-auto w-[fit-content]">
@@ -2553,8 +2594,11 @@ export default function BillWorkflow() {
                                               <img
                                                 key={colIndex}
                                                 src={`${img}`}
+                                                onClick={() => {
+                                                  setRowModalIndex(idx)
+                                                }}
                                                 alt={`Invoice cell ${rowIndex}-${colIndex}`}
-                                                className="w-[90px] h-[30px] object-contain border"
+                                                className="w-[90px] border-2 border h-[30px] object-contain border"
                                               />
                                             ) : (
                                               <div
@@ -2577,37 +2621,37 @@ export default function BillWorkflow() {
 
                     {(!billData[currentBillIndex]?.items ||
                       billData[currentBillIndex]?.items.length === 0) && (
-                      <tr>
-                        <td
-                          colSpan={12}
-                          className="px-6 py-8 text-center text-gray-500"
-                        >
-                          <div className="flex flex-col items-center">
-                            <svg
-                              className="w-12 h-12 text-gray-300 mb-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1}
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                              />
-                            </svg>
-                            <p className="mb-2">No items found in this bill</p>
-                            <button
-                              onClick={() => addItem(currentBillIndex)}
-                              className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
-                            >
-                              <Plus className="w-4 h-4 mr-1" />
-                              Add an item
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+                        <tr>
+                          <td
+                            colSpan={12}
+                            className="px-6 py-8 text-center text-gray-500"
+                          >
+                            <div className="flex flex-col items-center">
+                              <svg
+                                className="w-12 h-12 text-gray-300 mb-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={1}
+                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                                />
+                              </svg>
+                              <p className="mb-2">No items found in this bill</p>
+                              <button
+                                onClick={() => addItem(currentBillIndex)}
+                                className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+                              >
+                                <Plus className="w-4 h-4 mr-1" />
+                                Add an item
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                   </tbody>
                 </table>
               </div>
@@ -2726,14 +2770,12 @@ export default function BillWorkflow() {
                         </p>
                         <p className="text-sm text-gray-600 truncate">
                           {role === "Purchaser"
-                            ? `From: ${
-                                billData[index]?.senderDetails?.name ||
-                                "Unknown"
-                              }`
-                            : `To: ${
-                                billData[index]?.receiverDetails?.name ||
-                                "Unknown"
-                              }`}
+                            ? `From: ${billData[index]?.senderDetails?.name ||
+                            "Unknown"
+                            }`
+                            : `To: ${billData[index]?.receiverDetails?.name ||
+                            "Unknown"
+                            }`}
                         </p>
                         <p className="text-xs text-gray-500">
                           {billData[index]?.items?.length || 0} items
@@ -2800,6 +2842,32 @@ export default function BillWorkflow() {
           </div>
         )}
       </main>
+      <RowDetailModal
+        open={rowModalIndex !== null}
+        rowIndex={rowModalIndex ?? 0}
+        item={
+          rowModalIndex !== null
+            ? billData[currentBillIndex]?.items[rowModalIndex]
+            : {}
+        }
+        images={
+          rowModalIndex !== null
+            ? (
+              billData[currentBillIndex]
+                .invoice_items_cropped_images?.cell_images ?? []
+            )
+              .filter((_, r) => r === 0 || r === rowModalIndex + 1 || r === rowModalIndex + 2)
+              .flat()
+              .filter(Boolean)
+            : []
+        }
+        onUpdate={(field, val) =>
+          rowModalIndex !== null &&
+          handleItemChange(currentBillIndex, rowModalIndex, field, val)
+        }
+        onClose={() => setRowModalIndex(null)}
+      />
+
     </div>
   );
 }
