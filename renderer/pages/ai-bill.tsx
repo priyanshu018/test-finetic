@@ -673,9 +673,10 @@ export default function BillWorkflow() {
   const [error, setError] = useState<string | null>(null);
   const [netAmountTotal, setNetAmountTotal] = useState<number>(0);
   const [gstTotals, setGstTotals] = useState<{ [key: string]: number }>({});
-  const [selectedCompanyName, setSelectedCompanyName] = useState([
-    "Prime Depth Labs",
-  ]);
+  const [companyList, setCompanyList] = useState([
+    "Prime Depth Labs", "Test 1", "Test 2"
+  ])
+  const [selectedCompanyName, setSelectedCompanyName] = useState("");
   const [gstNumber, setGstNumber] = useState("");
 
   const [qrSession, setQRSession] = useState(null);
@@ -810,6 +811,70 @@ export default function BillWorkflow() {
     setIsLoading(true);
     try {
       const allFiles = [...files];
+
+
+      /* ---------- bring mobile-captured files into the same array ---------- */
+      for (const file of mobileFiles) {
+        const res = await fetch(file.url);
+        const blob = await res.blob();
+        const dataUrl: string = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+
+        allFiles.push({
+          id: Math.random().toString(36).substr(2, 9),
+          name: file.key.split("/").pop(),
+          dataUrl,                                   // ✨ preview & LS payload
+          file: new File([blob], file.key.split("/").pop(), { type: blob.type }),
+          isMobile: true,
+        });
+      }
+
+      /* ---------- 🔑  PERSIST PREVIEWS PER COMPANY · MONTH · DAY ---------- */
+      if (typeof window !== "undefined") {
+        const company = selectedCompanyName ?? "UNNAMED_COMPANY";
+
+        // helper for month labels
+        const MONTHS = [
+          "January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"
+        ];
+
+        // today’s date (or swap in the bill’s real date if you have it here)
+        const now = new Date();
+        const monthKey = MONTHS[now.getMonth()];    // "May"
+        const dayKey = String(now.getDate());     // "13"
+
+        // full tree from LS (or empty)
+        const store: Record<string, any> = JSON.parse(
+          localStorage.getItem("BILLS") || "{}"
+        );
+
+        // ensure all nesting levels exist
+        store[company] = store[company] ?? {};
+        store[company][monthKey] = store[company][monthKey] ?? {};
+        store[company][monthKey][dayKey] = store[company][monthKey][dayKey] ?? [];
+
+        /* just the new previews ─ no blobs */
+        const newPreviews = allFiles
+          .map(f => f.dataUrl)              // -> string[]
+          .filter(Boolean);
+
+        // push objects { imageUrl } so UI code can stay the same
+        newPreviews.forEach(url => {
+          // optional dedupe
+          if (!store[company][monthKey][dayKey].some((o: any) => o.imageUrl === url)) {
+            store[company][monthKey][dayKey].push({ imageUrl: url });
+          }
+        });
+
+        localStorage.setItem("BILLS", JSON.stringify(store));
+      }
+
+      /* -------------------------------------------------------------------- */
+
 
       for (const file of mobileFiles) {
         const res = await fetch(file.url);
@@ -965,7 +1030,7 @@ export default function BillWorkflow() {
   };
 
   const removeFile = async (id: string) => {
-  
+
     const indexToRemove = files.findIndex((f) => f.id === id);
     setFiles((prev) => prev.filter((file) => file.id !== id));
     setBillData((prev) => prev.filter((_, i) => i !== indexToRemove));
@@ -1492,10 +1557,12 @@ export default function BillWorkflow() {
   }, [selectedCompanyName]);
 
   useEffect(() => {
-    if (!selectedCompanyName && selectedCompanyName.length > 0) {
-      setSelectedCompanyName(selectedCompanyName[0]);
+    // when the list arrives, select the 1st company only if user hasn't chosen one
+    if (!selectedCompanyName && companyList.length > 0) {
+      setSelectedCompanyName(companyList[0]);
     }
-  }, [selectedCompanyName]);
+  }, [companyList, selectedCompanyName]);
+  
 
   // Add this useEffect to initialize totals when bill data changes
   useEffect(() => {
@@ -1563,7 +1630,7 @@ export default function BillWorkflow() {
       const response = await window.electron.getCompanyData(xmlData);
       const data = response.data;
       const companyList = await extractCompanyNames(data);
-      setSelectedCompanyName(companyList);
+      setCompanyList(companyList);
     } catch (error) {
       console.error("Error fetching companies:", error);
     } finally {
@@ -1750,11 +1817,11 @@ export default function BillWorkflow() {
                           }
                           className="block w-full pl-3 pr-10 py-3 text-black border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border-2"
                         >
-                          {selectedCompanyName.length === 0 && (
+                          {companyList.length === 0 && (
                             <option value="">No companies available</option>
                           )}
-                          {selectedCompanyName &&
-                            selectedCompanyName?.map((company, index) => (
+                          {companyList &&
+                            companyList?.map((company, index) => (
                               <option key={index} value={company}>
                                 {company}
                               </option>
@@ -2145,15 +2212,17 @@ export default function BillWorkflow() {
                       </div>
 
                       <button
-                        onClick={async(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          await axios.post('https://finetic-ai-mobile.primedepthlabs.com/delete-upload/SESSION_ID', {
-                            key: file.key
+                          console.log(e, file, qrSession)
+                          await axios.delete(`https://finetic-ai-mobile.primedepthlabs.com/delete-upload/${qrSession?.sessionId}`, {
+                            data: { key: file.key },
+                            headers: { "Content-Type": "application/json" }
                           })
                           setMobileFiles((files) =>
                             files.filter((f) => f.key !== file.key)
                           );
-                         
+
                         }}
                         className="text-gray-400 hover:text-red-600 ml-4 transition-colors rounded-full p-1.5 hover:bg-red-50"
                       >
