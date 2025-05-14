@@ -44,8 +44,6 @@ import QRCode from "react-qr-code";
 const toFixed2 = (num: number) => Number(num || 0).toFixed(2);
 const safeNum = (v: any) => parseFloat(v) || 0;
 
-
-
 export const RowDetailModal: React.FC<RowDetailModalProps> = ({
   open,
   onClose,
@@ -128,9 +126,6 @@ export const RowDetailModal: React.FC<RowDetailModalProps> = ({
     </div>
   );
 };
-
-
-
 
 export async function extractCompanyNames(xmlString) {
   const doc = await parseStringPromise(xmlString, { explicitArray: false });
@@ -603,10 +598,11 @@ const Stepper = ({ steps, currentStep }: StepperProps) => {
           <div key={step} className="flex-1 relative">
             <div className="flex flex-col items-center">
               <div
-                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${currentStep >= index
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-                  : "bg-gray-200 text-gray-500"
-                  }`}
+                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${
+                  currentStep >= index
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                    : "bg-gray-200 text-gray-500"
+                }`}
               >
                 {currentStep > index ? (
                   <Check className="w-5 h-5" />
@@ -615,10 +611,11 @@ const Stepper = ({ steps, currentStep }: StepperProps) => {
                 )}
               </div>
               <div
-                className={`mt-2 text-center ${currentStep >= index
-                  ? "text-gray-800 font-medium"
-                  : "text-gray-400"
-                  }`}
+                className={`mt-2 text-center ${
+                  currentStep >= index
+                    ? "text-gray-800 font-medium"
+                    : "text-gray-400"
+                }`}
               >
                 <span className="hidden md:block">{step}</span>
                 <span className="md:hidden">{step.split(" ")[0]}</span>
@@ -658,7 +655,6 @@ const NumberField = ({ label, value, onChange, style = {} }) => (
 );
 
 export default function BillWorkflow() {
-
   const [rowModalIndex, setRowModalIndex] = useState<number | null>(null);
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -674,8 +670,10 @@ export default function BillWorkflow() {
   const [netAmountTotal, setNetAmountTotal] = useState<number>(0);
   const [gstTotals, setGstTotals] = useState<{ [key: string]: number }>({});
   const [companyList, setCompanyList] = useState([
-    "Prime Depth Labs", "Test 1", "Test 2"
-  ])
+    "Prime Depth Labs",
+    "Test 1",
+    "Test 2",
+  ]);
   const [selectedCompanyName, setSelectedCompanyName] = useState("");
   const [gstNumber, setGstNumber] = useState("07BGUPD3647XXXX");
   const [zoomSrc, setZoomSrc] = useState<string | null>(null);
@@ -806,12 +804,10 @@ export default function BillWorkflow() {
   //   }
   // };
 
-
   const handleNextStep = async () => {
     setIsLoading(true);
     try {
       const allFiles = [...files];
-
 
       /* ---------- bring mobile-captured files into the same array ---------- */
       for (const file of mobileFiles) {
@@ -826,8 +822,10 @@ export default function BillWorkflow() {
         allFiles.push({
           id: Math.random().toString(36).substr(2, 9),
           name: file.key.split("/").pop(),
-          dataUrl,                                   // ✨ preview & LS payload
-          file: new File([blob], file.key.split("/").pop(), { type: blob.type }),
+          dataUrl, // ✨ preview & LS payload
+          file: new File([blob], file.key.split("/").pop(), {
+            type: blob.type,
+          }),
           isMobile: true,
         });
       }
@@ -838,14 +836,24 @@ export default function BillWorkflow() {
 
         // helper for month labels
         const MONTHS = [
-          "January", "February", "March", "April", "May", "June",
-          "July", "August", "September", "October", "November", "December"
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
         ];
 
         // today’s date (or swap in the bill’s real date if you have it here)
         const now = new Date();
-        const monthKey = MONTHS[now.getMonth()];    // "May"
-        const dayKey = String(now.getDate());     // "13"
+        const monthKey = MONTHS[now.getMonth()]; // "May"
+        const dayKey = String(now.getDate()); // "13"
 
         // full tree from LS (or empty)
         const store: Record<string, any> = JSON.parse(
@@ -855,17 +863,22 @@ export default function BillWorkflow() {
         // ensure all nesting levels exist
         store[company] = store[company] ?? {};
         store[company][monthKey] = store[company][monthKey] ?? {};
-        store[company][monthKey][dayKey] = store[company][monthKey][dayKey] ?? [];
+        store[company][monthKey][dayKey] =
+          store[company][monthKey][dayKey] ?? [];
 
         /* just the new previews ─ no blobs */
         const newPreviews = allFiles
-          .map(f => f.dataUrl)              // -> string[]
+          .map((f) => f.dataUrl) // -> string[]
           .filter(Boolean);
 
         // push objects { imageUrl } so UI code can stay the same
-        newPreviews.forEach(url => {
+        newPreviews.forEach((url) => {
           // optional dedupe
-          if (!store[company][monthKey][dayKey].some((o: any) => o.imageUrl === url)) {
+          if (
+            !store[company][monthKey][dayKey].some(
+              (o: any) => o.imageUrl === url
+            )
+          ) {
             store[company][monthKey][dayKey].push({ imageUrl: url });
           }
         });
@@ -874,7 +887,6 @@ export default function BillWorkflow() {
       }
 
       /* -------------------------------------------------------------------- */
-
 
       for (const file of mobileFiles) {
         const res = await fetch(file.url);
@@ -887,9 +899,11 @@ export default function BillWorkflow() {
 
         const fileObj = {
           id: Math.random().toString(36).substr(2, 9),
-          name: file.key.split('/').pop(),
+          name: file.key.split("/").pop(),
           dataUrl, // for preview
-          file: new File([blob], file.key.split('/').pop(), { type: blob.type }),
+          file: new File([blob], file.key.split("/").pop(), {
+            type: blob.type,
+          }),
           isMobile: true,
         };
 
@@ -1030,7 +1044,6 @@ export default function BillWorkflow() {
   };
 
   const removeFile = async (id: string) => {
-
     const indexToRemove = files.findIndex((f) => f.id === id);
     setFiles((prev) => prev.filter((file) => file.id !== id));
     setBillData((prev) => prev.filter((_, i) => i !== indexToRemove));
@@ -1205,10 +1218,13 @@ export default function BillWorkflow() {
   const createQRSession = async () => {
     setQRSessionLoading(true);
     try {
-      const response = await fetch("https://finetic-ai-mobile.primedepthlabs.com/create-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await fetch(
+        "https://finetic-ai-mobile.primedepthlabs.com/create-session",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to create session");
 
@@ -1563,7 +1579,6 @@ export default function BillWorkflow() {
     }
   }, [companyList, selectedCompanyName]);
 
-
   // Add this useEffect to initialize totals when bill data changes
   useEffect(() => {
     if (billData.length > 0 && billData[currentBillIndex]?.items?.length > 0) {
@@ -1677,8 +1692,8 @@ export default function BillWorkflow() {
   };
 
   useEffect(() => {
-    createQRSession()
-  }, [])
+    createQRSession();
+  }, []);
 
   // Add the BillTotals component
   const BillTotals = () => {
@@ -1947,10 +1962,11 @@ export default function BillWorkflow() {
                 onClick={() => setCurrentStep(1)}
                 disabled={!selectedCompanyName}
                 className={`px-6 py-2 rounded-md text-white font-medium transition-all 
-                        ${!selectedCompanyName
-                    ? "bg-gray-300 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  }`}
+                        ${
+                          !selectedCompanyName
+                            ? "bg-gray-300 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        }`}
               >
                 Continue
               </button>
@@ -2003,10 +2019,11 @@ export default function BillWorkflow() {
               onDragOver={handleDragOverFiles}
               onDragLeave={handleDragLeaveFiles}
               onDrop={handleDropFiles}
-              className={`group relative bg-white rounded-2xl border-2 border-dashed ${isDraggingFile
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-300 hover:border-blue-300"
-                } transition-all duration-200 py-16 px-6 text-center cursor-pointer shadow-lg hover:shadow-xl`}
+              className={`group relative bg-white rounded-2xl border-2 border-dashed ${
+                isDraggingFile
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-300 hover:border-blue-300"
+              } transition-all duration-200 py-16 px-6 text-center cursor-pointer shadow-lg hover:shadow-xl`}
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="space-y-6 relative z-10">
@@ -2214,15 +2231,17 @@ export default function BillWorkflow() {
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
-                          console.log(e, file, qrSession)
-                          await axios.delete(`https://finetic-ai-mobile.primedepthlabs.com/delete-upload/${qrSession?.sessionId}`, {
-                            data: { key: file.key },
-                            headers: { "Content-Type": "application/json" }
-                          })
+                          console.log(e, file, qrSession);
+                          await axios.delete(
+                            `https://finetic-ai-mobile.primedepthlabs.com/delete-upload/${qrSession?.sessionId}`,
+                            {
+                              data: { key: file.key },
+                              headers: { "Content-Type": "application/json" },
+                            }
+                          );
                           setMobileFiles((files) =>
                             files.filter((f) => f.key !== file.key)
                           );
-
                         }}
                         className="text-gray-400 hover:text-red-600 ml-4 transition-colors rounded-full p-1.5 hover:bg-red-50"
                       >
@@ -2238,10 +2257,11 @@ export default function BillWorkflow() {
               <button
                 onClick={handleNextStep}
                 disabled={files.length === 0 && mobileFiles.length === 0}
-                className={`px-6 py-3 rounded-lg font-medium text-base transition-all flex items-center gap-2 ${files.length > 0 || mobileFiles.length > 0
-                  ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
-                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  }`}
+                className={`px-6 py-3 rounded-lg font-medium text-base transition-all flex items-center gap-2 ${
+                  files.length > 0 || mobileFiles.length > 0
+                    ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
+                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                }`}
               >
                 Process Files
                 <ChevronRight className="w-5 h-5" />
@@ -2280,10 +2300,11 @@ export default function BillWorkflow() {
                           handleBillChange(Math.max(0, currentBillIndex - 1))
                         }
                         disabled={currentBillIndex === 0}
-                        className={`flex items-center justify-center p-2 rounded-full ${currentBillIndex === 0
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                          } transition-colors`}
+                        className={`flex items-center justify-center p-2 rounded-full ${
+                          currentBillIndex === 0
+                            ? "text-gray-300 cursor-not-allowed"
+                            : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                        } transition-colors`}
                       >
                         <ArrowLeft className="w-5 h-5" />
                       </button>
@@ -2293,10 +2314,11 @@ export default function BillWorkflow() {
                           <button
                             key={idx}
                             onClick={() => handleBillChange(idx)}
-                            className={`w-2.5 h-2.5 rounded-full transition-all ${currentBillIndex === idx
-                              ? "bg-blue-600 w-6"
-                              : "bg-gray-300 hover:bg-gray-400"
-                              }`}
+                            className={`w-2.5 h-2.5 rounded-full transition-all ${
+                              currentBillIndex === idx
+                                ? "bg-blue-600 w-6"
+                                : "bg-gray-300 hover:bg-gray-400"
+                            }`}
                             aria-label={`Go to bill ${idx + 1}`}
                           />
                         ))}
@@ -2430,7 +2452,7 @@ export default function BillWorkflow() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <TextField
                               label="Sender Name"
-                              value={senderDetails.name}
+                              value={billData?.[0]?.senderDetails.name}
                               onChange={(e) =>
                                 handleDataChange("senderDetails", {
                                   ...senderDetails,
@@ -2441,7 +2463,7 @@ export default function BillWorkflow() {
 
                             <TextField
                               label="Sender GST"
-                              value={senderDetails.gst}
+                              value={billData?.[0]?.senderDetails.gst}
                               onChange={(e) =>
                                 handleDataChange("senderDetails", {
                                   ...senderDetails,
@@ -2462,7 +2484,7 @@ export default function BillWorkflow() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <TextField
                               label="Receiver Name"
-                              value={receiverDetails.name}
+                              value={billData?.[0]?.receiverDetails.name}
                               onChange={(e) =>
                                 handleDataChange("receiverDetails", {
                                   ...receiverDetails,
@@ -2473,7 +2495,7 @@ export default function BillWorkflow() {
 
                             <TextField
                               label="Receiver GST"
-                              value={receiverDetails.gst}
+                              value={billData?.[0]?.receiverDetails.gst}
                               onChange={(e) =>
                                 handleDataChange("receiverDetails", {
                                   ...receiverDetails,
@@ -2538,10 +2560,11 @@ export default function BillWorkflow() {
                           <>
                             <tr
                               key={idx}
-                              className={`transition-colors mt-10 ${item.Qty == 0 || item.RATE == 0
-                                ? "bg-red-300"
-                                : ""
-                                }`}
+                              className={`transition-colors mt-10 ${
+                                item.Qty == 0 || item.RATE == 0
+                                  ? "bg-red-300"
+                                  : ""
+                              }`}
                             >
                               <td
                                 className="px-3 py-2.5 w-72 relative"
@@ -2702,10 +2725,11 @@ export default function BillWorkflow() {
 
                             <tr className="pb-10">
                               <td
-                                className={`px-3 py-2.5 text-center border-b-8 border-gray-300 ${item.Qty == 0 || item.RATE == 0
-                                  ? "bg-red-300"
-                                  : ""
-                                  }`}
+                                className={`px-3 py-2.5 text-center border-b-8 border-gray-300 ${
+                                  item.Qty == 0 || item.RATE == 0
+                                    ? "bg-red-300"
+                                    : ""
+                                }`}
                                 colSpan={11}
                               >
                                 <div className="gap-2 mx-auto w-[fit-content]">
@@ -2739,7 +2763,9 @@ export default function BillWorkflow() {
                                                 key={colIndex}
                                                 src={img}
                                                 alt={`Invoice cell ${rowIndex}-${colIndex}`}
-                                                onClick={() => setZoomSrc(img)}   /* open viewer */
+                                                onClick={() =>
+                                                  setZoomSrc(img)
+                                                } /* open viewer */
                                                 className="w-[90px] h-[30px] object-contain border-2
                                                          rounded cursor-zoom-in
                                                          hover:border-blue-500 transition-colors"
@@ -2765,37 +2791,37 @@ export default function BillWorkflow() {
 
                     {(!billData[currentBillIndex]?.items ||
                       billData[currentBillIndex]?.items.length === 0) && (
-                        <tr>
-                          <td
-                            colSpan={12}
-                            className="px-6 py-8 text-center text-gray-500"
-                          >
-                            <div className="flex flex-col items-center">
-                              <svg
-                                className="w-12 h-12 text-gray-300 mb-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={1}
-                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                                />
-                              </svg>
-                              <p className="mb-2">No items found in this bill</p>
-                              <button
-                                onClick={() => addItem(currentBillIndex)}
-                                className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
-                              >
-                                <Plus className="w-4 h-4 mr-1" />
-                                Add an item
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
+                      <tr>
+                        <td
+                          colSpan={12}
+                          className="px-6 py-8 text-center text-gray-500"
+                        >
+                          <div className="flex flex-col items-center">
+                            <svg
+                              className="w-12 h-12 text-gray-300 mb-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1}
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                              />
+                            </svg>
+                            <p className="mb-2">No items found in this bill</p>
+                            <button
+                              onClick={() => addItem(currentBillIndex)}
+                              className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+                            >
+                              <Plus className="w-4 h-4 mr-1" />
+                              Add an item
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -2914,12 +2940,14 @@ export default function BillWorkflow() {
                         </p>
                         <p className="text-sm text-gray-600 truncate">
                           {role === "Purchaser"
-                            ? `From: ${billData[index]?.senderDetails?.name ||
-                            "Unknown"
-                            }`
-                            : `To: ${billData[index]?.receiverDetails?.name ||
-                            "Unknown"
-                            }`}
+                            ? `From: ${
+                                billData[index]?.senderDetails?.name ||
+                                "Unknown"
+                              }`
+                            : `To: ${
+                                billData[index]?.receiverDetails?.name ||
+                                "Unknown"
+                              }`}
                         </p>
                         <p className="text-xs text-gray-500">
                           {billData[index]?.items?.length || 0} items
@@ -2997,12 +3025,17 @@ export default function BillWorkflow() {
         images={
           rowModalIndex !== null
             ? (
-              billData[currentBillIndex]
-                .invoice_items_cropped_images?.cell_images ?? []
-            )
-              .filter((_, r) => r === 0 || r === rowModalIndex + 1 || r === rowModalIndex + 2)
-              .flat()
-              .filter(Boolean)
+                billData[currentBillIndex].invoice_items_cropped_images
+                  ?.cell_images ?? []
+              )
+                .filter(
+                  (_, r) =>
+                    r === 0 ||
+                    r === rowModalIndex + 1 ||
+                    r === rowModalIndex + 2
+                )
+                .flat()
+                .filter(Boolean)
             : []
         }
         onUpdate={(field, val) =>
@@ -3016,9 +3049,9 @@ export default function BillWorkflow() {
         <div
           className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm
                      flex items-center justify-center"
-          onClick={() => setZoomSrc(null)}           /* click backdrop to close */
+          onClick={() => setZoomSrc(null)} /* click backdrop to close */
         >
-          <div onClick={e => e.stopPropagation()}>
+          <div onClick={(e) => e.stopPropagation()}>
             <ZoomableImage
               src={zoomSrc}
               alt="Zoom preview"
@@ -3036,7 +3069,6 @@ export default function BillWorkflow() {
           </button>
         </div>
       )}
-
     </div>
   );
 }
