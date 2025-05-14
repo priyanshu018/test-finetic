@@ -1649,6 +1649,8 @@ export default function BillWorkflow() {
         const gstRateKey = `${gst}%`;
         const gstAmount = gAmount * (gst / 100);
 
+        console.log(item["NET AMT"], gstRateKey, gstAmount, "here is the RATE");
+
         if (!gstRateTotals[gstRateKey]) {
           gstRateTotals[gstRateKey] = 0;
         }
@@ -2424,7 +2426,9 @@ export default function BillWorkflow() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <TextField
                               label="Sender Name"
-                              value={billData?.[0]?.senderDetails.name}
+                              value={
+                                billData?.[currentBillIndex]?.senderDetails.name
+                              }
                               onChange={(e) =>
                                 handleDataChange("senderDetails", {
                                   ...senderDetails,
@@ -2435,7 +2439,9 @@ export default function BillWorkflow() {
 
                             <TextField
                               label="Sender GST"
-                              value={billData?.[0]?.senderDetails.gst}
+                              value={
+                                billData?.[currentBillIndex]?.senderDetails.gst
+                              }
                               onChange={(e) =>
                                 handleDataChange("senderDetails", {
                                   ...senderDetails,
@@ -2456,7 +2462,10 @@ export default function BillWorkflow() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <TextField
                               label="Receiver Name"
-                              value={billData?.[0]?.receiverDetails.name}
+                              value={
+                                billData?.[currentBillIndex]?.receiverDetails
+                                  .name
+                              }
                               onChange={(e) =>
                                 handleDataChange("receiverDetails", {
                                   ...receiverDetails,
@@ -2467,7 +2476,10 @@ export default function BillWorkflow() {
 
                             <TextField
                               label="Receiver GST"
-                              value={billData?.[0]?.receiverDetails.gst}
+                              value={
+                                billData?.[currentBillIndex]?.receiverDetails
+                                  .gst
+                              }
                               onChange={(e) =>
                                 handleDataChange("receiverDetails", {
                                   ...receiverDetails,
@@ -2511,8 +2523,7 @@ export default function BillWorkflow() {
                         "MRP",
                         "RATE",
                         "DIS",
-                        isWithinState ? "SGST" : "IGST",
-                        isWithinState ? "CGST" : "",
+                        ...(isWithinState ? ["SGST", "CGST"] : ["IGST"]),
                         "G AMT",
                         "Actions",
                       ].map((head) => (
@@ -2683,23 +2694,14 @@ export default function BillWorkflow() {
                                   <td className="px-3 py-2 w-32">
                                     <input
                                       type="text"
-                                      value={
-                                        parseFloat(item.SGST || 0) +
-                                          parseFloat(item.CGST || 0) || ""
-                                      }
+                                      value={parseFloat(item.IGST || 0)}
                                       onChange={(e) => {
                                         const value = e.target.value;
                                         handleItemChange(
                                           currentBillIndex,
                                           idx,
-                                          "SGST",
+                                          "IGST",
                                           value
-                                        );
-                                        handleItemChange(
-                                          currentBillIndex,
-                                          idx,
-                                          "CGST",
-                                          "0"
                                         );
                                       }}
                                       className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -2754,15 +2756,6 @@ export default function BillWorkflow() {
                                         {row.map(
                                           (img: string, colIndex: number) =>
                                             img ? (
-                                              // <img
-                                              //   key={colIndex}
-                                              //   src={`${img}`}
-                                              //   onClick={() => {
-                                              //     setRowModalIndex(idx)
-                                              //   }}
-                                              //   alt={`Invoice cell ${rowIndex}-${colIndex}`}
-                                              //   className="w-[90px] border-2 border h-[30px] object-contain border"
-                                              // />
                                               <img
                                                 key={colIndex}
                                                 src={img}
