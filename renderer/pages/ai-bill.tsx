@@ -656,7 +656,6 @@ const NumberField = ({ label, value, onChange, style = {} }) => (
 
 export default function BillWorkflow() {
   const [rowModalIndex, setRowModalIndex] = useState<number | null>(null);
-
   const [currentStep, setCurrentStep] = useState(0);
   const [role, setRole] = useState("");
   const [files, setFiles] = useState<any[]>([]);
@@ -674,6 +673,7 @@ export default function BillWorkflow() {
     "Test 1",
     "Test 2",
   ]);
+  const [isWithinState, setIsWithinState] = useState(false);
   const [selectedCompanyName, setSelectedCompanyName] = useState("");
   const [gstNumber, setGstNumber] = useState("07BGUPD3647XXXX");
   const [zoomSrc, setZoomSrc] = useState<string | null>(null);
@@ -772,37 +772,6 @@ export default function BillWorkflow() {
       }
     );
   }, []);
-
-  // const handleNextStep = async () => {
-  //   setIsLoading(true);
-  //   try {
-  //     const requests = files.map(async (fileObj) => {
-  //       const formData = new FormData();
-  //       formData.append("file", fileObj.file);
-  //       formData.append("user_id", "2");
-  //       const response = await axios.post(
-  //         `${BackendLink}/extract-bill-details/`,
-  //         formData,
-  //         {
-  //           headers: {
-  //             "Content-Type":
-  //               "multipart/form-data; boundary=---011000010111000001101001",
-  //           },
-  //         }
-  //       );
-  //       return response.data;
-  //     });
-
-  //     const results = await Promise.all(requests);
-  //     setBillData(results);
-  //     setCurrentStep(2);
-  //   } catch (error: any) {
-  //     console.error("Error extracting bill details:", error);
-  //     toast.error("Error extracting bill details. Please try again.");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
 
   const handleNextStep = async () => {
     setIsLoading(true);
@@ -1066,7 +1035,7 @@ export default function BillWorkflow() {
       billData[newIndex].items.forEach((item) => {
         const gstRate =
           (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
-        const gAmount = parseFloat(item["NET AMT"]) || 0;
+        const gAmount = parseFloat(item["RATE"]) || 0;
         const gstAmount = (gAmount * gstRate) / 100;
         console.log({ gstRate, gAmount });
         if (gstRate > 0) {
@@ -1202,11 +1171,6 @@ export default function BillWorkflow() {
     const totalHalfAmt = entries
       .map(([_, amt]) => amt / 2)
       .reduce((sum, v) => sum + v, 0);
-
-    // return {
-    //   cgst: { percentage: halfRateStr, amount: totalHalfAmt },
-    //   sgst: { percentage: halfRateStr, amount: totalHalfAmt }
-    // };
 
     return {
       cgst: { percentage: "2.5%", amount: totalHalfAmt },
@@ -1579,33 +1543,116 @@ export default function BillWorkflow() {
     }
   }, [companyList, selectedCompanyName]);
 
+  // Helper function to extract state code from GST number
+  const getStateFromGST = (gst: string) => {
+    if (!gst || gst.length < 2) return null;
+    return gst.substring(0, 2);
+  };
+
+  // Check if both parties are in same state
+  const findIsWithinState = (ourGST: string, theirGST: string) => {
+    if (!ourGST || !theirGST) return true; // default to same state if missing
+    return getStateFromGST(ourGST) === getStateFromGST(theirGST);
+  };
+
   // Add this useEffect to initialize totals when bill data changes
+  // useEffect(() => {
+  //   if (billData.length > 0 && billData[currentBillIndex]?.items?.length > 0) {
+  //     // Calculate initial totals
+  //     const totalNetAmount = billData[currentBillIndex].items.reduce(
+  //       (total, item) => {
+  //         console.log(item["NET AMT"], "net amount");
+  //         return total + (parseFloat(item["NET AMT"]) || 0);
+  //       },
+  //       0
+  //     );
+
+  //     // Calculate GST totals by rate
+  //     const gstRateTotals: { [key: string]: number } = {};
+
+  //     const billGstNumber =
+  //       role === "Purchaser"
+  //         ? billData[currentBillIndex]?.senderDetails?.gst
+  //         : billData[currentBillIndex]?.receiverDetails?.gst;
+
+  //     const isWithinStateResponse = findIsWithinState(
+  //       "07BGUPD3647XXXX",
+  //       "07BGUPD3647XXXX"
+  //     );
+
+  //     setIsWithinState(isWithinStateResponse);
+
+  //     billData[currentBillIndex].items.forEach((item) => {
+  //       const gstRate =
+  //         (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
+  //       const gAmount = parseFloat(item["NET AMT"]) || 0;
+  //       const gstAmount = gAmount * (gstRate / 100);
+
+  //       if (gstRate > 0) {
+  //         const rateKey = `${gstRate}%`;
+  //         if (!gstRateTotals[rateKey]) {
+  //           gstRateTotals[rateKey] = 0;
+  //         }
+  //         gstRateTotals[rateKey] += gstAmount;
+  //       }
+  //     });
+
+  //     setNetAmountTotal(totalNetAmount);
+  //     setGstTotals(gstRateTotals);
+  //   }
+  // }, [billData, currentBillIndex]);
+
   useEffect(() => {
     if (billData.length > 0 && billData[currentBillIndex]?.items?.length > 0) {
-      // Calculate initial totals
-      const totalNetAmount = billData[currentBillIndex].items.reduce(
-        (total, item) => {
-          console.log(item["NET AMT"], "net amount");
-          return total + (parseFloat(item["NET AMT"]) || 0);
-        },
-        0
-      );
+      const currentItems = [...billData[currentBillIndex].items];
 
-      // Calculate GST totals by rate
+      // Calculate total NET AMT
+      const totalNetAmount = currentItems.reduce((total, item) => {
+        return total + (parseFloat(item["NET AMT"]) || 0);
+      }, 0);
+
+      // Determine GST distribution logic
+      const billGstNumber =
+        role === "Purchaser"
+          ? billData[currentBillIndex]?.senderDetails?.gst
+          : billData[currentBillIndex]?.receiverDetails?.gst;
+
+      const isWithinStateResponse = findIsWithinState(gstNumber, billGstNumber);
+
+      setIsWithinState(isWithinStateResponse);
+
       const gstRateTotals: { [key: string]: number } = {};
 
-      billData[currentBillIndex].items.forEach((item) => {
-        const gstRate =
-          (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
+      currentItems.forEach((item) => {
+        const gst = parseFloat(item["GST"]) || 0;
         const gAmount = parseFloat(item["NET AMT"]) || 0;
-        const gstAmount = gAmount * (gstRate / 100);
-        if (gstRate > 0) {
-          const rateKey = `${gstRate}%`;
-          if (!gstRateTotals[rateKey]) {
-            gstRateTotals[rateKey] = 0;
-          }
-          gstRateTotals[rateKey] += gstAmount;
+
+        let sgst = 0;
+        let cgst = 0;
+        let igst = 0;
+
+        if (isWithinStateResponse) {
+          // Same state: GST split into SGST and CGST
+          sgst = gst / 2;
+          cgst = gst / 2;
+          item.SGST = sgst.toFixed(2);
+          item.CGST = cgst.toFixed(2);
+          item.IGST = "0.00";
+        } else {
+          // Different state: assign full GST to IGST
+          igst = gst;
+          item.IGST = igst.toFixed(2);
+          item.SGST = "0.00";
+          item.CGST = "0.00";
         }
+
+        const gstRateKey = `${gst}%`;
+        const gstAmount = gAmount * (gst / 100);
+
+        if (!gstRateTotals[gstRateKey]) {
+          gstRateTotals[gstRateKey] = 0;
+        }
+        gstRateTotals[gstRateKey] += gstAmount;
       });
 
       setNetAmountTotal(totalNetAmount);
@@ -1683,7 +1730,8 @@ export default function BillWorkflow() {
 
     try {
       const response = await window.electron.getGSTData(xmlData);
-      setGstNumber(response?.[0]?.gst);
+      console.log(response, "from gst api");
+      // setGstNumber(response?.[0]?.gst);
     } catch (error) {
       console.error("Error fetching companies:", error);
     } finally {
@@ -2086,13 +2134,6 @@ export default function BillWorkflow() {
                             from mobile
                           </div>
                         )}
-                        {/* <button
-                          onClick={resetQRSession}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                          Reset Session
-                        </button> */}
                       </>
                     ) : (
                       <>
@@ -2372,75 +2413,6 @@ export default function BillWorkflow() {
                         </div>
                       </div>
 
-                      {/* <div className="pt-2">
-                        <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
-                          <Building className="w-5 h-5" />
-                          {role === "Purchaser"
-                            ? "Receiver Details"
-                            : "Sender Details"}
-                        </h3>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <TextField
-                            label={
-                              role === "Purchaser"
-                                ? "Receiver Name"
-                                : "Sender Name"
-                            }
-                            value={
-                              role === "Purchaser"
-                                ? billData[currentBillIndex]?.receiverDetails
-                                  ?.name || ""
-                                : billData[currentBillIndex]?.senderDetails
-                                  ?.name || ""
-                            }
-                            onChange={(e) => {
-                              if (role === "Purchaser") {
-                                handleDataChange("receiverDetails", {
-                                  ...billData[currentBillIndex]
-                                    ?.receiverDetails,
-                                  name: e.target.value,
-                                });
-                              } else {
-                                handleDataChange("senderDetails", {
-                                  ...billData[currentBillIndex]?.senderDetails,
-                                  name: e.target.value,
-                                });
-                              }
-                            }}
-                          />
-
-                          <TextField
-                            label={
-                              role === "Purchaser"
-                                ? "Receiver GST"
-                                : "Sender GST"
-                            }
-                            value={
-                              role === "Purchaser"
-                                ? billData[currentBillIndex]?.receiverDetails
-                                  ?.gst || ""
-                                : billData[currentBillIndex]?.senderDetails
-                                  ?.gst || ""
-                            }
-                            onChange={(e) => {
-                              if (role === "Purchaser") {
-                                handleDataChange("receiverDetails", {
-                                  ...billData[currentBillIndex]
-                                    ?.receiverDetails,
-                                  gst: e.target.value,
-                                });
-                              } else {
-                                handleDataChange("senderDetails", {
-                                  ...billData[currentBillIndex]?.senderDetails,
-                                  gst: e.target.value,
-                                });
-                              }
-                            }}
-                          />
-                        </div>
-                      </div> */}
-
                       <div className="pt-2 space-y-6">
                         {/* Sender Section */}
                         <section>
@@ -2539,8 +2511,8 @@ export default function BillWorkflow() {
                         "MRP",
                         "RATE",
                         "DIS",
-                        "SGST",
-                        "CGST",
+                        isWithinState ? "SGST" : "IGST",
+                        isWithinState ? "CGST" : "",
                         "G AMT",
                         "Actions",
                       ].map((head) => (
@@ -2673,36 +2645,68 @@ export default function BillWorkflow() {
                                   className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                               </td>
-                              <td className="px-3 py-2 w-16">
-                                <input
-                                  type="text"
-                                  value={item.SGST || ""}
-                                  onChange={(e) =>
-                                    handleItemChange(
-                                      currentBillIndex,
-                                      idx,
-                                      "SGST",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                              </td>
-                              <td className="px-3 py-2 w-16">
-                                <input
-                                  type="text"
-                                  value={item.CGST || ""}
-                                  onChange={(e) =>
-                                    handleItemChange(
-                                      currentBillIndex,
-                                      idx,
-                                      "CGST",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                              </td>
+                              <>
+                                {isWithinState ? (
+                                  <>
+                                    <td className="px-3 py-2 w-16">
+                                      <input
+                                        type="text"
+                                        value={item.SGST || ""}
+                                        onChange={(e) =>
+                                          handleItemChange(
+                                            currentBillIndex,
+                                            idx,
+                                            "SGST",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2 w-16">
+                                      <input
+                                        type="text"
+                                        value={item.CGST || ""}
+                                        onChange={(e) =>
+                                          handleItemChange(
+                                            currentBillIndex,
+                                            idx,
+                                            "CGST",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      />
+                                    </td>
+                                  </>
+                                ) : (
+                                  <td className="px-3 py-2 w-32">
+                                    <input
+                                      type="text"
+                                      value={
+                                        parseFloat(item.SGST || 0) +
+                                          parseFloat(item.CGST || 0) || ""
+                                      }
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        handleItemChange(
+                                          currentBillIndex,
+                                          idx,
+                                          "SGST",
+                                          value
+                                        );
+                                        handleItemChange(
+                                          currentBillIndex,
+                                          idx,
+                                          "CGST",
+                                          "0"
+                                        );
+                                      }}
+                                      className="w-full border border-gray-300 rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                  </td>
+                                )}
+                              </>
                               <td className="px-3 py-2 w-28">
                                 <p className="w-full rounded-md p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                   {item["G AMT"]}
