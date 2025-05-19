@@ -1,8 +1,13 @@
-
-// "use client"
+// "use client";
 
 // import React, { useState, useEffect } from "react";
-// import { ChevronLeft, CalendarDays, Building2, Calendar } from "lucide-react";
+// import {
+//   ChevronLeft,
+//   CalendarDays,
+//   Building2,
+//   Calendar,
+//   Download as DownloadIcon,
+// } from "lucide-react";
 
 // /* ------------------------------------------------------------------ */
 // /* 1️⃣  pull the whole store from localStorage once on mount          */
@@ -17,11 +22,20 @@
 // }
 
 // /* ------------------------------------------------------------------ */
-// /*  tiny select helper stays the same                                */
+// /*  tiny select helper                                                */
 // /* ------------------------------------------------------------------ */
-// const SelectInput = ({ icon: Icon, label, value, onChange, options, placeholder }) => (
+// const SelectInput = ({
+//   icon: Icon,
+//   label,
+//   value,
+//   onChange,
+//   options,
+//   placeholder,
+// }) => (
 //   <div className="relative">
-//     <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+//     <label className="block text-sm font-medium text-gray-700 mb-1">
+//       {label}
+//     </label>
 //     <div className="relative">
 //       <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
 //       <select
@@ -62,9 +76,11 @@
 
 //   /* ----- derive selections ----- */
 //   const firmCalendar = bills[selectedFirm] || {};
-//   const months       = Object.keys(firmCalendar);
-//   const dates        = selectedMonth ? Object.keys(firmCalendar[selectedMonth] || {}) : [];
-//   const billImages   =
+//   const months = Object.keys(firmCalendar);
+//   const dates = selectedMonth
+//     ? Object.keys(firmCalendar[selectedMonth] || {})
+//     : [];
+//   const billImages =
 //     selectedMonth && selectedDate
 //       ? firmCalendar[selectedMonth]?.[selectedDate] || []
 //       : [];
@@ -75,7 +91,6 @@
 //     setSelectedMonth("");
 //     setSelectedDate("");
 //   };
-
 //   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 //     setSelectedMonth(e.target.value);
 //     setSelectedDate("");
@@ -85,6 +100,7 @@
 //   return (
 //     <div className="min-h-screen text-black bg-gradient-to-br from-blue-50 to-indigo-50">
 //       <div className="max-w-6xl mx-auto p-6">
+//         {/* back button */}
 //         <div className="mb-8">
 //           <button
 //             onClick={() => window.history.back()}
@@ -95,12 +111,16 @@
 //           </button>
 //         </div>
 
+//         {/* card */}
 //         <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-//           <h1 className="text-3xl font-bold text-gray-900 mb-2">Bill Management</h1>
+//           <h1 className="text-3xl font-bold text-gray-900 mb-2">
+//             Bill Management
+//           </h1>
 //           <p className="text-gray-500 mb-8">
 //             Select firm, month, and date to view corresponding bills
 //           </p>
 
+//           {/* selects */}
 //           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 //             <SelectInput
 //               icon={Building2}
@@ -134,6 +154,7 @@
 //             )}
 //           </div>
 
+//           {/* gallery */}
 //           {selectedMonth && selectedDate && (
 //             <div className="bg-gray-50 rounded-xl p-6">
 //               {billImages.length > 0 ? (
@@ -141,18 +162,32 @@
 //                   <h2 className="text-xl font-semibold text-gray-900 mb-6">
 //                     Bills for {selectedFirm} – {selectedMonth} {selectedDate}
 //                   </h2>
+
 //                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 //                     {billImages.map((bill: any, idx: number) => (
 //                       <div
 //                         key={idx}
-//                         className="group relative bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden"
+//                         className="group relative bg-white rounded-lg shadow-sm hover:shadow-lg transition-all overflow-hidden"
 //                       >
+//                         {/* image */}
 //                         <div className="aspect-square relative">
 //                           <img
 //                             src={bill.imageUrl}
 //                             alt={`Bill ${idx + 1}`}
 //                             className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-200"
 //                           />
+
+//                           {/* download btn */}
+//                           <a
+//                             href={bill.imageUrl}
+//                             download={`bill-${selectedFirm}-${selectedMonth}-${selectedDate}-${idx + 1}.jpg`}
+//                             title="Download"
+//                             className="absolute top-2 right-2 p-2 rounded-full bg-black/60 text-white opacity-0
+//                                        group-hover:opacity-100 transition-opacity backdrop-blur hover:bg-black"
+//                             onClick={(e) => e.stopPropagation()}
+//                           >
+//                             <DownloadIcon className="w-4 h-4" />
+//                           </a>
 //                         </div>
 //                       </div>
 //                     ))}
@@ -170,7 +205,6 @@
 //     </div>
 //   );
 // }
-
 
 
 "use client";
@@ -233,13 +267,14 @@ const SelectInput = ({
 );
 
 /* ------------------------------------------------------------------ */
-/* 2️⃣  BillManagement component                                      */
+/* 2️⃣  BillManagement component with image zoom                      */
 /* ------------------------------------------------------------------ */
 export default function BillManagement() {
   const [bills, setBills] = useState<Record<string, any>>({});
   const [selectedFirm, setSelectedFirm] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
+  const [zoomSrc, setZoomSrc] = useState<string | null>(null);
 
   /* load once (and whenever the tab regains focus, optional) */
   useEffect(() => {
@@ -261,12 +296,12 @@ export default function BillManagement() {
       : [];
 
   /* ----- handlers ----- */
-  const handleFirmChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleFirmChange = (e) => {
     setSelectedFirm(e.target.value);
     setSelectedMonth("");
     setSelectedDate("");
   };
-  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleMonthChange = (e) => {
     setSelectedMonth(e.target.value);
     setSelectedDate("");
   };
@@ -339,13 +374,14 @@ export default function BillManagement() {
                   </h2>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {billImages.map((bill: any, idx: number) => (
+                    {billImages.map((bill, idx) => (
                       <div
                         key={idx}
                         className="group relative bg-white rounded-lg shadow-sm hover:shadow-lg transition-all overflow-hidden"
                       >
                         {/* image */}
-                        <div className="aspect-square relative">
+                        <div className="aspect-square relative cursor-zoom-in"
+                             onClick={() => setZoomSrc(bill.imageUrl)}>
                           <img
                             src={bill.imageUrl}
                             alt={`Bill ${idx + 1}`}
@@ -377,6 +413,20 @@ export default function BillManagement() {
           )}
         </div>
       </div>
+
+      {/* zoom modal */}
+      {zoomSrc && (
+        <div
+          className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center"
+          onClick={() => setZoomSrc(null)}
+        >
+          <img
+            src={zoomSrc}
+            alt="Zoomed bill"
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
+      )}
     </div>
   );
 }
