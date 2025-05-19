@@ -598,11 +598,10 @@ const Stepper = ({ steps, currentStep }: StepperProps) => {
           <div key={step} className="flex-1 relative">
             <div className="flex flex-col items-center">
               <div
-                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${
-                  currentStep >= index
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-                    : "bg-gray-200 text-gray-500"
-                }`}
+                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${currentStep >= index
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                  : "bg-gray-200 text-gray-500"
+                  }`}
               >
                 {currentStep > index ? (
                   <Check className="w-5 h-5" />
@@ -611,11 +610,10 @@ const Stepper = ({ steps, currentStep }: StepperProps) => {
                 )}
               </div>
               <div
-                className={`mt-2 text-center ${
-                  currentStep >= index
-                    ? "text-gray-800 font-medium"
-                    : "text-gray-400"
-                }`}
+                className={`mt-2 text-center ${currentStep >= index
+                  ? "text-gray-800 font-medium"
+                  : "text-gray-400"
+                  }`}
               >
                 <span className="hidden md:block">{step}</span>
                 <span className="md:hidden">{step.split(" ")[0]}</span>
@@ -1026,7 +1024,7 @@ export default function BillWorkflow() {
     if (billData.length > 0 && billData[newIndex]?.items?.length > 0) {
       // Calculate initial totals for the new bill
       const totalNetAmount = billData[newIndex].items.reduce((total, item) => {
-        return total + (parseFloat(item["NET AMT"]) || 0);
+        return total + (parseFloat(item["RATE"]) * parseFloat(item["QTY"]));
       }, 0);
 
       // Calculate GST totals by rate
@@ -1035,7 +1033,7 @@ export default function BillWorkflow() {
       billData[newIndex].items.forEach((item) => {
         const gstRate =
           (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
-        const gAmount = parseFloat(item["RATE"]) || 0;
+        const gAmount = parseFloat(item["RATE"]) * parseFloat(item["QTY"])
         const gstAmount = (gAmount * gstRate) / 100;
         console.log({ gstRate, gAmount });
         if (gstRate > 0) {
@@ -1511,7 +1509,7 @@ export default function BillWorkflow() {
 
     // total taxable
     const taxableTotal = items.reduce(
-      (sum, itm) => sum + safeNum(itm["NET AMT"]),
+      (sum, itm) => sum + safeNum(itm["RATE"] * itm["QTY"]),
       0
     );
 
@@ -1520,7 +1518,9 @@ export default function BillWorkflow() {
     items.forEach((itm) => {
       const sgst = safeNum(itm.SGST);
       const cgst = safeNum(itm.CGST);
-      const rate = sgst + cgst;
+      const igst = safeNum(itm.IGST);
+
+      const rate = sgst + cgst + igst;
       if (!rate) return;
       const key = `${rate}%`;
       const gstAmt = safeNum(itm["NET AMT"]) * (rate / 100);
@@ -1555,52 +1555,6 @@ export default function BillWorkflow() {
     return getStateFromGST(ourGST) === getStateFromGST(theirGST);
   };
 
-  // Add this useEffect to initialize totals when bill data changes
-  // useEffect(() => {
-  //   if (billData.length > 0 && billData[currentBillIndex]?.items?.length > 0) {
-  //     // Calculate initial totals
-  //     const totalNetAmount = billData[currentBillIndex].items.reduce(
-  //       (total, item) => {
-  //         console.log(item["NET AMT"], "net amount");
-  //         return total + (parseFloat(item["NET AMT"]) || 0);
-  //       },
-  //       0
-  //     );
-
-  //     // Calculate GST totals by rate
-  //     const gstRateTotals: { [key: string]: number } = {};
-
-  //     const billGstNumber =
-  //       role === "Purchaser"
-  //         ? billData[currentBillIndex]?.senderDetails?.gst
-  //         : billData[currentBillIndex]?.receiverDetails?.gst;
-
-  //     const isWithinStateResponse = findIsWithinState(
-  //       "07BGUPD3647XXXX",
-  //       "07BGUPD3647XXXX"
-  //     );
-
-  //     setIsWithinState(isWithinStateResponse);
-
-  //     billData[currentBillIndex].items.forEach((item) => {
-  //       const gstRate =
-  //         (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
-  //       const gAmount = parseFloat(item["NET AMT"]) || 0;
-  //       const gstAmount = gAmount * (gstRate / 100);
-
-  //       if (gstRate > 0) {
-  //         const rateKey = `${gstRate}%`;
-  //         if (!gstRateTotals[rateKey]) {
-  //           gstRateTotals[rateKey] = 0;
-  //         }
-  //         gstRateTotals[rateKey] += gstAmount;
-  //       }
-  //     });
-
-  //     setNetAmountTotal(totalNetAmount);
-  //     setGstTotals(gstRateTotals);
-  //   }
-  // }, [billData, currentBillIndex]);
 
   useEffect(() => {
     if (billData.length > 0 && billData[currentBillIndex]?.items?.length > 0) {
@@ -1608,7 +1562,7 @@ export default function BillWorkflow() {
 
       // Calculate total NET AMT
       const totalNetAmount = currentItems.reduce((total, item) => {
-        return total + (parseFloat(item["NET AMT"]) || 0);
+        return total + (parseFloat(item["RATE"]) * parseFloat(item["QTY"]));
       }, 0);
 
       // Determine GST distribution logic
@@ -1625,7 +1579,7 @@ export default function BillWorkflow() {
 
       currentItems.forEach((item) => {
         const gst = parseFloat(item["GST"]) || 0;
-        const gAmount = parseFloat(item["NET AMT"]) || 0;
+        const gAmount = parseFloat(item["RATE"]) * parseFloat(item["QTY"])
 
         let sgst = 0;
         let cgst = 0;
@@ -1815,7 +1769,7 @@ export default function BillWorkflow() {
                 </span>
               </div>
               <div className="pt-2 mt-2 border-t border-gray-200 flex justify-between items-center">
-                <span className="font-medium">Gross Amount Total</span>
+                <span className="font-medium text-black">Gross Amount Total</span>
                 <span className="text-xl font-bold text-blue-700">
                   ₹{(netAmountTotal + gstTotalAmount).toFixed(2)}
                 </span>
@@ -2012,11 +1966,10 @@ export default function BillWorkflow() {
                 onClick={() => setCurrentStep(1)}
                 disabled={!selectedCompanyName}
                 className={`px-6 py-2 rounded-md text-white font-medium transition-all 
-                        ${
-                          !selectedCompanyName
-                            ? "bg-gray-300 cursor-not-allowed"
-                            : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        }`}
+                        ${!selectedCompanyName
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  }`}
               >
                 Continue
               </button>
@@ -2069,11 +2022,10 @@ export default function BillWorkflow() {
               onDragOver={handleDragOverFiles}
               onDragLeave={handleDragLeaveFiles}
               onDrop={handleDropFiles}
-              className={`group relative bg-white rounded-2xl border-2 border-dashed ${
-                isDraggingFile
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-300 hover:border-blue-300"
-              } transition-all duration-200 py-16 px-6 text-center cursor-pointer shadow-lg hover:shadow-xl`}
+              className={`group relative bg-white rounded-2xl border-2 border-dashed ${isDraggingFile
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300 hover:border-blue-300"
+                } transition-all duration-200 py-16 px-6 text-center cursor-pointer shadow-lg hover:shadow-xl`}
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="space-y-6 relative z-10">
@@ -2300,11 +2252,10 @@ export default function BillWorkflow() {
               <button
                 onClick={handleNextStep}
                 disabled={files.length === 0 && mobileFiles.length === 0}
-                className={`px-6 py-3 rounded-lg font-medium text-base transition-all flex items-center gap-2 ${
-                  files.length > 0 || mobileFiles.length > 0
-                    ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
-                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                }`}
+                className={`px-6 py-3 rounded-lg font-medium text-base transition-all flex items-center gap-2 ${files.length > 0 || mobileFiles.length > 0
+                  ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  }`}
               >
                 Process Files
                 <ChevronRight className="w-5 h-5" />
@@ -2343,11 +2294,10 @@ export default function BillWorkflow() {
                           handleBillChange(Math.max(0, currentBillIndex - 1))
                         }
                         disabled={currentBillIndex === 0}
-                        className={`flex items-center justify-center p-2 rounded-full ${
-                          currentBillIndex === 0
-                            ? "text-gray-300 cursor-not-allowed"
-                            : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                        } transition-colors`}
+                        className={`flex items-center justify-center p-2 rounded-full ${currentBillIndex === 0
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                          } transition-colors`}
                       >
                         <ArrowLeft className="w-5 h-5" />
                       </button>
@@ -2357,11 +2307,10 @@ export default function BillWorkflow() {
                           <button
                             key={idx}
                             onClick={() => handleBillChange(idx)}
-                            className={`w-2.5 h-2.5 rounded-full transition-all ${
-                              currentBillIndex === idx
-                                ? "bg-blue-600 w-6"
-                                : "bg-gray-300 hover:bg-gray-400"
-                            }`}
+                            className={`w-2.5 h-2.5 rounded-full transition-all ${currentBillIndex === idx
+                              ? "bg-blue-600 w-6"
+                              : "bg-gray-300 hover:bg-gray-400"
+                              }`}
                             aria-label={`Go to bill ${idx + 1}`}
                           />
                         ))}
@@ -2543,11 +2492,10 @@ export default function BillWorkflow() {
                           <>
                             <tr
                               key={idx}
-                              className={`transition-colors mt-10 ${
-                                item.Qty == 0 || item.RATE == 0
-                                  ? "bg-red-300"
-                                  : ""
-                              }`}
+                              className={`transition-colors mt-10 ${item.Qty == 0 || item.RATE == 0
+                                ? "bg-red-300"
+                                : ""
+                                }`}
                             >
                               <td
                                 className="px-3 py-2.5 w-72 relative"
@@ -2731,11 +2679,10 @@ export default function BillWorkflow() {
 
                             <tr className="pb-10">
                               <td
-                                className={`px-3 py-2.5 text-center border-b-8 border-gray-300 ${
-                                  item.Qty == 0 || item.RATE == 0
-                                    ? "bg-red-300"
-                                    : ""
-                                }`}
+                                className={`px-3 py-2.5 text-center border-b-8 border-gray-300 ${item.Qty == 0 || item.RATE == 0
+                                  ? "bg-red-300"
+                                  : ""
+                                  }`}
                                 colSpan={11}
                               >
                                 <div className="gap-2 mx-auto w-[fit-content]">
@@ -2788,37 +2735,37 @@ export default function BillWorkflow() {
 
                     {(!billData[currentBillIndex]?.items ||
                       billData[currentBillIndex]?.items.length === 0) && (
-                      <tr>
-                        <td
-                          colSpan={12}
-                          className="px-6 py-8 text-center text-gray-500"
-                        >
-                          <div className="flex flex-col items-center">
-                            <svg
-                              className="w-12 h-12 text-gray-300 mb-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1}
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                              />
-                            </svg>
-                            <p className="mb-2">No items found in this bill</p>
-                            <button
-                              onClick={() => addItem(currentBillIndex)}
-                              className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
-                            >
-                              <Plus className="w-4 h-4 mr-1" />
-                              Add an item
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+                        <tr>
+                          <td
+                            colSpan={12}
+                            className="px-6 py-8 text-center text-gray-500"
+                          >
+                            <div className="flex flex-col items-center">
+                              <svg
+                                className="w-12 h-12 text-gray-300 mb-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={1}
+                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                                />
+                              </svg>
+                              <p className="mb-2">No items found in this bill</p>
+                              <button
+                                onClick={() => addItem(currentBillIndex)}
+                                className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+                              >
+                                <Plus className="w-4 h-4 mr-1" />
+                                Add an item
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                   </tbody>
                 </table>
               </div>
@@ -2937,14 +2884,12 @@ export default function BillWorkflow() {
                         </p>
                         <p className="text-sm text-gray-600 truncate">
                           {role === "Purchaser"
-                            ? `From: ${
-                                billData[index]?.senderDetails?.name ||
-                                "Unknown"
-                              }`
-                            : `To: ${
-                                billData[index]?.receiverDetails?.name ||
-                                "Unknown"
-                              }`}
+                            ? `From: ${billData[index]?.senderDetails?.name ||
+                            "Unknown"
+                            }`
+                            : `To: ${billData[index]?.receiverDetails?.name ||
+                            "Unknown"
+                            }`}
                         </p>
                         <p className="text-xs text-gray-500">
                           {billData[index]?.items?.length || 0} items
@@ -3022,17 +2967,17 @@ export default function BillWorkflow() {
         images={
           rowModalIndex !== null
             ? (
-                billData[currentBillIndex].invoice_items_cropped_images
-                  ?.cell_images ?? []
+              billData[currentBillIndex].invoice_items_cropped_images
+                ?.cell_images ?? []
+            )
+              .filter(
+                (_, r) =>
+                  r === 0 ||
+                  r === rowModalIndex + 1 ||
+                  r === rowModalIndex + 2
               )
-                .filter(
-                  (_, r) =>
-                    r === 0 ||
-                    r === rowModalIndex + 1 ||
-                    r === rowModalIndex + 2
-                )
-                .flat()
-                .filter(Boolean)
+              .flat()
+              .filter(Boolean)
             : []
         }
         onUpdate={(field, val) =>
