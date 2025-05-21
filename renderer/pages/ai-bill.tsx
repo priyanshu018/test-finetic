@@ -40,6 +40,8 @@ import {
 import { supabase } from "../lib/supabase";
 import { parseStringPromise } from "xml2js";
 import QRCode from "react-qr-code";
+import * as XLSX from "xlsx";
+
 
 const toFixed2 = (num: number) => Number(num || 0).toFixed(2);
 const safeNum = (v: any) => parseFloat(v) || 0;
@@ -686,6 +688,44 @@ export default function BillWorkflow() {
   useEffect(() => {
     return () => files.forEach((file) => URL.revokeObjectURL(file.dataUrl));
   }, [files]);
+
+  const handleExportItemsToExcel = () => {
+    const bill = billData[currentBillIndex];
+    if (!bill || !bill.items?.length) {
+      toast.warn("No items to export in this bill");
+      return;
+    }
+
+    /* 1.  Prep a flat JSON array.
+           If you prefer friendlier column names, change the keys here. */
+    const rows = bill.items.map((row) => ({
+      Product: row.Product,
+      Quantity: row.QTY,
+      HSN: row.HSN,
+      MRP: row.MRP,
+      Rate: row.RATE,
+      Discount: row.DIS,
+      SGST: row.SGST,
+      CGST: row.CGST,
+      IGST: row.IGST,
+      "Gross Amt": row["G AMT"],
+      "Net Amt": row["NET AMT"],
+      Unit: row.UNIT,
+    }));
+
+    /* 2.  Build the workbook */
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook: XLSX.WorkBook = {
+      Sheets: { Items: worksheet },
+      SheetNames: ["Items"],
+    };
+
+    /* 3.  Trigger download */
+    const filename =
+      `InvoiceItems-${bill.invoiceNumber || currentBillIndex + 1}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+    toast.success(`Exported ${rows.length} items → ${filename}`);
+  };
 
   const readFile = (file: File) =>
     new Promise((resolve, reject) => {
@@ -1730,8 +1770,10 @@ export default function BillWorkflow() {
                     <div className="flex items-center">
                       <span className="font-medium">{rate} GST</span>
                       <span className="text-gray-500 ml-2">
-                        (CGST: {parseFloat(rate) / 2}%, SGST:{" "}
-                        {parseFloat(rate) / 2}%)
+                        {isWithinState ?
+                          `CGST: ${parseFloat(rate) / 2}%, SGST: ${parseFloat(rate) / 2}%` :
+                          `IGST: ${rate}%`
+                        }
                       </span>
                     </div>
                     <span className="font-medium text-black">
@@ -2452,13 +2494,23 @@ export default function BillWorkflow() {
                   Item Details
                 </h3>
 
+                <div className='flex items-center gap-2'>
                 <button
-                  onClick={() => addItem(currentBillIndex)}
-                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors shadow-sm"
-                >
-                  <PlusCircle className="w-4 h-4 mr-1.5" />
-                  Add Item
-                </button>
+                    onClick={() => addItem(currentBillIndex)}
+                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors shadow-sm"
+                  >
+                    <PlusCircle className="w-4 h-4 mr-1.5" />
+                    Add Item
+                  </button>
+                  <button
+                    onClick={handleExportItemsToExcel}
+                    className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
+                  >
+                    <FileText className="w-4 h-4 mr-1.5" />
+                    Export to Excel
+                  </button>
+
+                </div>
               </div>
 
               <div className="overflow-x-auto">
