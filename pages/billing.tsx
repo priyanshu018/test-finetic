@@ -1,362 +1,525 @@
-import React, { useState } from 'react';
-import { ArrowUpRight, Clock, BarChart3, CreditCard, TrendingUp, ChevronRight, Plus, ArrowRight } from 'lucide-react';
+// @ts-nocheck
+'use client';
 
-const BillingPage = () => {
-  const [activeTab, setActiveTab] = useState('usage');
-  
-  // Mock data
-  const billingData = {
-    currentBalance: 234.50,
-    usageHistory: [
-      { month: "Jan", amount: 210 },
-      { month: "Feb", amount: 180 },
-      { month: "Mar", amount: 240 },
-      { month: "Apr", amount: 238 },
-    ],
-    lastTopUps: [
-      { id: 1, date: "Mar 28, 2025", amount: 150.00, description: "Monthly top-up" },
-      { id: 2, date: "Mar 15, 2025", amount: 75.00, description: "Additional credit" },
-      { id: 3, date: "Feb 28, 2025", amount: 150.00, description: "Monthly top-up" },
-    ],
+import React, { useState, useEffect } from 'react';
+import { createGlobalStyle } from 'styled-components';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts';
+import {
+  User,
+  LogOut,
+  CreditCard,
+  DollarSign,
+  Zap,
+  FileText,
+  Bell,
+  Settings,
+  Download,
+  ChevronRight,
+  Calendar,
+  ArrowUpRight,
+  TrendingUp,
+  Info,
+  IndianRupee
+} from 'lucide-react';
+import { useAuthenticatedLayout } from '../lib/authhook';
+import { supabase } from '../lib/supabase';
+import { RazorpayOrderOptions, useRazorpay } from 'react-razorpay';
+import { toast } from 'sonner';
+
+// Global styles for animations
+const GlobalStyle = createGlobalStyle`
+  @keyframes progressAnimation {
+    0% { width: 5%; }
+    50% { width: 70%; }
+    100% { width: 95%; }
+  }
+  .animate-progressBar {
+    animation: progressAnimation 2s ease-in-out infinite;
+  }
+`;
+
+const Dashboard = () => {
+  // Ensure the user is authenticated
+  const loading = useAuthenticatedLayout();
+  const { Razorpay } = useRazorpay();
+
+  // Local state
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [credits, setCredits] = useState(0);
+  const [billsProcessed, setBillsProcessed] = useState(0);
+  const [usedThisMonth, setUsedThisMonth] = useState(0);
+  const [monthlyUsage, setMonthlyUsage] = useState([]);
+  const [weeklyUsage, setWeeklyUsage] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [chartType, setChartType] = useState('weekly');
+
+  // Top-up modal state
+  const [topUpAmount, setTopUpAmount] = useState('');
+  const [estimatedBills, setEstimatedBills] = useState(0);
+  const [pricePerBill, setPricePerBill] = useState(3); // Default price per bill in INR
+
+  // Quick select options for top-up (in INR)
+  const quickSelectOptions = [1000, 2000, 5000, 10000];
+
+  // Calculate estimated bills based on top-up amount
+  useEffect(() => {
+    if (topUpAmount) {
+      const numericAmount = parseFloat(topUpAmount);
+      if (!isNaN(numericAmount)) {
+        setEstimatedBills(Math.floor(numericAmount / pricePerBill));
+      } else {
+        setEstimatedBills(0);
+      }
+    } else {
+      setEstimatedBills(0);
+    }
+  }, [topUpAmount, pricePerBill]);
+
+  // Handle quick select option click
+  const handleQuickSelectClick = (amount) => {
+    setTopUpAmount(amount.toString());
   };
 
-  const handleTopUp = () => {
-    // In a real app, this would redirect to your website
-    window.open('https://www.fineticai.com/', '_blank');
+  // Handle top-up amount input change
+  const handleTopUpAmountChange = (e) => {
+    const value = e.target.value;
+    if (value === '' || /^\d+$/.test(value)) {
+      setTopUpAmount(value);
+    }
   };
 
-  const goToHome = () => {
-    // Navigate back to home page
-    window.location.href = '/next';
+  const fetchData = async () => {
+    // 1) Get current session
+    const {
+      data: { session },
+      error: sessionError
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      console.error('Error fetching session:', sessionError);
+      return;
+    }
+    if (!session || !session.user) return;
+
+    const email = session.user.email;
+    setUserEmail(email);
+
+    // 2) Fetch the user record from 'users' table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (userError) {
+      console.error('Error fetching user record:', userError);
+      return;
+    }
+    const userId = userData.id ?? "";
+
+    // 3) Sum all recharge amounts for this user
+    const { data: rechargeData, error: rechargeError } = await supabase
+      .from('recharge')
+      .select('*')
+      .eq("user_id", userId);
+
+    if (rechargeError) {
+      console.error('Error fetching recharge data:', rechargeError);
+      return;
+    }
+    const userRecharges = rechargeData.filter(r => r.user_id === userId);
+    const totalRecharges = userRecharges.reduce((acc, curr) => parseInt(acc) + parseInt(curr.amount), 0);
+
+    // 4) Sum all usage counts for this user
+    const { data: usageData, error: usageError } = await supabase
+      .from('usage_count')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (usageError) {
+      console.error('Error fetching usage data:', usageError);
+      return;
+    }
+    const totalUsage = usageData.reduce((acc, curr) => acc + 1, 0);
+
+    // 5) Calculate credits and other stats
+    const userCredits = totalRecharges - (totalUsage * 3);
+    setCredits(userCredits);
+    setBillsProcessed(totalUsage);
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthlyUsageCount = usageData
+      .filter((u) => new Date(u.created_at) >= startOfMonth)
+      .reduce((acc, curr) => acc + curr.count, 0);
+    setUsedThisMonth(monthlyUsageCount);
+
+    // 6) Build monthly usage data for the chart
+    const usageByMonthMap = {};
+    usageData.forEach((u) => {
+      const date = new Date(u.created_at);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      usageByMonthMap[monthKey] = (usageByMonthMap[monthKey] || 0) + u.count;
+    });
+
+    // 7) Build weekly usage data for the chart
+    const usageByWeekMap = {};
+    usageData.forEach((u) => {
+      const date = new Date(u.created_at);
+      // Get the start of the week (Sunday as start)
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay());
+      const weekKey = weekStart.toISOString().split('T')[0]; // e.g., "2025-03-16"
+      usageByWeekMap[weekKey] = (usageByWeekMap[weekKey] || 0) + 1;
+    });
+
+    const weeklyUsageArray = Object.entries(usageByWeekMap)
+      .map(([weekKey, count]) => {
+        const weekStartDate = new Date(weekKey);
+        return {
+          name: `Week of ${weekStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+          usage: count
+        };
+      })
+      .sort((a, b) => new Date(a.name) - new Date(b.name));
+    setWeeklyUsage(weeklyUsageArray);
   };
 
-  return (
-    <div className="min-h-screen w-full bg-gray-50 font-sans">
-      {/* App Header */}
-      <div className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={goToHome}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
-                <path d="M19 12H5"></path>
-                <path d="M12 19l-7-7 7-7"></path>
+  // Fetch data from Supabase
+  useEffect(() => {
+    fetchData();
+  }, [loading]);
+
+  // Helper function for month names
+  const getMonthName = (month) => {
+    const monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return monthNames[month - 1] || '';
+  };
+
+  // Handler for completing purchase using react-razorpay
+  const handleCompletePurchase = async () => {
+    const amount = parseFloat(topUpAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+
+    // Create an order via the backend API
+    const res = await fetch('/api/razorpay/create_order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, currency: 'INR' }),
+    });
+    const orderData = await res.json();
+    if (orderData.error) {
+      alert(`Order creation failed: ${orderData.error}`);
+      return;
+    }
+
+    // Prepare options for Razorpay Checkout
+    const options: RazorpayOrderOptions = {
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "",
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: 'Finetic AI',
+      description: 'Top Up Credits',
+      order_id: orderData.id,
+      handler: async (response) => {
+        setShowTopUpModal(false);
+        toast.success(`Credit recharge for ${orderData.amount / 100} successfull`);
+        fetchData();
+        // Optionally, call an API to update your backend with the payment details
+      },
+      prefill: {
+        name: userEmail.split('@')[0],
+        email: userEmail,
+      },
+      theme: {
+        color: '#10B981',
+      },
+    };
+
+    // Use react-razorpay to open the checkout modal
+    const rzp = new Razorpay(options);
+    rzp.open();
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-white to-gray-50">
+        <div className="text-center p-8 rounded-xl bg-white shadow-lg shadow-green-100/50 max-w-md mx-auto">
+          <div className="relative h-20 w-20 mx-auto mb-6">
+            {/* Outer spinning circle */}
+            <div className="absolute inset-0 rounded-full border-4 border-green-100 border-t-green-500 animate-spin"></div>
+            {/* Inner pulsing circle */}
+            <div className="absolute inset-3 rounded-full bg-green-50 flex items-center justify-center animate-pulse">
+              <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span className="text-sm font-medium text-gray-700">Back</span>
-            </button>
-            
-            <div className="flex items-center">
-              <span className="text-xl font-semibold text-gray-900">
-                <span className="text-blue-600">Finetic</span>AI
-              </span>
             </div>
           </div>
-          <button 
-            onClick={handleTopUp}
-            className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
-          >
-            <span>Top Up</span>
-            <div className="w-5 h-5 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
-              <Plus size={12} />
-            </div>
-          </button>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Preparing Your Dashboard</h3>
+          <p className="text-gray-500 mb-4">Fetching your latest data and insights...</p>
+          {/* Progress bar */}
+          <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3 overflow-hidden">
+            <div className="bg-green-500 h-1.5 rounded-full animate-progressBar"></div>
+          </div>
+          <p className="text-xs text-gray-400">This may take a few moments</p>
         </div>
       </div>
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Balance Section */}
-        <div className="mb-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Balance Card */}
-          <div className="lg:col-span-4 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-md transition-all">
-            <div className="p-8 relative">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full -mt-16 -mr-16 opacity-40 group-hover:opacity-60 transition-opacity"></div>
-              
-              <h2 className="text-sm uppercase tracking-wider text-gray-500 font-semibold mb-3">Available Balance</h2>
-              <div className="flex items-baseline mb-6">
-                <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">₹{billingData.currentBalance}</span>
-                <span className="text-sm text-gray-500 ml-2">credits</span>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <GlobalStyle />
+      {/* Top Navigation */}
+      <header className="bg-white shadow-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <div className="text-xl font-bold text-green-600">Finetic AI</div>
+            </div>
+            <div className="flex items-center space-x-5">
+              <div className="relative group">
+                <div className="flex items-center space-x-2 cursor-pointer">
+                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                    {userEmail.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">{userEmail.split('@')[0]}</span>
+                </div>
+                <div className="absolute right-0 w-48 py-2 bg-white rounded-md shadow-lg hidden group-hover:block">
+                  <button onClick={async () => await supabase.auth.signOut()} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Log out
+                  </button>
+                </div>
               </div>
-              
-              <button 
-                onClick={handleTopUp}
-                className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 px-4 py-3 rounded-xl transition-colors text-sm font-medium flex items-center justify-center gap-2 group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-blue-500 group-hover:text-white"
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Dashboard Overview</h1>
+              <div className="flex items-center mt-1">
+                <Calendar className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-500 ml-2">
+                  {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowTopUpModal(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              ₹ Top Up Credits
+            </button>
+          </div>
+
+          {/* Key Stats Section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* Credits Card */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center mb-4">
+                <div className="p-3 rounded-full bg-emerald-500/10 text-emerald-600">₹</div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Available Credits</p>
+                  <p className="text-2xl font-bold text-gray-900">₹{credits.toLocaleString('en-IN')}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500"></p>
+                <div className="flex items-center text-emerald-600 text-sm font-medium">
+                  <ArrowUpRight className="h-4 w-4 mr-1" />
+                </div>
+              </div>
+            </div>
+
+            {/* Bills Processed Card */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center mb-4">
+                <div className="p-3 rounded-full bg-blue-500/10 text-blue-600">
+                  <FileText className="h-6 w-6" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Bills Processed</p>
+                  <p className="text-2xl font-bold text-gray-900">{billsProcessed}</p>
+                </div>
+              </div>
+              <div className="mt-2">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-gray-500">This month</span>
+                </div>
+                <div className="w-full bg-white/60 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-blue-500 h-2 rounded-full transition-all duration-500 ease-in-out"
+                    style={{ width: billsProcessed > 0 ? `${(usedThisMonth / billsProcessed) * 100}%` : '0%' }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Time Saved Card */}
+            <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center mb-4">
+                <div className="p-3 rounded-full bg-purple-500/10 text-purple-600">
+                  <Zap className="h-6 w-6" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Time Saved</p>
+                  <p className="text-2xl font-bold text-gray-900">{Math.round((billsProcessed * 6) / 60)} hours</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 flex items-center">
+                <span className="inline-block w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
+                6 minutes saved per bill on average
+              </p>
+            </div>
+          </div>
+
+          {/* Two Column Layout for Charts and Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 mb-8">
+            {/* Usage Graph */}
+            <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-semibold text-gray-900">Processing Activity</h2>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setChartType('weekly')}
+                    className={`px-3 py-1 text-xs font-medium rounded-full ${chartType === 'weekly' ? 'bg-green-50 text-green-700' : 'text-gray-500 hover:bg-gray-100'}`}>
+                    Weekly
+                  </button>
+                </div>
+              </div>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartType === 'monthly' ? monthlyUsage : weeklyUsage}>
+                    <defs>
+                      <linearGradient id="colorUsage" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#EEE" />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }} />
+                    <Area type="monotone" dataKey="usage" stroke="#10B981" fillOpacity={1} fill="url(#colorUsage)" strokeWidth={3} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+          </div>
+
+          {/* Download Windows App */}
+        </main>
+      </div>
+
+      {/* Top Up Modal */}
+      {showTopUpModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Top Up Credits</h2>
+            <p className="text-gray-600 mb-6">
+              Enter the amount you want to recharge or select from the options below.
+            </p>
+
+            {/* Amount Input Field */}
+            <div className="relative mb-6">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <IndianRupee className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={topUpAmount}
+                onChange={handleTopUpAmountChange}
+                placeholder="Enter amount"
+                className="block w-full pl-10 pr-12 py-3 border-2 border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 text-gray-900 text-lg font-medium"
+              />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <span className="text-gray-500 text-sm">INR</span>
+              </div>
+            </div>
+
+            {/* Quick Select Bubbles */}
+            <div className="flex flex-wrap gap-3 mb-6">
+              {quickSelectOptions.map((amount, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleQuickSelectClick(amount)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${topUpAmount === amount.toString()
+                    ? 'bg-green-100 text-green-800 border-2 border-green-500'
+                    : 'bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200'
+                    }`}
+                >
+                  ₹{amount.toLocaleString('en-IN')}
+                </button>
+              ))}
+            </div>
+
+            {/* Bill Estimation Card */}
+            {topUpAmount && estimatedBills > 0 && (
+              <div className="bg-green-50 rounded-lg p-4 mb-6 border border-green-200">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium text-gray-900">Estimated Bills</p>
+                    <div className="flex items-center mt-1">
+                      <FileText className="h-4 w-4 text-gray-500 mr-1" />
+                      <p className="text-sm text-gray-600">
+                        Process approximately {estimatedBills.toLocaleString()} bills
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-700">₹{pricePerBill.toFixed(2)}/bill</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Payment Buttons */}
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowTopUpModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
               >
-                Add More Credits
-                <ArrowRight size={16} />
+                Cancel
+              </button>
+              <button
+                onClick={handleCompletePurchase}
+                disabled={!topUpAmount || parseFloat(topUpAmount) <= 0}
+                className={`px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center ${!topUpAmount || parseFloat(topUpAmount) <= 0 ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+              >
+                <span>Complete Purchase</span>
+                <ChevronRight className="h-4 w-4 ml-1" />
               </button>
             </div>
           </div>
-          
-          {/* Chart Card */}
-          <div className="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="h-full flex flex-col">
-              <div className="px-8 pt-6 pb-4 border-b border-gray-100 flex justify-between items-center">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
-                    <TrendingUp size={18} className="text-blue-600" />
-                  </div>
-                  <h2 className="text-lg font-medium text-gray-800">Usage Trend</h2>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">Last 4 months</span>
-                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200">
-                    <ChevronRight size={14} className="text-gray-600" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex-grow p-8 pt-6">
-                {/* Line Chart */}
-                <div className="h-48 lg:h-56 relative">
-                  {/* Line Chart Background */}
-                  <div className="absolute inset-0 grid grid-cols-1 grid-rows-4">
-                    <div className="border-t border-gray-100"></div>
-                    <div className="border-t border-gray-100"></div>
-                    <div className="border-t border-gray-100"></div>
-                    <div className="border-t border-gray-100"></div>
-                  </div>
-                  
-                  {/* Y-axis labels */}
-                  <div className="absolute left-0 inset-y-0 flex flex-col justify-between text-xs text-gray-400 py-2">
-                    <div>₹300</div>
-                    <div>₹200</div>
-                    <div>₹100</div>
-                    <div>₹0</div>
-                  </div>
-                  
-                  {/* Line Chart */}
-                  <div className="absolute inset-0 ml-8 mr-4">
-                    <svg className="w-full h-full" viewBox="0 0 300 200" preserveAspectRatio="none">
-                      {/* Line */}
-                      <path 
-                        d={`
-                          M 0,${200 - (billingData.usageHistory[0].amount / 300) * 200}
-                          L ${300 / 3},${200 - (billingData.usageHistory[1].amount / 300) * 200}
-                          L ${300 * 2 / 3},${200 - (billingData.usageHistory[2].amount / 300) * 200}
-                          L ${300},${200 - (billingData.usageHistory[3].amount / 300) * 200}
-                        `}
-                        fill="none"
-                        stroke="url(#lineGradient)"
-                        strokeWidth="3"
-                      />
-                      
-                      {/* Data points */}
-                      {billingData.usageHistory.map((point, index) => (
-                        <circle 
-                          key={index}
-                          cx={index * (300 / 3)}
-                          cy={200 - (point.amount / 300) * 200}
-                          r="6"
-                          fill="white"
-                          stroke="url(#pointGradient)"
-                          strokeWidth="3"
-                        />
-                      ))}
-                      
-                      {/* Gradient Area under the line */}
-                      <path 
-                        d={`
-                          M 0,${200 - (billingData.usageHistory[0].amount / 300) * 200}
-                          L ${300 / 3},${200 - (billingData.usageHistory[1].amount / 300) * 200}
-                          L ${300 * 2 / 3},${200 - (billingData.usageHistory[2].amount / 300) * 200}
-                          L ${300},${200 - (billingData.usageHistory[3].amount / 300) * 200}
-                          L ${300},200
-                          L 0,200
-                          Z
-                        `}
-                        fill="url(#areaGradient)"
-                      />
-                      
-                      {/* Gradients definition */}
-                      <defs>
-                        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#8b5cf6" />
-                          <stop offset="100%" stopColor="#3b82f6" />
-                        </linearGradient>
-                        <linearGradient id="pointGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#8b5cf6" />
-                          <stop offset="100%" stopColor="#3b82f6" />
-                        </linearGradient>
-                        <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.05" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                  </div>
-                  
-                  {/* X-axis labels */}
-                  <div className="absolute bottom-0 inset-x-0 flex justify-between text-xs text-gray-400 pl-8 pr-4">
-                    {billingData.usageHistory.map((item, index) => (
-                      <div key={index}>{item.month}</div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
-        
-        {/* Tabs Section */}
-        <div className="mb-6">
-          <div className="flex space-x-6">
-            <button 
-              onClick={() => setActiveTab('usage')}
-              className={`py-2 font-medium text-sm relative ${
-                activeTab === 'usage' 
-                  ? 'text-gray-900' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <div className="flex items-center">
-                <BarChart3 size={18} className="mr-2" />
-                <span>Usage Analysis</span>
-              </div>
-              {activeTab === 'usage' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-600 to-blue-500 rounded-full"></div>
-              )}
-            </button>
-            <button 
-              onClick={() => setActiveTab('topups')}
-              className={`py-2 font-medium text-sm relative ${
-                activeTab === 'topups' 
-                  ? 'text-gray-900' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <div className="flex items-center">
-                <Clock size={18} className="mr-2" />
-                <span>Last Top Ups</span>
-              </div>
-              {activeTab === 'topups' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-600 to-blue-500 rounded-full"></div>
-              )}
-            </button>
-          </div>
-          <div className="h-px bg-gray-200 mt-2"></div>
-        </div>
-        
-        {/* Tab Content */}
-        <div className="mt-6">
-          {/* Usage Analysis Tab with Line Chart */}
-          {activeTab === 'usage' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-8 border-b border-gray-100">
-                <h3 className="text-lg font-medium text-gray-800">Monthly Usage Trends</h3>
-                <p className="text-sm text-gray-500 mt-1">Track your consumption patterns over time</p>
-              </div>
-              <div className="px-8 py-10">
-                {/* Enhanced Line Chart (detailed visualization) */}
-                <div className="h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 flex flex-col items-center justify-center">
-                  <div className="bg-white p-4 rounded-lg shadow-md w-full max-w-md">
-                    <div className="flex justify-between items-center mb-6">
-                      <div className="text-sm font-medium text-gray-600">Current Month Usage</div>
-                      <div className="bg-gradient-to-r from-purple-600 to-blue-500 text-white px-2 py-1 rounded-md text-xs">
-                        +4.2%
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <div className="text-3xl font-bold text-gray-900">₹238</div>
-                        <div className="text-xs text-gray-500 mt-1">vs ₹228 last month average</div>
-                      </div>
-                      <div className="flex space-x-1 items-end">
-                        {[30, 45, 25, 60, 75, 45, 65].map((height, i) => (
-                          <div 
-                            key={i} 
-                            className="w-1.5 bg-gray-200 rounded-full"
-                            style={{ height: `${height}px` }}
-                          ></div>
-                        ))}
-                        <div className="w-1.5 bg-gradient-to-t from-purple-600 to-blue-500 rounded-full h-16"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-between items-center border-t border-gray-100 p-6 bg-gray-50">
-                <div className="text-sm font-medium text-gray-600">
-                  Monthly average: <span className="text-gray-900">₹217</span>
-                </div>
-                <button 
-                  className="px-4 py-2 bg-white shadow-sm border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center gap-1"
-                  onClick={handleTopUp}
-                >
-                  View Details
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {/* Last Top Ups Tab */}
-          {activeTab === 'topups' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-8 border-b border-gray-100">
-                <h3 className="text-lg font-medium text-gray-800">Last Top Ups</h3>
-                <p className="text-sm text-gray-500 mt-1">Your recent balance additions</p>
-              </div>
-              <div>
-                {billingData.lastTopUps.map((topup, index) => (
-                  <div 
-                    key={topup.id} 
-                    className={`flex justify-between items-center p-6 hover:bg-gray-50 transition-colors ${
-                      index !== billingData.lastTopUps.length - 1 ? 'border-b border-gray-100' : ''
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center mr-4">
-                        <CreditCard size={18} className="text-emerald-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{topup.description}</p>
-                        <p className="text-xs text-gray-500 mt-1">{topup.date}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span className="font-semibold text-gray-900">+₹{topup.amount.toFixed(2)}</span>
-                      <span className="text-xs text-emerald-500 mt-1">Completed</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t border-gray-100 p-6 bg-gray-50">
-                <button 
-                  className="w-full px-4 py-3 bg-white shadow-sm border border-gray-200 text-gray-800 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-1"
-                  onClick={handleTopUp}
-                >
-                  View All Transactions
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-        
-        {/* Notice Box */}
-        <div className="mt-8 rounded-2xl overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-600/10 to-blue-500/10 p-6 relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -mt-20 -mr-20 opacity-10"></div>
-            
-            <div className="flex items-start">
-              <div className="rounded-xl bg-white p-2 mr-4 flex-shrink-0 shadow-sm">
-                <ArrowUpRight size={20} className="text-purple-600" />
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-900 mb-1">Secure Top-Up Process</h4>
-                <p className="text-sm text-gray-600">
-                  For security reasons, payment processing and top-ups are handled on our secure website. 
-                  Click the "Top Up" button to proceed.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
 
-export default BillingPage;
+export default Dashboard;
