@@ -1,19 +1,6 @@
-// import React from 'react'
-// import type { AppProps } from 'next/app'
-// import "react-medium-image-zoom/dist/styles.css";
-
-// import '../styles/globals.css'
-
-// function MyApp({ Component, pageProps }: AppProps) {
-//   return <Component {...pageProps} />
-// }
-
-// export default MyApp
-
-
 import React from 'react'
 import type { AppProps } from 'next/app'
-import "react-medium-image-zoom/dist/styles.css";
+import Head from 'next/head'
 import '../styles/globals.css'
 
 // Import Toastify CSS and ToastContainer component
@@ -23,6 +10,10 @@ import 'react-toastify/dist/ReactToastify.css';
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
+      <Head>
+        {/* Tailwind CSS CDN */}
+        <script src="https://cdn.tailwindcss.com"></script>
+      </Head>
       <Component {...pageProps} />
       {/* The ToastContainer renders the toast notifications */}
       <ToastContainer 

@@ -13,39 +13,16 @@ import {
   FiShield,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
-
-declare global {
-  interface Window {
-    electron: {
-      createItem: (
-        name: string,
-        description: string,
-        quantity: number,
-        code: number,
-        taxRate: number
-      ) => Promise<any>;
-      createIgstLedger: (name: string) => Promise<any>;
-      createCgstLedger: (name: string) => Promise<any>;
-      createPurchaseEntry: (
-        voucherNumber: number,
-        date: string,
-        partyName: string,
-        type: string,
-        items: { name: string; quantity: number; price: number }[],
-        includeGst: boolean,
-        taxRate: number,
-        discount: number,
-        roundOff: number
-      ) => Promise<any>;
-      exportLedger: (name: string) => Promise<{ success: boolean }>;
-      exportItem: (name: string) => Promise<any>;
-      exportUnit: (unit: {
-        Name: string;
-        conversionRate: number;
-      }) => Promise<any>;
-    };
-  }
-}
+import {
+  getGSTData,
+  createPartyName,
+  createPurchaserLedger,
+  getTaxLedgerData,
+  getCompanyData,
+  createUnit,
+  createItem,
+  createPurchaseEntry,
+} from "../service/tally";
 
 export default function IndexPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -110,12 +87,14 @@ export default function IndexPage() {
 	</BODY>
 </ENVELOPE>`;
 
-    const response = await window.electron.getGSTData(xmlData);
+    const response = await getGSTData(xmlData);
   };
 
   const handleCreatePartyLedger = async () => {
-    const response = await window.electron
-      .createPartyName(ledgerXmlData, "code test", {
+    const response = await createPartyName(
+      ledgerXmlData,
+      "code test",
+      {
         name: "code test",
         parent: "Sundry Creditors",
         address: "",
@@ -123,15 +102,13 @@ export default function IndexPage() {
         state: "Punjab",
         date: "01-04-2025",
         gstin: "04AAACI7952A1ZZ",
-      })
-      .then((result) => {
-        if (result.success) {
-          console.log("Response from Tally:", result.data);
-          return result;
-        } else {
-          console.error("Error sending XML to Tally:", result.error);
-        }
-      });
+      }
+    );
+    if (response.success) {
+      console.log("Response from Tally:", response.data);
+    } else {
+      console.error("Error sending XML to Tally:", response.error);
+    }
 
     console.log(response, "taxLedgerData");
   };
@@ -142,7 +119,7 @@ export default function IndexPage() {
   }, []);
 
   const handleCreatePurchaseLedger = async () => {
-    const purchaserLedgerResponse = await window.electron.createPurchaserLedger(
+    const purchaserLedgerResponse = await createPurchaserLedger(
       ledgerXmlData,
       "Purchase"
     );
@@ -150,16 +127,12 @@ export default function IndexPage() {
   };
 
   const handleCreateCgstIgstSgstLedger = async () => {
-    const response = await window.electron
-      .getTaxLedgerData(ledgerXmlData)
-      .then((result) => {
-        if (result.success) {
-          console.log("Response from Tally:", result);
-          return result;
-        } else {
-          console.error("Error sending XML to Tally:", result.error);
-        }
-      });
+    const response = await getTaxLedgerData(ledgerXmlData);
+    if (response.success) {
+      console.log("Response from Tally:", response);
+    } else {
+      console.error("Error sending XML to Tally:", response.error);
+    }
   };
 
   const handleGetComapnyData = async () => {
@@ -191,7 +164,7 @@ export default function IndexPage() {
     try {
       // Calculate content length (in bytes) from the XML data.
 
-      const response = await window.electron.getCompanyData(xmlData);
+      const response = await getCompanyData(xmlData);
       console.log(response, "responseeee");
     } catch (error) {
       console.error("Error fetching companies:", error);
@@ -218,7 +191,7 @@ export default function IndexPage() {
       },
     ];
 
-    const response = await window.electron.createUnit(units);
+    const response = await createUnit(units);
     console.log(response, "here is ");
   };
 
@@ -308,7 +281,7 @@ export default function IndexPage() {
       },
     ];
 
-    const response = await window.electron.createItem(items);
+    const response = await createItem(items);
     console.log(response);
   };
 
@@ -499,14 +472,10 @@ export default function IndexPage() {
     // ]
     //   , false);
 
-    window.electron.createPurchaseEntry(payload).then((response) => {
+    {
+      const response = await createPurchaseEntry(payload);
       console.log({ response });
-      // if (response.success) {
-      //   console.log("Voucher XML:", response.voucherXml);
-      // } else {
-      //   console.error("Error:", response.error);
-      // }
-    });
+    }
   };
 
   return (

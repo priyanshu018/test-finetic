@@ -1,8 +1,18 @@
 // @ts-nocheck
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
-import { BackendLink } from "../../service/api";
+import { BackendLink } from "../service/api";
 import { useRouter } from "next/router";
+import {
+  getGSTData,
+  getCompanyData,
+  createPartyName,
+  createPurchaserLedger,
+  getTaxLedgerData,
+  createUnit,
+  createItem,
+  createPurchaseEntry,
+} from "../service/tally";
 import {
   ChevronLeft,
   Upload,
@@ -144,53 +154,6 @@ export async function extractCompanyNames(xmlString) {
     }
     return nameNode;
   });
-}
-
-declare global {
-  interface Window {
-    electronAPI: {
-      createCgstLedger: (
-        ledgerName: string
-      ) => Promise<{ success: boolean; ledgerName?: string; error?: string }>;
-    };
-    electron: {
-      exportAndCreatePartyNameEntry: (
-        purchaserName: string,
-        gst: string
-      ) => Promise<{ success: boolean; partyName: string }>;
-      exportLedger: (
-        ledgerNames: string[] | string,
-        ledgerType: string
-      ) => Promise<any>;
-      exportAndCreateLedger: (
-        ledgerName: string | string[],
-        ledgerType: string
-      ) => Promise<{ success: boolean; ledgerName: string }>;
-      exportUnit: (unit: any) => Promise<any>;
-      exportItem: (items: any) => Promise<any>;
-      createPurchaseEntry: (
-        invoiceNumber: string,
-        date: string,
-        purchaserName: string,
-        purchaseName: string,
-        updatedPurchaseEntryItem: any,
-        isWithinState: boolean
-      ) => Promise<any>;
-      getCompanyData: (xmlData: string) => Promise<any>;
-      createPartyName: (
-        xmlData: string,
-        purchaserName: string,
-        partyDetails: any
-      ) => Promise<any>;
-      createPurchaserLedger: (
-        xmlData: string,
-        ledgerName: string
-      ) => Promise<any>;
-      getTaxLedgerData: (xmlData: string) => Promise<any>;
-      createUnit: (units: any) => Promise<any>;
-      createItem: (items: any) => Promise<any>;
-    };
-  }
 }
 
 interface Product {
@@ -1370,7 +1333,7 @@ export default function BillWorkflow() {
           sgst,
         };
 
-        const responsePartyName = await window.electron.createPartyName(
+        const responsePartyName = await createPartyName(
           ledgerXmlData,
           purchaserName,
           {
@@ -1402,25 +1365,25 @@ export default function BillWorkflow() {
         });
 
         if (responsePartyName.success) {
-          const responsePurchase = await window.electron.createPurchaserLedger(
+          const responsePurchase = await createPurchaserLedger(
             ledgerXmlData,
             "Purchase"
           );
           if (responsePurchase.success) {
-            const responseTaxLedger = await window.electron.getTaxLedgerData(
+            const responseTaxLedger = await getTaxLedgerData(
               ledgerXmlData
             );
             if (responseTaxLedger.success) {
-              const responseUnit = await window.electron.createUnit(
+              const responseUnit = await createUnit(
                 updatedUnits
               );
-              if (responseUnit?.success) {
-                const responseItems = await window.electron.createItem(
+              if (responseUnit.success) {
+                const responseItems = await createItem(
                   updatedItemsForExport
                 );
                 if (responseItems.success) {
                   const responsePurchaseVoucher =
-                    await window.electron.createPurchaseEntry(
+                    await createPurchaseEntry(
                       purchaseVoucherPayload
                     );
 
@@ -1484,7 +1447,7 @@ export default function BillWorkflow() {
         { updatedItemsForExport }
       );
 
-      const responsePartyName = await window.electron.createPartyName(
+      const responsePartyName = await createPartyName(
         ledgerXmlData,
         purchaserName,
         {
@@ -1499,25 +1462,19 @@ export default function BillWorkflow() {
       );
 
       if (responsePartyName.success) {
-        const responsePurchase = await window.electron.createPurchaserLedger(
+        const responsePurchase = await createPurchaserLedger(
           ledgerXmlData,
           "Purchase"
         );
         if (responsePurchase.success) {
-          const responseTaxLedger = await window.electron.getTaxLedgerData(
-            ledgerXmlData
-          );
+          const responseTaxLedger = await getTaxLedgerData(ledgerXmlData);
           if (responseTaxLedger.success) {
-            const responseUnit = await window.electron.createUnit(updatedUnits);
-            if (responseUnit?.success) {
-              const responseItems = await window.electron.createItem(
-                updatedItemsForExport
-              );
+            const responseUnit = await createUnit(updatedUnits);
+            if (responseUnit.success) {
+              const responseItems = await createItem(updatedItemsForExport);
               if (responseItems.success) {
                 const responsePurchaseVoucher =
-                  await window.electron.createPurchaseEntry(
-                    purchaseVoucherPayload
-                  );
+                  await createPurchaseEntry(purchaseVoucherPayload);
 
                 console.log({ responsePurchaseVoucher });
                 if (responsePurchaseVoucher.success) {
@@ -1685,10 +1642,12 @@ export default function BillWorkflow() {
     </ENVELOPE>`;
 
     try {
-      const response = await window.electron.getCompanyData(xmlData);
-      const data = response.data;
-      const companyList = await extractCompanyNames(data);
-      setCompanyList(companyList);
+      const response = await getCompanyData(xmlData);
+      if (response.success) {
+        setCompanyList(response.data);
+      } else {
+        console.error('Error fetching companies:', response.error);
+      }
     } catch (error) {
       console.error("Error fetching companies:", error);
     } finally {
@@ -1725,7 +1684,7 @@ export default function BillWorkflow() {
   </ENVELOPE>`;
 
     try {
-      const response = await window.electron.getGSTData(xmlData);
+      const response = await getGSTData(xmlData);
       console.log(response, "from gst api");
       // setGstNumber(response?.[0]?.gst);
     } catch (error) {

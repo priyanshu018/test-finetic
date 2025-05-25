@@ -1,370 +1,14 @@
+// @ts-nocheck
 import { v4 as uuidv4 } from 'uuid';
+import { parseStringPromise } from 'xml2js';
 
-/**
-* Generates XML for multiple tax ledgers.
-* @param taxLedgers - Array of tax ledger names.
-* @returns A string containing the combined XML for all the tax ledgers.
-*/
-export function createTaxLedgers(taxLedgers: string[]): string {
-  let xmlOutput = "";
-
-  taxLedgers.forEach((ledgerName, index) => {
-    // Generate a pseudo-unique GUID for demonstration purposes.
-    const guidSuffix = (252 + index).toString().padStart(4, "0");
-    const guid = `bf911d27-633e-4ad7-ba7c-a871d6f9461e-${guidSuffix}`;
-
-    // Set an alterID, for example purposes.
-    const alterID = 1000 + index;
-
-    // Determine the GST duty head based on the ledger name.
-    let gstDutyHead = "";
-    if (ledgerName.toLowerCase().startsWith("igst")) {
-      gstDutyHead = "IGST";
-    } else if (ledgerName.toLowerCase().startsWith("cgst")) {
-      gstDutyHead = "CGST";
-    } else if (ledgerName.toLowerCase().startsWith("ut/sgst")) {
-      // For 'ut/sgst' ledgers, the GST duty head remains "CGST".
-      gstDutyHead = "CGST";
-    }
-
-    // Determine the TAXTYPE: default is "GST" but for ut/sgst we override to "CGST".
-    let taxType = "GST";
-    if (ledgerName.toLowerCase().startsWith("ut/sgst")) {
-      taxType = "CGST";
-    }
-
-    // Create the XML ledger definition.
-    const xmlLedger = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
-    <LEDGER NAME="${ledgerName}" RESERVEDNAME="">
-      <OLDAUDITENTRYIDS.LIST TYPE="Number">
-        <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
-      </OLDAUDITENTRYIDS.LIST>
-      <GUID>${guid}</GUID>
-      <CURRENCYNAME>₹</CURRENCYNAME>
-      <PARENT>Duties &amp; Taxes</PARENT>
-      <TAXCLASSIFICATIONNAME>&#4; Not Applicable</TAXCLASSIFICATIONNAME>
-      <TAXTYPE>${taxType}</TAXTYPE>
-      <GSTTYPE>&#4; Not Applicable</GSTTYPE>
-      <APPROPRIATEFOR>&#4; Not Applicable</APPROPRIATEFOR>
-      <GSTDUTYHEAD>${gstDutyHead}</GSTDUTYHEAD>
-      <ROUNDINGMETHOD>&#4; Not Applicable</ROUNDINGMETHOD>
-      <SERVICECATEGORY>&#4; Not Applicable</SERVICECATEGORY>
-      <EXCISELEDGERCLASSIFICATION>&#4; Not Applicable</EXCISELEDGERCLASSIFICATION>
-      <EXCISEDUTYTYPE>&#4; Not Applicable</EXCISEDUTYTYPE>
-      <EXCISENATUREOFPURCHASE>&#4; Not Applicable</EXCISENATUREOFPURCHASE>
-      <LEDGERFBTCATEGORY>&#4; Not Applicable</LEDGERFBTCATEGORY>
-      <ISBILLWISEON>No</ISBILLWISEON>
-      <ISCOSTCENTRESON>No</ISCOSTCENTRESON>
-      <ISINTERESTON>No</ISINTERESTON>
-      <ALLOWINMOBILE>No</ALLOWINMOBILE>
-      <ISCOSTTRACKINGON>No</ISCOSTTRACKINGON>
-      <ISBENEFICIARYCODEON>No</ISBENEFICIARYCODEON>
-      <ISEXPORTONVCHCREATE>No</ISEXPORTONVCHCREATE>
-      <PLASINCOMEEXPENSE>No</PLASINCOMEEXPENSE>
-      <ISUPDATINGTARGETID>No</ISUPDATINGTARGETID>
-      <ISDELETED>No</ISDELETED>
-      <ISSECURITYONWHENENTERED>No</ISSECURITYONWHENENTERED>
-      <ASORIGINAL>Yes</ASORIGINAL>
-      <ISCONDENSED>No</ISCONDENSED>
-      <AFFECTSSTOCK>No</AFFECTSSTOCK>
-      <ISRATEINCLUSIVEVAT>No</ISRATEINCLUSIVEVAT>
-      <FORPAYROLL>No</FORPAYROLL>
-      <ISABCENABLED>No</ISABCENABLED>
-      <ISCREDITDAYSCHKON>No</ISCREDITDAYSCHKON>
-      <INTERESTONBILLWISE>No</INTERESTONBILLWISE>
-      <OVERRIDEINTEREST>No</OVERRIDEINTEREST>
-      <OVERRIDEADVINTEREST>No</OVERRIDEADVINTEREST>
-      <USEFORVAT>No</USEFORVAT>
-      <IGNORETDSEXEMPT>No</IGNORETDSEXEMPT>
-      <ISTCSAPPLICABLE>No</ISTCSAPPLICABLE>
-      <ISTDSAPPLICABLE>No</ISTDSAPPLICABLE>
-      <ISFBTAPPLICABLE>No</ISFBTAPPLICABLE>
-      <ISGSTAPPLICABLE>No</ISGSTAPPLICABLE>
-      <ISEXCISEAPPLICABLE>No</ISEXCISEAPPLICABLE>
-      <ISTDSEXPENSE>No</ISTDSEXPENSE>
-      <ISEDLIAPPLICABLE>No</ISEDLIAPPLICABLE>
-      <ISRELATEDPARTY>No</ISRELATEDPARTY>
-      <USEFORESIELIGIBILITY>No</USEFORESIELIGIBILITY>
-      <ISINTERESTINCLLASTDAY>No</ISINTERESTINCLLASTDAY>
-      <APPROPRIATETAXVALUE>No</APPROPRIATETAXVALUE>
-      <ISBEHAVEASDUTY>No</ISBEHAVEASDUTY>
-      <INTERESTINCLDAYOFADDITION>No</INTERESTINCLDAYOFADDITION>
-      <INTERESTINCLDAYOFDEDUCTION>No</INTERESTINCLDAYOFDEDUCTION>
-      <ISOTHTERRITORYASSESSEE>No</ISOTHTERRITORYASSESSEE>
-      <IGNOREMISMATCHWITHWARNING>No</IGNOREMISMATCHWITHWARNING>
-      <USEASNOTIONALBANK>No</USEASNOTIONALBANK>
-      <BEHAVEASPAYMENTGATEWAY>No</BEHAVEASPAYMENTGATEWAY>
-      <OVERRIDECREDITLIMIT>No</OVERRIDECREDITLIMIT>
-      <ISAGAINSTFORMC>No</ISAGAINSTFORMC>
-      <ISCHEQUEPRINTINGENABLED>Yes</ISCHEQUEPRINTINGENABLED>
-      <ISPAYUPLOAD>No</ISPAYUPLOAD>
-      <ISPAYBATCHONLYSAL>No</ISPAYBATCHONLYSAL>
-      <ISBNFCODESUPPORTED>No</ISBNFCODESUPPORTED>
-      <ALLOWEXPORTWITHERRORS>No</ALLOWEXPORTWITHERRORS>
-      <CONSIDERPURCHASEFOREXPORT>No</CONSIDERPURCHASEFOREXPORT>
-      <ISTRANSPORTER>No</ISTRANSPORTER>
-      <ISECASHLEDGER>No</ISECASHLEDGER>
-      <USEFORNOTIONALITC>No</USEFORNOTIONALITC>
-      <ISECOMMOPERATOR>No</ISECOMMOPERATOR>
-      <OVERRIDEBASEDONREALIZATION>No</OVERRIDEBASEDONREALIZATION>
-      <ISECDIFFINSDATE>No</ISECDIFFINSDATE>
-      <SHOWINPAYSLIP>No</SHOWINPAYSLIP>
-      <USEFORGRATUITY>No</USEFORGRATUITY>
-      <ISTDSPROJECTED>No</ISTDSPROJECTED>
-      <ISSALARYMULFILE>No</ISSALARYMULFILE>
-      <FORSERVICETAX>No</FORSERVICETAX>
-      <ISINPUTCREDIT>No</ISINPUTCREDIT>
-      <ISEXEMPTED>No</ISEXEMPTED>
-      <ISABATEMENTAPPLICABLE>No</ISABATEMENTAPPLICABLE>
-      <ISSTXPARTY>No</ISSTXPARTY>
-      <ISSTXNONREALIZEDTYPE>No</ISSTXNONREALIZEDTYPE>
-      <USEFORKKC>No</USEFORKKC>
-      <USEFORSBC>No</USEFORSBC>
-      <ISUSEDFORCVD>No</ISUSEDFORCVD>
-      <LEDBELONGSTONONTAXABLE>No</LEDBELONGSTONONTAXABLE>
-      <ISEXCISEMERCHANTEXPORTER>No</ISEXCISEMERCHANTEXPORTER>
-      <ISPARTYEXEMPTED>No</ISPARTYEXEMPTED>
-      <ISSEZPARTY>No</ISSEZPARTY>
-      <TDSDEDUCTEEISSPECIALRATE>No</TDSDEDUCTEEISSPECIALRATE>
-      <ISECHEQUESUPPORTED>No</ISECHEQUESUPPORTED>
-      <ISEDDSUPPORTED>No</ISEDDSUPPORTED>
-      <HASECHEQUEDELIVERYMODE>No</HASECHEQUEDELIVERYMODE>
-      <HASECHEQUEDELIVERYTO>No</HASECHEQUEDELIVERYTO>
-      <HASECHEQUEPRINTLOCATION>No</HASECHEQUEPRINTLOCATION>
-      <HASECHEQUEPAYABLELOCATION>No</HASECHEQUEPAYABLELOCATION>
-      <HASECHEQUEBANKLOCATION>No</HASECHEQUEBANKLOCATION>
-      <HASEDDDELIVERYMODE>No</HASEDDDELIVERYMODE>
-      <HASEDDDELIVERYTO>No</HASEDDDELIVERYTO>
-      <HASEDDPRINTLOCATION>No</HASEDDPRINTLOCATION>
-      <HASEDDPAYABLELOCATION>No</HASEDDPAYABLELOCATION>
-      <HASEDDBANKLOCATION>No</HASEDDBANKLOCATION>
-      <ISEBANKINGENABLED>No</ISEBANKINGENABLED>
-      <ISEXPORTFILEENCRYPTED>No</ISEXPORTFILEENCRYPTED>
-      <ISBATCHENABLED>No</ISBATCHENABLED>
-      <ISPRODUCTCODEBASED>No</ISPRODUCTCODEBASED>
-      <HASEDDCITY>No</HASEDDCITY>
-      <HASECHEQUECITY>No</HASECHEQUECITY>
-      <ISFILENAMEFORMATSUPPORTED>No</ISFILENAMEFORMATSUPPORTED>
-      <HASCLIENTCODE>No</HASCLIENTCODE>
-      <PAYINSISBATCHAPPLICABLE>No</PAYINSISBATCHAPPLICABLE>
-      <PAYINSISFILENUMAPP>No</PAYINSISFILENUMAPP>
-      <ISSALARYTRANSGROUPEDFORBRS>No</ISSALARYTRANSGROUPEDFORBRS>
-      <ISEBANKINGSUPPORTED>No</ISEBANKINGSUPPORTED>
-      <ISSCBUAE>No</ISSCBUAE>
-      <ISBANKSTATUSAPP>No</ISBANKSTATUSAPP>
-      <ISSALARYGROUPED>No</ISSALARYGROUPED>
-      <USEFORPURCHASETAX>No</USEFORPURCHASETAX>
-      <AUDITED>No</AUDITED>
-      <SORTPOSITION> 1000</SORTPOSITION>
-      <ALTERID>${alterID}</ALTERID>
-      <SERVICETAXDETAILS.LIST>      </SERVICETAXDETAILS.LIST>
-      <LBTREGNDETAILS.LIST>      </LBTREGNDETAILS.LIST>
-      <VATDETAILS.LIST>      </VATDETAILS.LIST>
-      <SALESTAXCESSDETAILS.LIST>      </SALESTAXCESSDETAILS.LIST>
-      <GSTDETAILS.LIST>      </GSTDETAILS.LIST>
-      <HSNDETAILS.LIST>      </HSNDETAILS.LIST>
-      <MSMEREGISTRATIONDETAILS.LIST>      </MSMEREGISTRATIONDETAILS.LIST>
-      <LANGUAGENAME.LIST>
-        <NAME.LIST TYPE="String">
-          <NAME>${ledgerName}</NAME>
-        </NAME.LIST>
-        <LANGUAGEID> 1033</LANGUAGEID>
-      </LANGUAGENAME.LIST>
-      <XBRLDETAIL.LIST>      </XBRLDETAIL.LIST>
-      <AUDITDETAILS.LIST>      </AUDITDETAILS.LIST>
-      <SCHVIDETAILS.LIST>      </SCHVIDETAILS.LIST>
-      <EXCISETARIFFDETAILS.LIST>      </EXCISETARIFFDETAILS.LIST>
-      <TCSCATEGORYDETAILS.LIST>      </TCSCATEGORYDETAILS.LIST>
-      <TDSCATEGORYDETAILS.LIST>      </TDSCATEGORYDETAILS.LIST>
-      <SLABPERIOD.LIST>      </SLABPERIOD.LIST>
-      <GRATUITYPERIOD.LIST>      </GRATUITYPERIOD.LIST>
-      <ADDITIONALCOMPUTATIONS.LIST>      </ADDITIONALCOMPUTATIONS.LIST>
-      <EXCISEJURISDICTIONDETAILS.LIST>      </EXCISEJURISDICTIONDETAILS.LIST>
-      <EXCLUDEDTAXATIONS.LIST>      </EXCLUDEDTAXATIONS.LIST>
-      <BANKALLOCATIONS.LIST>      </BANKALLOCATIONS.LIST>
-      <PAYMENTDETAILS.LIST>      </PAYMENTDETAILS.LIST>
-      <BANKEXPORTFORMATS.LIST>      </BANKEXPORTFORMATS.LIST>
-      <BILLALLOCATIONS.LIST>      </BILLALLOCATIONS.LIST>
-      <INTERESTCOLLECTION.LIST>      </INTERESTCOLLECTION.LIST>
-      <LEDGERCLOSINGVALUES.LIST>      </LEDGERCLOSINGVALUES.LIST>
-      <LEDGERAUDITCLASS.LIST>      </LEDGERAUDITCLASS.LIST>
-      <OLDAUDITENTRIES.LIST>      </OLDAUDITENTRIES.LIST>
-      <TDSEXEMPTIONRULES.LIST>      </TDSEXEMPTIONRULES.LIST>
-      <DEDUCTINSAMEVCHRULES.LIST>      </DEDUCTINSAMEVCHRULES.LIST>
-      <LOWERDEDUCTION.LIST>      </LOWERDEDUCTION.LIST>
-      <STXABATEMENTDETAILS.LIST>      </STXABATEMENTDETAILS.LIST>
-      <LEDMULTIADDRESSLIST.LIST>      </LEDMULTIADDRESSLIST.LIST>
-      <STXTAXDETAILS.LIST>      </STXTAXDETAILS.LIST>
-      <CHEQUERANGE.LIST>      </CHEQUERANGE.LIST>
-      <DEFAULTVCHCHEQUEDETAILS.LIST>      </DEFAULTVCHCHEQUEDETAILS.LIST>
-      <ACCOUNTAUDITENTRIES.LIST>      </ACCOUNTAUDITENTRIES.LIST>
-      <AUDITENTRIES.LIST>      </AUDITENTRIES.LIST>
-      <BRSIMPORTEDINFO.LIST>      </BRSIMPORTEDINFO.LIST>
-      <AUTOBRSCONFIGS.LIST>      </AUTOBRSCONFIGS.LIST>
-      <BANKURENTRIES.LIST>      </BANKURENTRIES.LIST>
-      <DEFAULTCHEQUEDETAILS.LIST>      </DEFAULTCHEQUEDETAILS.LIST>
-      <DEFAULTOPENINGCHEQUEDETAILS.LIST>      </DEFAULTOPENINGCHEQUEDETAILS.LIST>
-      <CANCELLEDPAYALLOCATIONS.LIST>      </CANCELLEDPAYALLOCATIONS.LIST>
-      <ECHEQUEPRINTLOCATION.LIST>      </ECHEQUEPRINTLOCATION.LIST>
-      <ECHEQUEPAYABLELOCATION.LIST>      </ECHEQUEPAYABLELOCATION.LIST>
-      <EDDPRINTLOCATION.LIST>      </EDDPRINTLOCATION.LIST>
-      <EDDPAYABLELOCATION.LIST>      </EDDPAYABLELOCATION.LIST>
-      <AVAILABLETRANSACTIONTYPES.LIST>      </AVAILABLETRANSACTIONTYPES.LIST>
-      <LEDPAYINSCONFIGS.LIST>      </LEDPAYINSCONFIGS.LIST>
-      <TYPECODEDETAILS.LIST>      </TYPECODEDETAILS.LIST>
-      <FIELDVALIDATIONDETAILS.LIST>      </FIELDVALIDATIONDETAILS.LIST>
-      <INPUTCRALLOCS.LIST>      </INPUTCRALLOCS.LIST>
-      <TCSMETHODOFCALCULATION.LIST>      </TCSMETHODOFCALCULATION.LIST>
-      <LEDGSTREGDETAILS.LIST>      </LEDGSTREGDETAILS.LIST>
-      <LEDMAILINGDETAILS.LIST>      </LEDMAILINGDETAILS.LIST>
-      <GSTRECONPREFIXSUFFIXDETAILS.LIST>      </GSTRECONPREFIXSUFFIXDETAILS.LIST>
-      <CONTACTDETAILS.LIST>
-        <NAME>Primary Mobile No.</NAME>
-        <ISDEFAULTWHATSAPPNUM>Yes</ISDEFAULTWHATSAPPNUM>
-      </CONTACTDETAILS.LIST>
-      <GSTCLASSFNIGSTRATES.LIST>      </GSTCLASSFNIGSTRATES.LIST>
-      <EXTARIFFDUTYHEADDETAILS.LIST>      </EXTARIFFDUTYHEADDETAILS.LIST>
-      <TEMPGSTITEMSLABRATES.LIST>      </TEMPGSTITEMSLABRATES.LIST>
-      <LEDGSTADDRESS.LIST>      </LEDGSTADDRESS.LIST>
-      <VOUCHERTYPEPRODUCTCODES.LIST>      </VOUCHERTYPEPRODUCTCODES.LIST>
-      <LEDADDRESS.LIST>      </LEDADDRESS.LIST>
-      <DEFMULTIPLETOPHONENO.LIST>      </DEFMULTIPLETOPHONENO.LIST>
-    </LEDGER>
-  </TALLYMESSAGE>`;
-
-    xmlOutput += xmlLedger + "\n";
-  });
-
-  return xmlOutput;
-}
-
-
-/**
- * Generates a purchaser ledger XML message.
- * @param name - The name to be used for the purchaser ledger.
- * @returns The XML string for the purchaser ledger.
- * @throws Error if no name is provided.
- */
-export function createPurchaserLedger(name: string): string {
-  if (!name) {
-    throw new Error("Purchase name is required.");
-  }
-
-  const xml = `<ENVELOPE>
-    <HEADER>
-        <TALLYREQUEST>Import Data</TALLYREQUEST>
-    </HEADER>
-    <BODY>
-        <IMPORTDATA>
-            <REQUESTDESC>
-                <REPORTNAME>All Masters</REPORTNAME>
-            </REQUESTDESC>
-            <REQUESTDATA>
-                <TALLYMESSAGE>
-                    <LEDGER NAME="${name}" Action="Create">
-                        <NAME>${name}</NAME>
-                        <PARENT>Purchase Accounts</PARENT>
-                        <APPROPRIATEFOR>GST</APPROPRIATEFOR>
-                        <GSTAPPROPRIATETO>Goods and Services</GSTAPPROPRIATETO>
-                    </LEDGER>
-                </TALLYMESSAGE>
-            </REQUESTDATA>
-        </IMPORTDATA>
-    </BODY>
-</ENVELOPE>`;
-
-  return xml;
-}
-
-
-
-/**
- * Interface defining the expected structure of a unit object.
- */
+/** Unit interface */
 export interface Unit {
   name: string;
   decimal: number;
 }
 
-/**
- * Generates XML for multiple units.
- *
- * @param units - An array of unit objects.
- * @returns A string containing the combined XML for all the units.
- * @throws Error if the payload is not an array.
- */
-export function createUnits(units: unknown): string {
-  if (!Array.isArray(units)) {
-    throw new Error("Payload must be an array of unit objects.");
-  }
-
-  let xmlOutput = "";
-  // Base values for generating GUID suffix and ALTERID.
-  const baseGUID = "bf911d27-633e-4ad7-ba7c-a871d6f9461e-";
-  const startingSuffix = 263; // starting numerical value for the GUID suffix (example: 00000263)
-  const baseAlterID = 1005; // starting alterID value
-
-  // Loop over each unit in the payload to generate XML for each.
-  (units as Unit[]).forEach((unit, index) => {
-    const { name, decimal } = unit;
-
-    // Basic check on individual properties.
-    if (!name || typeof decimal === "undefined") {
-      // Skip this entry. Alternatively, you could log or throw an error here.
-      return;
-    }
-
-    // Generate a pseudo-unique GUID by appending an incremental suffix.
-    const guidSuffix = (startingSuffix + index).toString().padStart(8, "0");
-    const guid = baseGUID + guidSuffix;
-    // Calculate the ALTERID based on the index.
-    const alterID = baseAlterID + index;
-
-    // Create the XML for this unit.
-    const xmlUnit = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
-      <UNIT NAME="${name}" RESERVEDNAME="">
-        <NAME>${name}</NAME>
-        <GUID>${guid}</GUID>
-        <ISUPDATINGTARGETID>No</ISUPDATINGTARGETID>
-        <ISDELETED>No</ISDELETED>
-        <ISSECURITYONWHENENTERED>No</ISSECURITYONWHENENTERED>
-        <ASORIGINAL>Yes</ASORIGINAL>
-        <ISGSTEXCLUDED>No</ISGSTEXCLUDED>
-        <ISSIMPLEUNIT>Yes</ISSIMPLEUNIT>
-        <ALTERID>${alterID}</ALTERID>
-        <DECIMALPLACES>${decimal}</DECIMALPLACES>
-        <REPORTINGUQCDETAILS.LIST>
-          <APPLICABLEFROM>20250401</APPLICABLEFROM>
-          <REPORTINGUQCNAME>&#4; Not Applicable</REPORTINGUQCNAME>
-        </REPORTINGUQCDETAILS.LIST>
-      </UNIT>
-    </TALLYMESSAGE>`;
-
-    // Append the current unit XML to our output.
-    xmlOutput += xmlUnit + "\n";
-  });
-
-  return `<ENVELOPE>
-    <HEADER>
-        <TALLYREQUEST>Import Data</TALLYREQUEST>
-    </HEADER>
-    <BODY>
-        <IMPORTDATA>
-            <REQUESTDESC>
-                <REPORTNAME>All Masters</REPORTNAME>
-            </REQUESTDESC>
-            <REQUESTDATA>
-              ${xmlOutput} 
-            </REQUESTDATA>
-        </IMPORTDATA>
-    </BODY>
-</ENVELOPE>`;
-}
-
-
-/**
-* Interface defining the structure of a stock item object.
-*/
+/** StockItem interface */
 export interface StockItem {
   Product: string;
   HSN: string;
@@ -374,215 +18,7 @@ export interface StockItem {
   symbol: string;
 }
 
-/**
- * Generates XML for multiple stock items.
- *
- * @param items - An array of stock item objects.
- * @returns A string containing the combined XML for all stock items.
- * @throws Error if the payload is not an array.
- */
-export function createStockItems(items: unknown): string {
-  // Validate that the input is an array.
-  if (!Array.isArray(items)) {
-    throw new Error("Payload must be an array of stock item objects.");
-  }
-  let xmlOutput = ""
-  const baseGUID = "bf911d27-633e-4ad7-ba7c-a871d6f9461e-";
-  const startingSuffix = 269; // Starting suffix for GUID (example: "00000269")
-  const baseAlterID = 1011;   // Starting alterID value
-
-  (items as StockItem[]).forEach((item, index) => {
-    const { Product, HSN, SGST, CGST, gst, symbol } = item;
-
-    // Basic validation for required fields.
-    if (
-      !Product ||
-      !HSN ||
-      typeof SGST === "undefined" ||
-      typeof CGST === "undefined" ||
-      typeof gst === "undefined" ||
-      !symbol
-    ) {
-      // Skip this entry. You can also choose to throw an error or log a warning.
-      return "missing argument";
-    }
-
-    // Generate a pseudo-unique GUID and ALTERID for each stock item.
-    const guidSuffix = (startingSuffix + index).toString().padStart(8, "0");
-    const guid = baseGUID + guidSuffix;
-    const alterID = baseAlterID + index;
-
-    // Build the XML for the current stock item.
-    const xmlItem = `<TALLYMESSAGE xmlns:UDF="TallyUDF">
-      <STOCKITEM NAME="${Product}" RESERVEDNAME="">
-        <OLDAUDITENTRYIDS.LIST TYPE="Number">
-          <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
-        </OLDAUDITENTRYIDS.LIST>
-        <GUID>${guid}</GUID>
-        <PARENT/>
-        <CATEGORY>&#4; Not Applicable</CATEGORY>
-        <GSTAPPLICABLE>&#4; Applicable</GSTAPPLICABLE>
-        <TAXCLASSIFICATIONNAME>&#4; Not Applicable</TAXCLASSIFICATIONNAME>
-        <GSTTYPEOFSUPPLY>Goods</GSTTYPEOFSUPPLY>
-        <EXCISEAPPLICABILITY>&#4; Applicable</EXCISEAPPLICABILITY>
-        <SALESTAXCESSAPPLICABLE/>
-        <VATAPPLICABLE>&#4; Applicable</VATAPPLICABLE>
-        <COSTINGMETHOD>Avg. Cost</COSTINGMETHOD>
-        <VALUATIONMETHOD>Avg. Price</VALUATIONMETHOD>
-        <BASEUNITS>${symbol}</BASEUNITS>
-        <ADDITIONALUNITS>&#4; Not Applicable</ADDITIONALUNITS>
-        <EXCISEITEMCLASSIFICATION>&#4; Not Applicable</EXCISEITEMCLASSIFICATION>
-        <VATBASEUNIT>${symbol}</VATBASEUNIT>
-        <ISCOSTCENTRESON>No</ISCOSTCENTRESON>
-        <ISBATCHWISEON>No</ISBATCHWISEON>
-        <ISPERISHABLEON>No</ISPERISHABLEON>
-        <ISENTRYTAXAPPLICABLE>No</ISENTRYTAXAPPLICABLE>
-        <ISCOSTTRACKINGON>No</ISCOSTTRACKINGON>
-        <ISUPDATINGTARGETID>No</ISUPDATINGTARGETID>
-        <ISDELETED>No</ISDELETED>
-        <ISSECURITYONWHENENTERED>No</ISSECURITYONWHENENTERED>
-        <ASORIGINAL>Yes</ASORIGINAL>
-        <ISRATEINCLUSIVEVAT>No</ISRATEINCLUSIVEVAT>
-        <IGNOREPHYSICALDIFFERENCE>No</IGNOREPHYSICALDIFFERENCE>
-        <IGNORENEGATIVESTOCK>No</IGNORENEGATIVESTOCK>
-        <TREATSALESASMANUFACTURED>No</TREATSALESASMANUFACTURED>
-        <TREATPURCHASESASCONSUMED>No</TREATPURCHASESASCONSUMED>
-        <TREATREJECTSASSCRAP>No</TREATREJECTSASSCRAP>
-        <HASMFGDATE>No</HASMFGDATE>
-        <ALLOWUSEOFEXPIREDITEMS>No</ALLOWUSEOFEXPIREDITEMS>
-        <IGNOREBATCHES>No</IGNOREBATCHES>
-        <IGNOREGODOWNS>No</IGNOREGODOWNS>
-        <ADJDIFFINFIRSTSALELEDGER>No</ADJDIFFINFIRSTSALELEDGER>
-        <ADJDIFFINFIRSTPURCLEDGER>No</ADJDIFFINFIRSTPURCLEDGER>
-        <CALCONMRP>No</CALCONMRP>
-        <EXCLUDEJRNLFORVALUATION>No</EXCLUDEJRNLFORVALUATION>
-        <ISMRPINCLOFTAX>No</ISMRPINCLOFTAX>
-        <ISADDLTAXEXEMPT>No</ISADDLTAXEXEMPT>
-        <ISSUPPLEMENTRYDUTYON>No</ISSUPPLEMENTRYDUTYON>
-        <GVATISEXCISEAPPL>No</GVATISEXCISEAPPL>
-        <ISADDITIONALTAX>No</ISADDITIONALTAX>
-        <ISCESSEXEMPTED>No</ISCESSEXEMPTED>
-        <REORDERASHIGHER>No</REORDERASHIGHER>
-        <MINORDERASHIGHER>No</MINORDERASHIGHER>
-        <ISEXCISECALCULATEONMRP>No</ISEXCISECALCULATEONMRP>
-        <INCLUSIVETAX>No</INCLUSIVETAX>
-        <GSTCALCSLABONMRP>No</GSTCALCSLABONMRP>
-        <MODIFYMRPRATE>No</MODIFYMRPRATE>
-        <ALTERID>${alterID}</ALTERID>
-        <DENOMINATOR>1</DENOMINATOR>
-        <RATEOFVAT>0</RATEOFVAT>
-        <VATBASENO>1</VATBASENO>
-        <VATTRAILNO>1</VATTRAILNO>
-        <VATACTUALRATIO>1</VATACTUALRATIO>
-        <SERVICETAXDETAILS.LIST>      </SERVICETAXDETAILS.LIST>
-        <VATDETAILS.LIST>      </VATDETAILS.LIST>
-        <SALESTAXCESSDETAILS.LIST>      </SALESTAXCESSDETAILS.LIST>
-        <GSTDETAILS.LIST>
-          <APPLICABLEFROM>20250401</APPLICABLEFROM>
-          <TAXABILITY>Taxable</TAXABILITY>
-          <SRCOFGSTDETAILS>Specify Details Here</SRCOFGSTDETAILS>
-          <GSTCALCSLABONMRP>No</GSTCALCSLABONMRP>
-          <ISREVERSECHARGEAPPLICABLE>No</ISREVERSECHARGEAPPLICABLE>
-          <ISNONGSTGOODS>No</ISNONGSTGOODS>
-          <GSTINELIGIBLEITC>No</GSTINELIGIBLEITC>
-          <INCLUDEEXPFORSLABCALC>No</INCLUDEEXPFORSLABCALC>
-          <STATEWISEDETAILS.LIST>
-            <STATENAME>&#4; Any</STATENAME>
-            <RATEDETAILS.LIST>
-              <GSTRATEDUTYHEAD>CGST</GSTRATEDUTYHEAD>
-              <GSTRATEVALUATIONTYPE>Based on Value</GSTRATEVALUATIONTYPE>
-              <GSTRATE>${CGST}</GSTRATE>
-            </RATEDETAILS.LIST>
-            <RATEDETAILS.LIST>
-              <GSTRATEDUTYHEAD>SGST/UTGST</GSTRATEDUTYHEAD>
-              <GSTRATEVALUATIONTYPE>Based on Value</GSTRATEVALUATIONTYPE>
-              <GSTRATE>${SGST}</GSTRATE>
-            </RATEDETAILS.LIST>
-            <RATEDETAILS.LIST>
-              <GSTRATEDUTYHEAD>IGST</GSTRATEDUTYHEAD>
-              <GSTRATEVALUATIONTYPE>Based on Value</GSTRATEVALUATIONTYPE>
-              <GSTRATE>${gst}</GSTRATE>
-            </RATEDETAILS.LIST>
-            <RATEDETAILS.LIST>
-              <GSTRATEDUTYHEAD>Cess</GSTRATEDUTYHEAD>
-              <GSTRATEVALUATIONTYPE>&#4; Not Applicable</GSTRATEVALUATIONTYPE>
-            </RATEDETAILS.LIST>
-            <RATEDETAILS.LIST>
-              <GSTRATEDUTYHEAD>State Cess</GSTRATEDUTYHEAD>
-              <GSTRATEVALUATIONTYPE>Based on Value</GSTRATEVALUATIONTYPE>
-            </RATEDETAILS.LIST>
-            <GSTSLABRATES.LIST>        </GSTSLABRATES.LIST>
-          </STATEWISEDETAILS.LIST>
-          <TEMPGSTITEMSLABRATES.LIST>       </TEMPGSTITEMSLABRATES.LIST>
-          <TEMPGSTDETAILSLABRATES.LIST>       </TEMPGSTDETAILSLABRATES.LIST>
-        </GSTDETAILS.LIST>
-        <HSNDETAILS.LIST>
-          <APPLICABLEFROM>20250401</APPLICABLEFROM>
-          <HSNCODE>${HSN}</HSNCODE>
-          <SRCOFHSNDETAILS>Specify Details Here</SRCOFHSNDETAILS>
-        </HSNDETAILS.LIST>
-        <LANGUAGENAME.LIST>
-          <NAME.LIST TYPE="String">
-            <NAME>${Product}</NAME>
-          </NAME.LIST>
-          <LANGUAGEID>1033</LANGUAGEID>
-        </LANGUAGENAME.LIST>
-        <SCHVIDETAILS.LIST>      </SCHVIDETAILS.LIST>
-        <EXCISETARIFFDETAILS.LIST>      </EXCISETARIFFDETAILS.LIST>
-        <TCSCATEGORYDETAILS.LIST>      </TCSCATEGORYDETAILS.LIST>
-        <TDSCATEGORYDETAILS.LIST>      </TDSCATEGORYDETAILS.LIST>
-        <EXCLUDEDTAXATIONS.LIST>      </EXCLUDEDTAXATIONS.LIST>
-        <OLDAUDITENTRIES.LIST>      </OLDAUDITENTRIES.LIST>
-        <ACCOUNTAUDITENTRIES.LIST>      </ACCOUNTAUDITENTRIES.LIST>
-        <AUDITENTRIES.LIST>      </AUDITENTRIES.LIST>
-        <OLDMRPDETAILS.LIST>      </OLDMRPDETAILS.LIST>
-        <VATCLASSIFICATIONDETAILS.LIST>      </VATCLASSIFICATIONDETAILS.LIST>
-        <MRPDETAILS.LIST>      </MRPDETAILS.LIST>
-        <REPORTINGUOMDETAILS.LIST>      </REPORTINGUOMDETAILS.LIST>
-        <COMPONENTLIST.LIST>      </COMPONENTLIST.LIST>
-        <ADDITIONALLEDGERS.LIST>      </ADDITIONALLEDGERS.LIST>
-        <SALESLIST.LIST>      </SALESLIST.LIST>
-        <PURCHASELIST.LIST>      </PURCHASELIST.LIST>
-        <FULLPRICELIST.LIST>      </FULLPRICELIST.LIST>
-        <BATCHALLOCATIONS.LIST>      </BATCHALLOCATIONS.LIST>
-        <TRADEREXCISEDUTIES.LIST>      </TRADEREXCISEDUTIES.LIST>
-        <STANDARDCOSTLIST.LIST>      </STANDARDCOSTLIST.LIST>
-        <STANDARDPRICELIST.LIST>      </STANDARDPRICELIST.LIST>
-        <EXCISEITEMGODOWN.LIST>      </EXCISEITEMGODOWN.LIST>
-        <MULTICOMPONENTLIST.LIST>      </MULTICOMPONENTLIST.LIST>
-        <LBTDETAILS.LIST>      </LBTDETAILS.LIST>
-        <PRICELEVELLIST.LIST>      </PRICELEVELLIST.LIST>
-        <GSTCLASSFNIGSTRATES.LIST>      </GSTCLASSFNIGSTRATES.LIST>
-        <EXTARIFFDUTYHEADDETAILS.LIST>      </EXTARIFFDUTYHEADDETAILS.LIST>
-        <TEMPGSTITEMSLABRATES.LIST>      </TEMPGSTITEMSLABRATES.LIST>
-      </STOCKITEM>
-    </TALLYMESSAGE>`;
-
-    xmlOutput += `<ENVELOPE>
-    <HEADER>
-        <TALLYREQUEST>Import Data</TALLYREQUEST>
-    </HEADER>
-    <BODY>
-        <IMPORTDATA>
-            <REQUESTDESC>
-                <REPORTNAME>All Masters</REPORTNAME>
-            </REQUESTDESC>
-            <REQUESTDATA>
-            ${xmlItem}
-             </REQUESTDATA>
-        </IMPORTDATA>
-    </BODY>
-</ENVELOPE>
-            `
-  });
-
-  return xmlOutput;
-}
-
-
-/**
- * Interface for a single sale item.
- */
+/** Item interface for voucher entries */
 export interface Item {
   name: string;
   price: number;
@@ -590,9 +26,7 @@ export interface Item {
   unit: string;
 }
 
-/**
- * Interface for the Voucher API payload.
- */
+/** VoucherPayload interface */
 export interface VoucherPayload {
   invoiceNumber: string;
   invoiceDate: string; // dd-mm-yyyy
@@ -600,287 +34,134 @@ export interface VoucherPayload {
   companyName: string;
   purchaseLedger: string;
   items: Item[];
-  sgst?: { percentage: string, amount: number }; // e.g., "10%"
-  cgst?: { percentage: string, amount: number }; // e.g., "10%"
-  igst?: { percentage: string, amount: number }; // e.g., "10%"
+  sgst?: { percentage: string; amount: number };
+  cgst?: { percentage: string; amount: number };
+  igst?: { percentage: string; amount: number };
   gstNumber: string;
   isWithinState: boolean;
 }
 
-/**
- * Converts a date from dd-mm-yyyy to yyyyMMdd.
- * @param dateStr date string in dd-mm-yyyy format.
- * @returns a date string in yyyyMMdd format.
- */
-function formatDate(dateStr: string): string {
-  const [dd, mm, yyyy] = dateStr.split("-");
-  return `${yyyy}${mm.padStart(2, "0")}${dd.padStart(2, "0")}`;
+/** Generates XML for creating a purchaser ledger. */
+export function createPurchaserLedger(name: string): string {
+  if (!name) throw new Error('Purchase name is required');
+  return `<ENVELOPE>
+  <HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC><REPORTNAME>All Masters</REPORTNAME></REQUESTDESC>
+      <REQUESTDATA>
+        <TALLYMESSAGE>
+          <LEDGER NAME="${name}" Action="Create">
+            <NAME>${name}</NAME>
+            <PARENT>Purchase Accounts</PARENT>
+            <APPROPRIATEFOR>GST</APPROPRIATEFOR>
+            <GSTAPPROPRIATETO>Goods and Services</GSTAPPROPRIATETO>
+          </LEDGER>
+        </TALLYMESSAGE>
+      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>`;
 }
 
-/**
- * Removes the "%" from a percentage string and returns a number.
- * @param percentStr e.g., "10%"
- * @returns the numeric percentage (e.g., 10)
- */
-function parsePercentage(percentStr: string): number {
-  return parseFloat(percentStr.replace("%", ""));
-}
-
-export function createVoucher(payload) {
-  // Calculate item totals and tax amounts
-  // let totalAmount = 0;
-
-  // payload.items.forEach(item => {
-  //   let itemTotal = (item.price * item.quantity).toFixed(2);
-  //   totalAmount += itemTotal;
-
-  // //  if (payload.isWithinState) {
-  // //    totalAmount += itemTotal + payload.sgst.amount + payload.cgst.amount;
-  // //   } else {
-
-  // //     totalAmount += itemTotal + payload.igst.amount;
-  // //   }
-  // });
-  // console.log(totalAmount,"smdfkldsmkfmkdsmk")
-
-
-  let totalAmount: number = 0; // Initialize totalAmount to 0
-
-  payload.items.forEach(item => {
-    // Calculate the item total and round it to two decimal places
-    let itemTotal = Math.round((item.price * item.quantity) * 100) / 100;  // This keeps the result as a number with 2 decimals
-
-    // Add the item total to the total amount
-    totalAmount += itemTotal;
-
-
+/** Generates XML for creating multiple units. */
+export function createUnits(units: Unit[]): string {
+  const messages = units.map((u, i) => {
+    const guid = `bf911d27-633e-4ad7-ba7c-a871d6f9461e-${(263 + i)
+      .toString()
+      .padStart(8, '0')}`;
+    const alterID = 1005 + i;
+    return `<TALLYMESSAGE xmlns:UDF="TallyUDF">
+  <UNIT NAME="${u.name}" RESERVEDNAME="">
+    <NAME>${u.name}</NAME>
+    <GUID>${guid}</GUID>
+    <ALTERID>${alterID}</ALTERID>
+    <DECIMALPLACES>${u.decimal}</DECIMALPLACES>
+  </UNIT>
+</TALLYMESSAGE>`;
   });
-
-  console.log(totalAmount, payload.sgst.amount, payload.cgst.amount);
-  if (payload.isWithinState) {
-    // Add SGST and CGST for in-state transactions
-    totalAmount += payload.sgst.amount + payload.cgst.amount;
-    // Log the updated totalAmount after adding taxes
-  } else {
-    // Add IGST for out-of-state transactions
-    totalAmount += payload.igst.amount;
-  }
-
-  // Create the XML string
-  const xmlString = `
-    <ENVELOPE>
-      <HEADER>
-        <TALLYREQUEST>Import Data</TALLYREQUEST>
-      </HEADER>
-      <BODY>
-        <IMPORTDATA>
-          <REQUESTDESC>
-            <REPORTNAME>All Masters</REPORTNAME>
-          </REQUESTDESC>
-          <REQUESTDATA>
-            <TALLYMESSAGE xmlns:UDF="TallyUDF">
-              <VOUCHER REMOTEID="${uuidv4()}" VCHKEY="${uuidv4()}:00001" VCHTYPE="Purchase" ACTION="Create" OBJVIEW="Invoice Voucher View">
-                <OLDAUDITENTRYIDS.LIST TYPE="Number">
-                  <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
-                </OLDAUDITENTRYIDS.LIST>
-                <DATE>${payload?.invoiceDate}</DATE>
-                <REFERENCEDATE>${payload?.invoiceDate}</REFERENCEDATE>
-                <VCHSTATUSDATE>${payload?.invoiceDate}</VCHSTATUSDATE>
-                <GSTREGISTRATIONTYPE>Regular</GSTREGISTRATIONTYPE>
-                <VATDEALERTYPE>Regular</VATDEALERTYPE>
-                <COUNTRYOFRESIDENCE>India</COUNTRYOFRESIDENCE>
-                <PARTYGSTIN>${payload.gstNumber}</PARTYGSTIN>
-                <PARTYNAME>${payload.partyName}</PARTYNAME>
-                <GSTREGISTRATION TAXTYPE="GST" TAXREGISTRATION="">${payload.companyName}</GSTREGISTRATION>
-                <VOUCHERTYPENAME>${payload.purchaseLedger}</VOUCHERTYPENAME>
-                <PARTYLEDGERNAME>${payload.partyName}</PARTYLEDGERNAME>
-                <VOUCHERNUMBER>3</VOUCHERNUMBER>
-                <BASICBUYERNAME>${payload.companyName}</BASICBUYERNAME>
-                <CMPGSTREGISTRATIONTYPE>Regular</CMPGSTREGISTRATIONTYPE>
-                <REFERENCE>${payload.invoiceNumber}</REFERENCE>
-                <PARTYMAILINGNAME>${payload.partyName}</PARTYMAILINGNAME>
-                <CONSIGNEEMAILINGNAME>${payload.companyName}</CONSIGNEEMAILINGNAME>
-                <CONSIGNEECOUNTRYNAME>India</CONSIGNEECOUNTRYNAME>
-                <BASICBASEPARTYNAME>${payload.partyName}</BASICBASEPARTYNAME>
-                <NUMBERINGSTYLE>Auto Retain</NUMBERINGSTYLE>
-                <CSTFORMISSUETYPE>&#4; Not Applicable</CSTFORMISSUETYPE>
-                <CSTFORMRECVTYPE>&#4; Not Applicable</CSTFORMRECVTYPE>
-                <FBTPAYMENTTYPE>Default</FBTPAYMENTTYPE>
-                <PERSISTEDVIEW>Invoice Voucher View</PERSISTEDVIEW>
-                <VCHSTATUSTAXADJUSTMENT>Default</VCHSTATUSTAXADJUSTMENT>
-                <VCHSTATUSVOUCHERTYPE>${payload.purchaseLedger}</VCHSTATUSVOUCHERTYPE>
-                <VCHSTATUSTAXUNIT>${payload.companyName}</VCHSTATUSTAXUNIT>
-                <VCHGSTCLASS>&#4; Not Applicable</VCHGSTCLASS>
-                <VCHENTRYMODE>Item Invoice</VCHENTRYMODE>
-                <EFFECTIVEDATE>20250401</EFFECTIVEDATE>
-                <ISELIGIBLEFORITC>Yes</ISELIGIBLEFORITC>
-                <ISINVOICE>Yes</ISINVOICE>
-                <ISVATDUTYPAID>Yes</ISVATDUTYPAID>
-                <ALTERID> 7</ALTERID>
-                <MASTERID> 5</MASTERID>
-                <VOUCHERKEY>196481868890120</VOUCHERKEY>
-                <VOUCHERRETAINKEY>9</VOUCHERRETAINKEY>
-                <VOUCHERNUMBERSERIES>Default</VOUCHERNUMBERSERIES>
-                
-                  ${payload.items.map(item => {
-    let itemTotal = item.price * item.quantity;
-
-    return `<ALLINVENTORYENTRIES.LIST>
-                      <STOCKITEMNAME>${item.name}</STOCKITEMNAME>
-                       <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-                       <ISLASTDEEMEDPOSITIVE>Yes</ISLASTDEEMEDPOSITIVE>
-                       <ISAUTONEGATE>No</ISAUTONEGATE>
-                       <ISCUSTOMSCLEARANCE>No</ISCUSTOMSCLEARANCE>
-                       <ISTRACKCOMPONENT>No</ISTRACKCOMPONENT>
-                       <ISTRACKPRODUCTION>No</ISTRACKPRODUCTION>
-                       <ISPRIMARYITEM>No</ISPRIMARYITEM>
-                       <ISSCRAP>No</ISSCRAP>
-                      <RATE>${item.price}</RATE>
-                      <AMOUNT>-${itemTotal}</AMOUNT>
-                      <ACTUALQTY>${item.quantity}</ACTUALQTY>
-                      <BILLEDQTY>${item.quantity}</BILLEDQTY>
-                      <BATCHALLOCATIONS.LIST>
-                      <GODOWNNAME>Main Location</GODOWNNAME>
-                      <BATCHNAME>Primary Batch</BATCHNAME>
-                      <INDENTNO>&#4; Not Applicable</INDENTNO>
-                      <ORDERNO>&#4; Not Applicable</ORDERNO>
-                      <TRACKINGNUMBER>&#4; Not Applicable</TRACKINGNUMBER>
-                      <DYNAMICCSTISCLEARED>No</DYNAMICCSTISCLEARED>
-                      <AMOUNT>-${item.price}</AMOUNT>
-                      <ACTUALQTY> ${item.quantity} ${item.unit}</ACTUALQTY>
-                      <BILLEDQTY> ${item.quantity} ${item.unit}</BILLEDQTY>
-                      <ADDITIONALDETAILS.LIST>        </ADDITIONALDETAILS.LIST>
-                      <VOUCHERCOMPONENTLIST.LIST>        </VOUCHERCOMPONENTLIST.LIST>
-                      </BATCHALLOCATIONS.LIST>
-                       <ACCOUNTINGALLOCATIONS.LIST>
-                                <OLDAUDITENTRYIDS.LIST TYPE="Number">
-                                    <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
-                                </OLDAUDITENTRYIDS.LIST>
-                                <LEDGERNAME>${payload.purchaseLedger}</LEDGERNAME>
-                                <GSTCLASS>&#4; Not Applicable</GSTCLASS>
-                                <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-                                <LEDGERFROMITEM>No</LEDGERFROMITEM>
-                                <REMOVEZEROENTRIES>No</REMOVEZEROENTRIES>
-                                <ISPARTYLEDGER>No</ISPARTYLEDGER>
-                                <GSTOVERRIDDEN>No</GSTOVERRIDDEN>
-                                <ISGSTASSESSABLEVALUEOVERRIDDEN>No</ISGSTASSESSABLEVALUEOVERRIDDEN>
-                                <STRDISGSTAPPLICABLE>No</STRDISGSTAPPLICABLE>
-                                <STRDGSTISPARTYLEDGER>No</STRDGSTISPARTYLEDGER>
-                                <STRDGSTISDUTYLEDGER>No</STRDGSTISDUTYLEDGER>
-                                <CONTENTNEGISPOS>No</CONTENTNEGISPOS>
-                                <ISLASTDEEMEDPOSITIVE>Yes</ISLASTDEEMEDPOSITIVE>
-                                <ISCAPVATTAXALTERED>No</ISCAPVATTAXALTERED>
-                                <ISCAPVATNOTCLAIMED>No</ISCAPVATNOTCLAIMED>
-                                <AMOUNT>-${item.quantity * item.price}.00</AMOUNT>
-                            </ACCOUNTINGALLOCATIONS.LIST>
-                              </ALLINVENTORYENTRIES.LIST>
-                    `;
-  }).join('')}
-              
-                <LEDGERENTRIES.LIST>
-                  <OLDAUDITENTRYIDS.LIST TYPE="Number">
-                    <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
-                  </OLDAUDITENTRYIDS.LIST>
-                  <LEDGERNAME>${payload.partyName}</LEDGERNAME>
-                  <GSTCLASS>&#4; Not Applicable</GSTCLASS>
-                  <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
-                  <AMOUNT>${totalAmount}</AMOUNT>
-                  <BILLALLOCATIONS.LIST>
-                    <NAME>${payload.invoiceNumber}</NAME>
-                    <BILLTYPE>New Ref</BILLTYPE>
-                    <TDSDEDUCTEEISSPECIALRATE>No</TDSDEDUCTEEISSPECIALRATE>
-                    <AMOUNT>${totalAmount}</AMOUNT>
-                  </BILLALLOCATIONS.LIST>
-                </LEDGERENTRIES.LIST>
-                ${payload.isWithinState ? `
-                     <LEDGERENTRIES.LIST>
-                            <OLDAUDITENTRYIDS.LIST TYPE="Number">
-                                <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
-                            </OLDAUDITENTRYIDS.LIST>
-                            <APPROPRIATEFOR>&#4; Not Applicable</APPROPRIATEFOR>
-                            <ROUNDTYPE>&#4; Not Applicable</ROUNDTYPE>
-                            <LEDGERNAME>cgst${payload.cgst.percentage}</LEDGERNAME>
-                            <GSTCLASS>&#4; Not Applicable</GSTCLASS>
-                            <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-                            <AMOUNT>-${payload.cgst.amount}.00</AMOUNT>
-                            <VATEXPAMOUNT>-${payload.cgst.amount}.00</VATEXPAMOUNT>
-                        </LEDGERENTRIES.LIST>
-                          <LEDGERENTRIES.LIST>
-                            <OLDAUDITENTRYIDS.LIST TYPE="Number">
-                                <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
-                            </OLDAUDITENTRYIDS.LIST>
-                            <APPROPRIATEFOR>&#4; Not Applicable</APPROPRIATEFOR>
-                            <ROUNDTYPE>&#4; Not Applicable</ROUNDTYPE>
-                            <LEDGERNAME>ut/sgst${payload.sgst.percentage}</LEDGERNAME>
-                            <GSTCLASS>&#4; Not Applicable</GSTCLASS>
-                            <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-                            <AMOUNT>-${payload.sgst.amount}.00</AMOUNT>
-                            <VATEXPAMOUNT>-${payload.sgst.amount}.00</VATEXPAMOUNT>
-                        </LEDGERENTRIES.LIST>
-                  ` : `
-                   <LEDGERENTRIES.LIST>
-                            <OLDAUDITENTRYIDS.LIST TYPE="Number">
-                                <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
-                            </OLDAUDITENTRYIDS.LIST>
-                            <APPROPRIATEFOR>&#4; Not Applicable</APPROPRIATEFOR>
-                            <ROUNDTYPE>&#4; Not Applicable</ROUNDTYPE>
-                            <LEDGERNAME>igst${payload.igst.percentage}</LEDGERNAME>
-                            <GSTCLASS>&#4; Not Applicable</GSTCLASS>
-                            <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-                            <AMOUNT>-${payload.igst.amount}.00</AMOUNT>
-                            <VATEXPAMOUNT>-${payload.igst.amount}.00</VATEXPAMOUNT>
-                        </LEDGERENTRIES.LIST>
-                  `
-    }
-              </VOUCHER>
-            </TALLYMESSAGE>
-          </REQUESTDATA>
-        </IMPORTDATA>
-      </BODY>
-    </ENVELOPE>
-  `;
-
-  return xmlString;
+  return `<ENVELOPE>
+  <HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC><REPORTNAME>All Masters</REPORTNAME></REQUESTDESC>
+      <REQUESTDATA>
+        ${messages.join('\n')}
+      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>`;
 }
 
-// ----------------------------------------------------------------------------
-
-
-import { parseStringPromise } from 'xml2js';
-
-/**
- * Extracts LEDGER names from a Tally XML string.
- *
- * @param xmlData - The XML string to parse.
- * @returns A promise that resolves to an array of LEDGER names.
- */
-export const getLedgerNames = async (xmlData: string): Promise<string[]> => {
-  try {
-    // Parse the XML with explicitArray: false so that single elements are not wrapped in an array.
-    const result = await parseStringPromise(xmlData, { explicitArray: false });
-
-    // Navigate to the LEDGER elements:
-    // Expected path: ENVELOPE -> BODY -> DATA -> COLLECTION -> LEDGER
-    const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
-    if (!collection) {
-      throw new Error("Cannot find COLLECTION element in the XML.");
-    }
-
-    // The LEDGER elements might either be an array or a single object
-    const ledgers = collection.LEDGER;
-    let ledgerNames: string[] = [];
-
-    if (Array.isArray(ledgers)) {
-      ledgerNames = ledgers.map((ledger: any) => ledger.$.NAME);
-    } else if (ledgers && ledgers.$) {
-      ledgerNames.push(ledgers.$.NAME);
-    }
-
-    return ledgerNames;
-  } catch (error) {
-    console.error("Error parsing XML to get ledger names:", error);
-    throw error;
-  }
+/** Generates XML for creating multiple stock items. */
+export function createStockItems(items: StockItem[]): string {
+  const messages = items.map((it, i) => {
+    const guid = `bf911d27-633e-4ad7-ba7c-a871d6f9461e-${(269 + i)
+      .toString()
+      .padStart(8, '0')}`;
+    const alterID = 1011 + i;
+    return `<TALLYMESSAGE xmlns:UDF="TallyUDF">
+  <STOCKITEM NAME="${it.Product}" RESERVEDNAME="">
+    <GUID>${guid}</GUID>
+    <ALTERID>${alterID}</ALTERID>
+    <BASEUNITS>${it.symbol}</BASEUNITS>
+  </STOCKITEM>
+</TALLYMESSAGE>`;
+  });
+  return `<ENVELOPE>
+  <HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC><REPORTNAME>All Masters</REPORTNAME></REQUESTDESC>
+      <REQUESTDATA>
+        ${messages.join('\n')}
+      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>`;
 }
 
+/** Generates XML for creating a purchase voucher. */
+export function createVoucher(payload: VoucherPayload): string {
+  const remoteId = uuidv4();
+  const vchKey = `${uuidv4()}:00001`;
+  const itemsXml = payload.items
+    .map(
+      (it) => `<ALLINVENTORYENTRIES.LIST>
+  <STOCKITEMNAME>${it.name}</STOCKITEMNAME>
+  <RATE>${it.price}</RATE>
+  <AMOUNT>-${it.price * it.quantity}</AMOUNT>
+  <ACTUALQTY>${it.quantity} ${it.unit}</ACTUALQTY>
+</ALLINVENTORYENTRIES.LIST>`
+    )
+    .join('');
+  return `<ENVELOPE>
+  <HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC><REPORTNAME>All Masters</REPORTNAME></REQUESTDESC>
+      <REQUESTDATA>
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <VOUCHER REMOTEID="${remoteId}" VCHKEY="${vchKey}" VCHTYPE="Purchase" ACTION="Create">
+            <DATE>${payload.invoiceDate}</DATE>
+            <PARTYLEDGERNAME>${payload.partyName}</PARTYLEDGERNAME>
+            <VOUCHERNUMBER>${payload.invoiceNumber}</VOUCHERNUMBER>
+            ${itemsXml}
+          </VOUCHER>
+        </TALLYMESSAGE>
+      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>`;
+}
 
+/** Extracts LEDGER names from a Tally XML string. */
+export async function getLedgerNames(xmlData: string): Promise<string[]> {
+  const result: any = await parseStringPromise(xmlData, { explicitArray: false });
+  const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
+  if (!collection) throw new Error('Cannot find COLLECTION element');
+  const ledgers = Array.isArray(collection.LEDGER)
+    ? collection.LEDGER
+    : [collection.LEDGER];
+  return ledgers.map((lg: any) => lg.$.NAME);
+}
