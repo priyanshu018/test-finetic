@@ -564,7 +564,7 @@ export default function IndexPage() {
                       className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all duration-150"
                       onClick={() => {
                         localStorage.clear();
-                        window.location.href = "/home";
+                        window.location.href = "/";
                       }}
                     >
                       <svg
