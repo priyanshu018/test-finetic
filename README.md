@@ -6,7 +6,8 @@
 
 ```
 # with npx
-$ npx create-nextron-app my-app --example with-tailwindcss
+$ npx create-nextron-app my-app --example with-t
+ailwindcss
 
 # with yarn
 $ yarn create nextron-app my-app --example with-tailwindcss
