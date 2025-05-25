@@ -29,7 +29,8 @@ import {
   ArrowUpRight,
   TrendingUp,
   Info,
-  IndianRupee
+  IndianRupee,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuthenticatedLayout } from '../lib/authhook';
 import { supabase } from '../lib/supabase';
@@ -45,6 +46,11 @@ const GlobalStyle = createGlobalStyle`
   }
   .animate-progressBar {
     animation: progressAnimation 2s ease-in-out infinite;
+  }
+  
+  .bg-grid-pattern {
+    background-image: radial-gradient(circle, #e5e7eb 1px, transparent 1px);
+    background-size: 20px 20px;
   }
 `;
 
@@ -63,6 +69,7 @@ const Dashboard = () => {
   const [weeklyUsage, setWeeklyUsage] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [chartType, setChartType] = useState('weekly');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Top-up modal state
   const [topUpAmount, setTopUpAmount] = useState('');
@@ -231,7 +238,7 @@ const Dashboard = () => {
     }
 
     // Prepare options for Razorpay Checkout
-    const options: RazorpayOrderOptions = {
+    const options = {
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "",
       amount: orderData.amount,
       currency: orderData.currency,
@@ -249,7 +256,7 @@ const Dashboard = () => {
         email: userEmail,
       },
       theme: {
-        color: '#10B981',
+        color: '#2563eb',
       },
     };
 
@@ -260,14 +267,14 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-white to-gray-50">
-        <div className="text-center p-8 rounded-xl bg-white shadow-lg shadow-green-100/50 max-w-md mx-auto">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center p-8 rounded-xl bg-white shadow-lg shadow-blue-100/50 max-w-md mx-auto">
           <div className="relative h-20 w-20 mx-auto mb-6">
             {/* Outer spinning circle */}
-            <div className="absolute inset-0 rounded-full border-4 border-green-100 border-t-green-500 animate-spin"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin"></div>
             {/* Inner pulsing circle */}
-            <div className="absolute inset-3 rounded-full bg-green-50 flex items-center justify-center animate-pulse">
-              <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="absolute inset-3 rounded-full bg-blue-50 flex items-center justify-center animate-pulse">
+              <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -276,7 +283,7 @@ const Dashboard = () => {
           <p className="text-gray-500 mb-4">Fetching your latest data and insights...</p>
           {/* Progress bar */}
           <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3 overflow-hidden">
-            <div className="bg-green-500 h-1.5 rounded-full animate-progressBar"></div>
+            <div className="bg-blue-600 h-1.5 rounded-full animate-progressBar"></div>
           </div>
           <p className="text-xs text-gray-400">This may take a few moments</p>
         </div>
@@ -285,36 +292,111 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <GlobalStyle />
-      {/* Top Navigation */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
+      
+      {/* Subtle professional background pattern */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] pointer-events-none"></div>
+
+      {/* Subtle gradient accents */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-10 -left-10 w-56 h-56 bg-blue-400 rounded-full opacity-[0.07] blur-3xl"></div>
+        <div className="absolute -bottom-10 -right-10 w-56 h-56 bg-indigo-400 rounded-full opacity-[0.07] blur-3xl"></div>
+      </div>
+
+      {/* Professional Navigation Bar */}
+      <nav className="fixed top-0 w-full bg-white shadow-sm z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="text-xl font-bold text-green-600">Finetic AI</div>
+          <div className="flex items-center justify-between h-16">
+            {/* Back button and company logo/name */}
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => window.location.href = '/'}
+                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors duration-150 p-2 rounded-md hover:bg-gray-100"
+                aria-label="Go back"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <span className="text-xl font-semibold text-gray-900">
+                <span className="text-blue-600">Finetic</span>AI
+              </span>
             </div>
-            <div className="flex items-center space-x-5">
-              <div className="relative group">
-                <div className="flex items-center space-x-2 cursor-pointer">
-                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                    {userEmail.charAt(0).toUpperCase()}
+
+            {/* Professional user menu */}
+            <div className="relative flex items-center space-x-4">
+              <div className="h-5 w-px bg-gray-300 hidden md:block"></div>
+
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center space-x-2 p-1.5 rounded-full hover:bg-gray-100 transition-all duration-150"
+                aria-label="User menu"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white text-sm font-medium">
+                  {userEmail.charAt(0).toUpperCase()}
+                </div>
+                <svg
+                  className="w-5 h-5 text-gray-500 hidden md:block"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute right-0 top-full mt-1 w-56 bg-white shadow-lg rounded-lg border border-gray-200 overflow-hidden z-10">
+                  <div className="p-3 border-b border-gray-100">
+                    <div className="font-medium text-gray-900">
+                      User Account
+                    </div>
+                    <div className="text-xs text-gray-500">{userEmail}</div>
                   </div>
-                  <span className="text-sm font-medium text-gray-700">{userEmail.split('@')[0]}</span>
+                  <div className="divide-y divide-gray-100">
+                    {/* Billing */}
+                    <button
+                      className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all duration-150"
+                      onClick={() => setShowTopUpModal(true)}
+                    >
+                      <DollarSign className="w-4 h-4 mr-3 text-gray-500" />
+                      Billing
+                    </button>
+
+                    {/* Logout */}
+                    <button
+                      className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-all duration-150"
+                      onClick={async () => await supabase.auth.signOut()}
+                    >
+                      <svg
+                        className="w-4 h-4 mr-3 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        />
+                      </svg>
+                      Sign out
+                    </button>
+                  </div>
                 </div>
-                <div className="absolute right-0 w-48 py-2 bg-white rounded-md shadow-lg hidden group-hover:block">
-                  <button onClick={async () => await supabase.auth.signOut()} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    Log out
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
-      </header>
+      </nav>
 
       {/* Main Content */}
-      <div>
+      <div className="pt-24 pb-16">
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -328,7 +410,7 @@ const Dashboard = () => {
             </div>
             <button
               onClick={() => setShowTopUpModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               ₹ Top Up Credits
             </button>
@@ -337,9 +419,9 @@ const Dashboard = () => {
           {/* Key Stats Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {/* Credits Card */}
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 shadow-sm">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 shadow-sm">
               <div className="flex items-center mb-4">
-                <div className="p-3 rounded-full bg-emerald-500/10 text-emerald-600">₹</div>
+                <div className="p-3 rounded-full bg-blue-500/10 text-blue-600">₹</div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Available Credits</p>
                   <p className="text-2xl font-bold text-gray-900">₹{credits.toLocaleString('en-IN')}</p>
@@ -347,16 +429,16 @@ const Dashboard = () => {
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-500"></p>
-                <div className="flex items-center text-emerald-600 text-sm font-medium">
+                <div className="flex items-center text-blue-600 text-sm font-medium">
                   <ArrowUpRight className="h-4 w-4 mr-1" />
                 </div>
               </div>
             </div>
 
             {/* Bills Processed Card */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 shadow-sm">
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 shadow-sm">
               <div className="flex items-center mb-4">
-                <div className="p-3 rounded-full bg-blue-500/10 text-blue-600">
+                <div className="p-3 rounded-full bg-indigo-500/10 text-indigo-600">
                   <FileText className="h-6 w-6" />
                 </div>
                 <div className="ml-4">
@@ -370,7 +452,7 @@ const Dashboard = () => {
                 </div>
                 <div className="w-full bg-white/60 rounded-full h-2 overflow-hidden">
                   <div
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-500 ease-in-out"
+                    className="bg-indigo-500 h-2 rounded-full transition-all duration-500 ease-in-out"
                     style={{ width: billsProcessed > 0 ? `${(usedThisMonth / billsProcessed) * 100}%` : '0%' }}
                   ></div>
                 </div>
@@ -378,7 +460,7 @@ const Dashboard = () => {
             </div>
 
             {/* Time Saved Card */}
-            <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-xl p-6 shadow-sm">
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 shadow-sm">
               <div className="flex items-center mb-4">
                 <div className="p-3 rounded-full bg-purple-500/10 text-purple-600">
                   <Zap className="h-6 w-6" />
@@ -395,43 +477,37 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Two Column Layout for Charts and Activity */}
-          <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 mb-8">
-            {/* Usage Graph */}
-            <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-gray-900">Processing Activity</h2>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setChartType('weekly')}
-                    className={`px-3 py-1 text-xs font-medium rounded-full ${chartType === 'weekly' ? 'bg-green-50 text-green-700' : 'text-gray-500 hover:bg-gray-100'}`}>
-                    Weekly
-                  </button>
-                </div>
-              </div>
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartType === 'monthly' ? monthlyUsage : weeklyUsage}>
-                    <defs>
-                      <linearGradient id="colorUsage" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#EEE" />
-                    <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }} />
-                    <Area type="monotone" dataKey="usage" stroke="#10B981" fillOpacity={1} fill="url(#colorUsage)" strokeWidth={3} />
-                  </AreaChart>
-                </ResponsiveContainer>
+          {/* Usage Graph */}
+          <div className="bg-white rounded-xl p-6 shadow-sm mb-8">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Processing Activity</h2>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setChartType('weekly')}
+                  className={`px-3 py-1 text-xs font-medium rounded-full ${chartType === 'weekly' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-100'}`}
+                >
+                  Weekly
+                </button>
               </div>
             </div>
-
-            {/* Recent Activity */}
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartType === 'monthly' ? monthlyUsage : weeklyUsage}>
+                  <defs>
+                    <linearGradient id="colorUsage" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#EEE" />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }} />
+                  <Area type="monotone" dataKey="usage" stroke="#2563eb" fillOpacity={1} fill="url(#colorUsage)" strokeWidth={3} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-
-          {/* Download Windows App */}
         </main>
       </div>
 
@@ -454,7 +530,7 @@ const Dashboard = () => {
                 value={topUpAmount}
                 onChange={handleTopUpAmountChange}
                 placeholder="Enter amount"
-                className="block w-full pl-10 pr-12 py-3 border-2 border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 text-gray-900 text-lg font-medium"
+                className="block w-full pl-10 pr-12 py-3 border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-lg font-medium"
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                 <span className="text-gray-500 text-sm">INR</span>
@@ -468,7 +544,7 @@ const Dashboard = () => {
                   key={index}
                   onClick={() => handleQuickSelectClick(amount)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${topUpAmount === amount.toString()
-                    ? 'bg-green-100 text-green-800 border-2 border-green-500'
+                    ? 'bg-blue-100 text-blue-800 border-2 border-blue-500'
                     : 'bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200'
                     }`}
                 >
@@ -479,7 +555,7 @@ const Dashboard = () => {
 
             {/* Bill Estimation Card */}
             {topUpAmount && estimatedBills > 0 && (
-              <div className="bg-green-50 rounded-lg p-4 mb-6 border border-green-200">
+              <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="font-medium text-gray-900">Estimated Bills</p>
@@ -508,7 +584,7 @@ const Dashboard = () => {
               <button
                 onClick={handleCompletePurchase}
                 disabled={!topUpAmount || parseFloat(topUpAmount) <= 0}
-                className={`px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center ${!topUpAmount || parseFloat(topUpAmount) <= 0 ? 'opacity-50 cursor-not-allowed' : ''
+                className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center ${!topUpAmount || parseFloat(topUpAmount) <= 0 ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
               >
                 <span>Complete Purchase</span>

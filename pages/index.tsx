@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { EmailOtpModal } from "../components/otpModal";
 import { supabase } from "../lib/supabase";
-import BillManagement from "./billing";
+import BillManagement from "./bill-management";
 import AiBill from "./ai-bill";
 import Next from "./next";
 import { ArrowRight, BarChart3, Calendar, CheckCircle, Clock, CreditCard, FileText, Receipt, Upload, Shield, Users, Zap, TrendingUp, Building2, DollarSign } from "lucide-react";
