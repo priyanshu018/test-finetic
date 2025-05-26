@@ -800,63 +800,6 @@ export default function BillWorkflow() {
         });
       }
 
-      /* ---------- 🔑  PERSIST PREVIEWS PER COMPANY · MONTH · DAY ---------- */
-      if (typeof window !== "undefined") {
-        const company = selectedCompanyName ?? "UNNAMED_COMPANY";
-
-        // helper for month labels
-        const MONTHS = [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December",
-        ];
-
-        // today’s date (or swap in the bill’s real date if you have it here)
-        const now = new Date();
-        const monthKey = MONTHS[now.getMonth()]; // "May"
-        const dayKey = String(now.getDate()); // "13"
-
-        // full tree from LS (or empty)
-        const store: Record<string, any> = JSON.parse(
-          localStorage.getItem("BILLS") || "{}"
-        );
-
-        // ensure all nesting levels exist
-        store[company] = store[company] ?? {};
-        store[company][monthKey] = store[company][monthKey] ?? {};
-        store[company][monthKey][dayKey] =
-          store[company][monthKey][dayKey] ?? [];
-
-        /* just the new previews ─ no blobs */
-        const newPreviews = allFiles
-          .map((f) => f.dataUrl) // -> string[]
-          .filter(Boolean);
-
-        // push objects { imageUrl } so UI code can stay the same
-        newPreviews.forEach((url) => {
-          // optional dedupe
-          if (
-            !store[company][monthKey][dayKey].some(
-              (o: any) => o.imageUrl === url
-            )
-          ) {
-            store[company][monthKey][dayKey].push({ imageUrl: url });
-          }
-        });
-
-        localStorage.setItem("BILLS", JSON.stringify(store));
-      }
-
-      /* -------------------------------------------------------------------- */
 
       for (const file of mobileFiles) {
         const res = await fetch(file.url);
@@ -903,6 +846,71 @@ export default function BillWorkflow() {
 
       const results = await Promise.all(requests);
       setBillData(results);
+
+      /* ---------- 🔑  PERSIST PREVIEWS PER COMPANY · MONTH · DAY ---------- */
+      if (typeof window !== "undefined") {
+        const company = selectedCompanyName ?? "UNNAMED_COMPANY";
+
+        // helper for month labels
+        const MONTHS = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+
+        // today’s date (or swap in the bill’s real date if you have it here)
+        const now = new Date();
+        const monthKey = MONTHS[now.getMonth()]; // "May"
+        const dayKey = String(now.getDate()); // "13"
+
+        // full tree from LS (or empty)
+        const store: Record<string, any> = JSON.parse(
+          localStorage.getItem("BILLS") || "{}"
+        );
+
+        // ensure all nesting levels exist
+
+        /* just the new previews ─ no blobs */
+        const newPreviews = allFiles
+          .map((f) => f.dataUrl) // -> string[]
+          .filter(Boolean);
+
+        // push objects { imageUrl } so UI code can stay the same
+        newPreviews.forEach((url, index) => {
+          const allCurrentResultData = results[index]
+          const billDateStr = allCurrentResultData.billDate; // e.g., '12/20/2021'
+          const [month, day, year] = billDateStr.split('/');
+          store[company] = store[company] ?? {};
+          store[company][year] = store[company][year] ?? {};
+
+          store[company][year][month] = store[company][year][month] ?? {};
+          store[company][year][month][day] =
+            store[company][year][month][day] ?? [];
+
+          // optional dedupe
+          if (
+            !store[company][year][month][day].some(
+              (o: any) => o.imageUrl === url
+            )
+          ) {
+            store[company][year][month][day].push({ imageUrl: url, gst: allCurrentResultData.gstNumber, invoiceNo: allCurrentResultData.invoiceNumber, invoiceValue: allCurrentResultData.totalAmount, senderDetails: allCurrentResultData.receiverDetails, receiverDetails: allCurrentResultData.receiverDetails });
+          }
+        });
+
+        localStorage.setItem("BILLS", JSON.stringify(store));
+      }
+
+      /* -------------------------------------------------------------------- */
+
       setCurrentStep(2);
     } catch (error: any) {
       console.error("Error extracting bill details:", error);
@@ -2454,7 +2462,7 @@ export default function BillWorkflow() {
                 </h3>
 
                 <div className='flex items-center gap-2'>
-                <button
+                  <button
                     onClick={() => addItem(currentBillIndex)}
                     className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors shadow-sm"
                   >
