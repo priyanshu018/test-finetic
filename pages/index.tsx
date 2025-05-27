@@ -63,8 +63,8 @@ export default function HeroSection({ setIsAuth }) {
                     <a href="#enterprise" className="text-gray-600 hover:text-gray-900 font-medium">Enterprise</a>
                     <a href="#security" className="text-gray-600 hover:text-gray-900 font-medium">Security</a>
                     <a href="#pricing" className="text-gray-600 hover:text-gray-900 font-medium">Pricing</a>
-                    <EmailOtpModal />
                   </nav>
+                    <EmailOtpModal />
                 </div>
               </div>
             </header>

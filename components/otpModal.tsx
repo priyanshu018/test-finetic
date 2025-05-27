@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/navigation'
 
@@ -10,7 +10,20 @@ export function EmailOtpModal() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [otpSent, setOtpSent] = useState(false);
+    const [resendCountdown, setResendCountdown] = useState(0);
+    const [resendLoading, setResendLoading] = useState(false);
     const { push } = useRouter()
+
+    // Countdown timer effect
+    useEffect(() => {
+        let interval;
+        if (resendCountdown > 0) {
+            interval = setInterval(() => {
+                setResendCountdown(prev => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [resendCountdown]);
 
     const handleOtpChange = (index, value) => {
         if (value.length > 1) return; // Prevent multi-character input
@@ -21,14 +34,14 @@ export function EmailOtpModal() {
 
         // Auto-focus next input
         if (value && index < 5) {
-            const nextInput: any = document.querySelector(`input[name="otp-${index + 1}"]`);
+            const nextInput = document.querySelector(`input[name="otp-${index + 1}"]`);
             nextInput?.focus();
         }
     };
 
     const handleKeyDown = (index, e) => {
         if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            const prevInput: any = document.querySelector(`input[name="otp-${index - 1}"]`);
+            const prevInput = document.querySelector(`input[name="otp-${index - 1}"]`);
             prevInput?.focus();
         }
     };
@@ -43,12 +56,36 @@ export function EmailOtpModal() {
             const { error } = await supabase.auth.signInWithOtp({ email });
             if (error) throw error;
             setOtpSent(true);
-
+            setResendCountdown(60); // Start 60 second countdown
             setSuccess('Verification code sent to your email!');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to send verification code');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        setResendLoading(true);
+        setError('');
+        setSuccess('');
+        setOtp(['', '', '', '', '', '']); // Clear existing OTP
+
+        try {
+            const { error } = await supabase.auth.signInWithOtp({ email });
+            if (error) throw error;
+            setResendCountdown(60); // Restart countdown
+            setSuccess('New verification code sent to your email!');
+            
+            // Focus first OTP input
+            setTimeout(() => {
+                const firstInput = document.querySelector(`input[name="otp-0"]`);
+                firstInput?.focus();
+            }, 100);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to resend verification code');
+        } finally {
+            setResendLoading(false);
         }
     };
 
@@ -61,7 +98,11 @@ export function EmailOtpModal() {
         try {
             const otpString = otp.join('');
             // @ts-ignore
-            const { data, error } = await supabase.auth.verifyOtp({ email: email ?? "", token: otpString, type: "email" });
+            const { data, error } = await supabase.auth.verifyOtp({ 
+                email: email ?? "", 
+                token: otpString, 
+                type: "email" 
+            });
             if (error) throw error;
             setSuccess('Successfully verified!');
             localStorage.setItem("email", email)
@@ -84,6 +125,17 @@ export function EmailOtpModal() {
         setOtp(['', '', '', '', '', '']);
         setError('');
         setSuccess('');
+        setResendCountdown(0);
+        setResendLoading(false);
+    };
+
+    const handleChangeEmail = () => {
+        setOtpSent(false);
+        setSuccess('');
+        setError('');
+        setOtp(['', '', '', '', '', '']);
+        setResendCountdown(0);
+        setResendLoading(false);
     };
 
     return (
@@ -110,6 +162,11 @@ export function EmailOtpModal() {
                                 <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
                                     Email Verification
                                 </h2>
+                                {email && otpSent&& (
+                                    <h2 className="text-xl font-bold text-white mt-2">
+                                        {email}
+                                    </h2>
+                                )}
                                 <p className="text-slate-400 mt-2">
                                     {otpSent
                                         ? 'Enter the 6-digit code sent to your email'
@@ -184,17 +241,35 @@ export function EmailOtpModal() {
                             </form>
 
                             {otpSent && (
-                                <button
-                                    onClick={() => {
-                                        setOtpSent(false);
-                                        setSuccess('');
-                                        setError('');
-                                        setOtp(['', '', '', '', '', '']);
-                                    }}
-                                    className="w-full text-cyan-400 text-sm hover:text-cyan-300 transition-colors"
-                                >
-                                    Change Email Address
-                                </button>
+                                <div className="space-y-3">
+                                    {/* Resend OTP Button */}
+                                    <div className="text-center">
+                                        {resendCountdown > 0 ? (
+                                            <p className="text-slate-400 text-sm">
+                                                Didn't receive the code?{' '}
+                                                <span className="text-slate-300">
+                                                    Resend in {resendCountdown}s
+                                                </span>
+                                            </p>
+                                        ) : (
+                                            <button
+                                                onClick={handleResendOtp}
+                                                disabled={resendLoading}
+                                                className="text-cyan-400 text-sm hover:text-cyan-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {resendLoading ? 'Sending...' : 'Didn\'t receive the code? Resend'}
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Change Email Button */}
+                                    <button
+                                        onClick={handleChangeEmail}
+                                        className="w-full text-cyan-400 text-sm hover:text-cyan-300 transition-colors"
+                                    >
+                                        Change Email Address
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>
