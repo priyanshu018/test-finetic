@@ -1,6 +1,6 @@
 //@ts-nocheck
 export const BackendLink = "https://finetic-ai.primedepthlabs.com"
-export const localUrl = "http://localhost:9000"
+export const localUrl = "http://localhost:8080/http://localhost:9000"
 
 
 /**
