@@ -90,27 +90,27 @@ export function EmailOtpModal() {
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="bg-gradient-to-r from-cyan-500 to-violet-500 text-white px-8 py-4 rounded-xl font-semibold hover:scale-105 transition-transform duration-300 shadow-lg"
+                className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-4 rounded-xl font-semibold hover:scale-105 transition-transform duration-300 shadow-lg"
             >
                 Sign In with Email
             </button>
 
             {isOpen && (
-                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 rounded-2xl p-8 max-w-md w-full relative border border-slate-800 animate-in fade-in duration-300">
+                <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-8 max-w-md w-full relative border border-gray-200 animate-in fade-in duration-300 shadow-xl">
                         <button
                             onClick={resetModal}
-                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors"
+                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
                         >
                             ✕
                         </button>
 
                         <div className="space-y-6">
                             <div className="text-center">
-                                <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
+                                <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
                                     Email Verification
                                 </h2>
-                                <p className="text-slate-400 mt-2">
+                                <p className="text-gray-600 mt-2">
                                     {otpSent
                                         ? 'Enter the 6-digit code sent to your email'
                                         : 'Enter your email to receive a verification code'}
@@ -120,7 +120,7 @@ export function EmailOtpModal() {
                             <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-6">
                                 {!otpSent ? (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Email Address
                                         </label>
                                         <input
@@ -128,13 +128,13 @@ export function EmailOtpModal() {
                                             required
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                            className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             placeholder="your@email.com"
                                         />
                                     </div>
                                 ) : (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Verification Code
                                         </label>
                                         <div className="flex gap-2 justify-center">
@@ -147,7 +147,7 @@ export function EmailOtpModal() {
                                                     value={digit}
                                                     onChange={(e) => handleOtpChange(index, e.target.value.replace(/\D/g, ''))}
                                                     onKeyDown={(e) => handleKeyDown(index, e)}
-                                                    className="w-12 h-12 text-center bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                    className="w-12 h-12 text-center bg-gray-50 border border-gray-300 rounded-lg text-gray-900 text-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                     maxLength={1}
                                                     required
                                                 />
@@ -157,13 +157,13 @@ export function EmailOtpModal() {
                                 )}
 
                                 {error && (
-                                    <div className="text-red-400 text-sm p-3 bg-red-900/30 rounded-lg">
+                                    <div className="text-red-600 text-sm p-3 bg-red-50 border border-red-200 rounded-lg">
                                         {error}
                                     </div>
                                 )}
 
                                 {success && (
-                                    <div className="text-emerald-400 text-sm p-3 bg-emerald-900/30 rounded-lg">
+                                    <div className="text-green-600 text-sm p-3 bg-green-50 border border-green-200 rounded-lg">
                                         {success}
                                     </div>
                                 )}
@@ -171,7 +171,7 @@ export function EmailOtpModal() {
                                 <button
                                     type="submit"
                                     disabled={loading || (otpSent && otp.some(digit => !digit))}
-                                    className="w-full bg-gradient-to-r from-cyan-600 to-violet-600 hover:from-cyan-500 hover:to-violet-500 text-white font-semibold py-3 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold py-3 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                                 >
                                     {loading ? (
                                         'Processing...'
@@ -191,7 +191,7 @@ export function EmailOtpModal() {
                                         setError('');
                                         setOtp(['', '', '', '', '', '']);
                                     }}
-                                    className="w-full text-cyan-400 text-sm hover:text-cyan-300 transition-colors"
+                                    className="w-full text-blue-600 text-sm hover:text-blue-500 transition-colors"
                                 >
                                     Change Email Address
                                 </button>

@@ -617,12 +617,12 @@ export default function IndexPage() {
                 <div className="ml-4 flex-1">
                   <div className="flex justify-between items-center mb-1">
                     <h2 className="text-lg font-medium text-gray-900">
-                      AI Workflow
+                      Purchase Workflow
                     </h2>
                     <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all duration-200" />
                   </div>
                   <p className="text-gray-600">
-                    Automated bill processing powered by AI
+                    Automated purchse bill processing powered by AI
                   </p>
                   <div className="mt-4 flex items-center text-xs text-blue-600">
                     <span className="font-medium">Get started</span>
@@ -648,12 +648,41 @@ export default function IndexPage() {
                 <div className="ml-4 flex-1">
                   <div className="flex justify-between items-center mb-1">
                     <h2 className="text-lg font-medium text-gray-900">
-                      Management
+                      Bill Management
                     </h2>
                     <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all duration-200" />
                   </div>
                   <p className="text-gray-600">
                     Advanced bill tracking and analytics
+                  </p>
+                  <div className="mt-4 flex items-center text-xs text-indigo-600">
+                    <span className="font-medium">Get started</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+          <Link
+            href="/payment-workflow"
+            className="group flex bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+          >
+            <div className="w-3 bg-indigo-600 hidden sm:block"></div>
+            <div className="flex-1 p-6 sm:p-8">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-lg bg-indigo-50 flex items-center justify-center">
+                    <FiBarChart2 className="w-6 h-6 text-indigo-600" />
+                  </div>
+                </div>
+                <div className="ml-4 flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <h2 className="text-lg font-medium text-gray-900">
+                      Payment Workflow
+                    </h2>
+                    <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all duration-200" />
+                  </div>
+                  <p className="text-gray-600">
+                    Export Payment Data intelligently into accounting software using AI
                   </p>
                   <div className="mt-4 flex items-center text-xs text-indigo-600">
                     <span className="font-medium">Get started</span>
