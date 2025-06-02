@@ -1,4 +1,4 @@
-// ExpenseClassifier.jsx - Complete AI Expense Classifier Component
+// ExpenseClassifier.jsx - Complete Business Classifier with Category & Subcategory Selection
 import React, { useState } from 'react';
 import {
     Upload,
@@ -20,119 +20,116 @@ import {
     RefreshCw,
     Info,
     CreditCard,
-    Receipt
+    ArrowUpCircle,
+    ArrowDownCircle,
+    Banknote,
+    Factory,
+    Briefcase,
+    ShoppingCart,
+    X
 } from 'lucide-react';
 import { useRouter } from 'next/router';
+import * as XLSX from 'xlsx';
 
 const ExpenseClassifier = () => {
     // State management
     const [currentStep, setCurrentStep] = useState(1);
-    const [businessNature, setBusinessNature] = useState('');
-    const [specificIndustry, setSpecificIndustry] = useState('');
-    const [documentType, setDocumentType] = useState('');
+    const [businessCategory, setBusinessCategory] = useState('');
+    const [businessSubcategory, setBusinessSubcategory] = useState('');
     const [uploadedFiles, setUploadedFiles] = useState([]);
     const [processing, setProcessing] = useState(false);
     const [results, setResults] = useState(null);
+    const [summary, setSummary] = useState(null);
     const [editingRow, setEditingRow] = useState(null);
-    const [filterSuspense, setFilterSuspense] = useState(false);
+    const [editingCategory, setEditingCategory] = useState(null);
+    const [tempCategoryValue, setTempCategoryValue] = useState(''); // NEW: Temporary value for category editing
+    const [filterType, setFilterType] = useState('all'); // 'all', 'debit', 'credit', 'suspense', 'cash'
     const [showDetails, setShowDetails] = useState(false);
     const [processingProgress, setProcessingProgress] = useState(0);
     const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
     // Python API configuration
     const PYTHON_API_BASE = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://localhost:8000';
 
-    // Business nature options
-    const businessNatures = [
+    // Main business categories
+    const businessCategories = [
         {
-            value: 'goods_trader',
-            label: 'Goods Trader',
-            desc: 'Buy and sell physical products',
-            icon: '📦'
+            value: 'service',
+            label: 'Service Business',
+            desc: 'Professional services, consulting, expertise-based businesses',
+            icon: <Briefcase className="w-8 h-8" />,
+            color: 'blue',
+            bgGradient: 'from-blue-50 to-blue-100',
+            borderColor: 'border-blue-200'
         },
         {
-            value: 'service_provider',
-            label: 'Service Provider',
-            desc: 'Provide professional services',
-            icon: '🛠️'
+            value: 'manufacturing',
+            label: 'Manufacturing Business',
+            desc: 'Production, processing, assembly, industrial operations',
+            icon: <Factory className="w-8 h-8" />,
+            color: 'green',
+            bgGradient: 'from-green-50 to-green-100',
+            borderColor: 'border-green-200'
         },
         {
-            value: 'manufacturer',
-            label: 'Manufacturer',
-            desc: 'Produce/manufacture goods',
-            icon: '🏭'
-        },
-        {
-            value: 'retailer',
-            label: 'Retailer',
-            desc: 'Sell directly to consumers',
-            icon: '🏪'
-        },
-        {
-            value: 'wholesaler',
-            label: 'Wholesaler',
-            desc: 'Sell in bulk to retailers',
-            icon: '🏬'
+            value: 'trading',
+            label: 'Trading Business',
+            desc: 'Buying, selling, import/export, distribution operations',
+            icon: <ShoppingCart className="w-8 h-8" />,
+            color: 'purple',
+            bgGradient: 'from-purple-50 to-purple-100',
+            borderColor: 'border-purple-200'
         }
     ];
 
-    // Industry options
-    const industryOptions = {
-        goods_trader: [
-            'Electronics', 'Automotive Parts', 'Textiles', 'Food & Beverages',
-            'Hardware', 'Pharmaceuticals', 'Chemicals', 'Metals'
+    // Subcategories for each main category
+    const businessSubcategories = {
+        service: [
+            { value: 'IT Services', desc: 'Software development, tech consulting, IT support' },
+            { value: 'Consulting', desc: 'Business advisory, management consulting' },
+            { value: 'Healthcare', desc: 'Medical services, clinics, healthcare providers' },
+            { value: 'Legal Services', desc: 'Law firms, legal advisory services' },
+            { value: 'Financial Services', desc: 'Accounting, financial advisory, banking' },
+            { value: 'Education', desc: 'Training institutes, educational services' }
         ],
-        service_provider: [
-            'IT Services', 'Consulting', 'Legal Services', 'Marketing',
-            'Healthcare', 'Education', 'Financial Services', 'Real Estate'
+        manufacturing: [
+            { value: 'Textile Manufacturing', desc: 'Garment production, fabric manufacturing' },
+            { value: 'Food Processing', desc: 'Food production, packaging, processing' },
+            { value: 'Electronics Manufacturing', desc: 'Electronics assembly, component production' },
+            { value: 'Chemical Production', desc: 'Chemical manufacturing, processing' },
+            { value: 'Automotive Parts', desc: 'Auto component manufacturing' },
+            { value: 'Pharmaceuticals', desc: 'Drug manufacturing, pharmaceutical production' }
         ],
-        manufacturer: [
-            'Textile Manufacturing', 'Electronics Manufacturing', 'Food Processing',
-            'Chemical Manufacturing', 'Automotive', 'Pharmaceuticals', 'Plastics'
-        ],
-        retailer: [
-            'Fashion Retail', 'Electronics Retail', 'Grocery', 'Home & Garden',
-            'Pharmacy', 'Sporting Goods', 'Books & Media'
-        ],
-        wholesaler: [
-            'FMCG Distribution', 'Electronics Distribution', 'Textile Wholesale',
-            'Industrial Supplies', 'Food Distribution', 'Medical Supplies'
+        trading: [
+            { value: 'Import/Export', desc: 'International trade, import-export business' },
+            { value: 'Wholesale Distribution', desc: 'Bulk trading, distribution business' },
+            { value: 'Retail Operations', desc: 'Retail stores, consumer sales' },
+            { value: 'E-commerce', desc: 'Online retail, digital marketplace' },
+            { value: 'FMCG Trading', desc: 'Fast-moving consumer goods trading' },
+            { value: 'Electronics Trading', desc: 'Electronics and technology products trading' }
         ]
     };
 
-    // Document type options
-    const documentTypes = [
-        {
-            value: 'bank_statement',
-            label: 'Bank Statements',
-            description: 'Process your bank statements to extract and classify all expense transactions',
-            icon: CreditCard,
-            acceptedFiles: '.pdf',
-            fileTypes: 'PDF files only',
-            features: ['Extract all debit transactions', 'Identify vendors automatically', 'Classify business expenses', 'Handle multiple months'],
-            example: 'Upload your monthly bank statement PDF'
-        },
-        {
-            value: 'expense_bills',
-            label: 'Expense Bills',
-            description: 'Process individual bills, invoices, and receipts for expense classification',
-            icon: Receipt,
-            acceptedFiles: '.pdf,.jpg,.jpeg,.png',
-            fileTypes: 'PDF, JPG, PNG files',
-            features: ['OCR text extraction', 'Vendor identification', 'Amount detection', 'Multi-file processing'],
-            example: 'Upload photos or PDFs of bills/invoices'
-        }
-    ];
-
-    // Classification options
-    const classificationOptions = [
+    // Classification options for debits
+    const debitClassificationOptions = [
         'Fixed (Capital Good)',
         'Trading Variable (Direct Business)',
         'Non-Trading Variable (Indirect Business)',
+        'Cash Withdrawal',
         'SUSPENSE'
     ];
 
-    // Process documents
+    // Classification options for credits
+    const creditClassificationOptions = [
+        'Direct Income',
+        'Other Income',
+        'Cash Deposit',
+        'SUSPENSE'
+    ];
+
+    // Process documents - FIXED: Now sends both category and subcategory
     const processDocuments = async () => {
         setProcessing(true);
         setError(null);
@@ -140,9 +137,9 @@ const ExpenseClassifier = () => {
 
         try {
             const formData = new FormData();
-            formData.append('business_nature', businessNature);
-            formData.append('specific_industry', specificIndustry);
-            formData.append('document_type', documentType);
+            // IMPORTANT: Send both business_category and business_subcategory
+            formData.append('business_category', businessCategory);
+            formData.append('business_subcategory', businessSubcategory);
 
             uploadedFiles.forEach((file) => {
                 formData.append('files', file);
@@ -151,6 +148,12 @@ const ExpenseClassifier = () => {
             const progressInterval = setInterval(() => {
                 setProcessingProgress(prev => Math.min(prev + 10, 90));
             }, 500);
+
+            console.log('Sending request with:', { 
+                business_category: businessCategory, 
+                business_subcategory: businessSubcategory,
+                files: uploadedFiles.length 
+            });
 
             const response = await fetch(`${PYTHON_API_BASE}/paymentflow/process`, {
                 method: 'POST',
@@ -169,6 +172,7 @@ const ExpenseClassifier = () => {
 
             if (data.success) {
                 setResults(data.results);
+                setSummary(data.summary);
                 setCurrentStep(4);
 
                 if (data.processing_errors && data.processing_errors.length > 0) {
@@ -193,9 +197,6 @@ const ExpenseClassifier = () => {
         const validFiles = [];
         const errors = [];
 
-        const selectedDocType = documentTypes.find(dt => dt.value === documentType);
-        const allowedExtensions = selectedDocType.acceptedFiles.split(',');
-
         files.forEach(file => {
             if (file.size > 20 * 1024 * 1024) {
                 errors.push(`${file.name}: File too large (max 20MB)`);
@@ -203,9 +204,8 @@ const ExpenseClassifier = () => {
             }
 
             const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-
-            if (!allowedExtensions.includes(fileExtension)) {
-                errors.push(`${file.name}: Invalid format for ${selectedDocType.label}. Allowed: ${selectedDocType.fileTypes}`);
+            if (!['.pdf', '.xls', '.xlsx'].includes(fileExtension)) {
+                errors.push(`${file.name}: Only PDF and Excel files (.xls, .xlsx) are supported`);
                 return;
             }
 
@@ -219,12 +219,93 @@ const ExpenseClassifier = () => {
         setUploadedFiles(validFiles);
     };
 
-    // Handle classification editing
-    const handleEditClassification = (id, newClassification) => {
-        setResults(results.map(item =>
-            item.id === id ? { ...item, classification: newClassification } : item
-        ));
+    // Start editing both classification and category - UPDATED
+    const startRowEdit = (id, currentClassification, currentCategory) => {
+        setEditingRow(id);
+        setEditingCategory(id);
+        setTempCategoryValue(currentCategory || '');
+    };
+
+    // Helper function to count matching vendor transactions - NEW
+    const getMatchingVendorCount = (currentId, vendorName) => {
+        if (!vendorName || !results) return 0;
+        
+        const vendorPrefix = vendorName.trim().toUpperCase().substring(0, 6);
+        if (vendorPrefix.length < 6) return 0;
+        
+        return results.filter(item => {
+            const itemVendorPrefix = (item.vendor || '').trim().toUpperCase().substring(0, 6);
+            return item.id !== currentId && itemVendorPrefix === vendorPrefix;
+        }).length;
+    };
+
+    // Save both classification and category changes - UPDATED with vendor matching
+    const saveRowChanges = (id) => {
+        // Get current classification value from the select element
+        const selectElement = document.querySelector(`select[data-item-id="${id}"]`);
+        const newClassification = selectElement ? selectElement.value : null;
+        
+        // Find the current item to get its vendor name
+        const currentItem = results.find(item => item.id === id);
+        if (!currentItem) return;
+        
+        // Get the first 6 characters of the vendor name (trimmed and uppercase for comparison)
+        const vendorPrefix = (currentItem.vendor || '').trim().toUpperCase().substring(0, 6);
+        
+        // Update the results with both classification and category
+        setResults(results.map(item => {
+            // Check if this item's vendor starts with the same 6 characters
+            const itemVendorPrefix = (item.vendor || '').trim().toUpperCase().substring(0, 6);
+            const shouldUpdate = item.id === id || (vendorPrefix.length >= 6 && itemVendorPrefix === vendorPrefix);
+            
+            if (shouldUpdate) {
+                const updates = {};
+                if (newClassification) updates.classification = newClassification;
+                if (tempCategoryValue !== undefined) updates.category = tempCategoryValue;
+                return { ...item, ...updates };
+            }
+            return item;
+        }));
+        
+        // Reset editing states
         setEditingRow(null);
+        setEditingCategory(null);
+        setTempCategoryValue('');
+    };
+
+    // Cancel editing both fields - UPDATED
+    const cancelRowEdit = () => {
+        setEditingRow(null);
+        setEditingCategory(null);
+        setTempCategoryValue('');
+    };
+
+    // Handle table sorting
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    // Get file icon with Excel support
+    const getFileIcon = (filename) => {
+        const extension = filename?.split('.').pop().toLowerCase();
+        switch (extension) {
+            case 'pdf': return '📄';
+            case 'xls':
+            case 'xlsx': return '📊';
+            default: return '📎';
+        }
+    };
+
+    // Get sort icon
+    const getSortIcon = (columnKey) => {
+        if (sortConfig.key !== columnKey) {
+            return <span className="text-gray-400">↕️</span>;
+        }
+        return sortConfig.direction === 'asc' ? <span className="text-blue-600">↑</span> : <span className="text-blue-600">↓</span>;
     };
 
     // Color functions
@@ -250,15 +331,44 @@ const ExpenseClassifier = () => {
         if (classification?.includes('Non-Trading Variable')) {
             return 'text-purple-700 bg-purple-100';
         }
+        if (classification?.includes('Direct Income')) {
+            return 'text-emerald-700 bg-emerald-100';
+        }
+        if (classification?.includes('Other Income')) {
+            return 'text-teal-700 bg-teal-100';
+        }
+        if (classification?.includes('Cash')) {
+            return 'text-amber-700 bg-amber-100';
+        }
         return 'text-gray-700 bg-gray-100';
+    };
+
+    const getTransactionTypeColor = (transactionType) => {
+        if (transactionType === 'DEBIT') {
+            return 'text-red-700 bg-red-100 border border-red-200';
+        }
+        if (transactionType === 'CREDIT') {
+            return 'text-green-700 bg-green-100 border border-green-200';
+        }
+        return 'text-gray-700 bg-gray-100';
+    };
+
+    const getCategoryColor = (category) => {
+        const colors = {
+            service: 'blue',
+            manufacturing: 'green',
+            trading: 'purple'
+        };
+        return colors[category] || 'gray';
     };
 
     // Export to CSV
     const exportToCSV = () => {
         try {
             const headers = [
-                'Date', 'Vendor', 'Amount', 'Classification', 'Category',
-                'Confidence', 'Source File', 'Description'
+                'Date', 'Vendor', 'Amount', 'Transaction Type', 'Balance Change', 'Running Balance', 
+                'Classification', 'Category', 'Confidence', 'Source File', 'Description', 
+                'Business Category', 'Business Subcategory'
             ];
 
             const csvRows = [
@@ -267,11 +377,16 @@ const ExpenseClassifier = () => {
                     item.date || new Date().toISOString().split('T')[0],
                     `"${item.vendor || 'Unknown'}"`,
                     item.amount || 0,
+                    item.transaction_type || 'DEBIT',
+                    item.balance_change || 0,
+                    item.running_balance || 0,
                     `"${item.classification}"`,
                     `"${item.category || 'Uncategorized'}"`,
                     item.classification === 'SUSPENSE' ? 'REVIEW' : item.confidence,
                     `"${item.source_file || 'Unknown'}"`,
-                    `"${item.description || ''}"`
+                    `"${item.description || ''}"`,
+                    `"${businessCategory.toUpperCase()}"`,
+                    `"${businessSubcategory}"`
                 ].join(','))
             ];
 
@@ -279,7 +394,7 @@ const ExpenseClassifier = () => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `expense_classification_${documentType}_${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = `${businessCategory}_${businessSubcategory.replace(/[^a-zA-Z0-9]/g, '_')}_analysis_${new Date().toISOString().split('T')[0]}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -289,57 +404,169 @@ const ExpenseClassifier = () => {
         }
     };
 
-    // Get file icon
-    const getFileIcon = (filename) => {
-        const extension = filename?.split('.').pop().toLowerCase();
-        switch (extension) {
-            case 'pdf': return '📄';
-            case 'jpg':
-            case 'jpeg':
-            case 'png': return '🖼️';
-            default: return '📎';
+    // Export to Excel
+    const exportToExcel = () => {
+        try {
+            const workbook = XLSX.utils.book_new();
+            
+            // Prepare data for Excel
+            const excelData = results.map(item => ({
+                'Date': item.date || new Date().toISOString().split('T')[0],
+                'Vendor': item.vendor || 'Unknown',
+                'Amount': item.amount || 0,
+                'Transaction Type': item.transaction_type || 'DEBIT',
+                'Balance Change': item.balance_change || 0,
+                'Running Balance': item.running_balance || 0,
+                'Classification': item.classification,
+                'Category': item.category || 'Uncategorized',
+                'Confidence': item.classification === 'SUSPENSE' ? 'REVIEW' : `${item.confidence}%`,
+                'Source File': item.source_file || 'Unknown',
+                'Description': item.description || '',
+                'Business Category': businessCategory.toUpperCase(),
+                'Business Subcategory': businessSubcategory
+            }));
+
+            // Create worksheet
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');
+            
+            // Create summary sheet
+            const summaryData = [
+                { 'Metric': 'Business Category', 'Value': businessCategory.toUpperCase(), 'Amount': '' },
+                { 'Metric': 'Business Subcategory', 'Value': businessSubcategory, 'Amount': '' },
+                { 'Metric': 'Total Transactions', 'Value': summary?.total_items || 0, 'Amount': '' },
+                { 'Metric': 'Debit Transactions', 'Value': summary?.debit_transactions || 0, 'Amount': `₹${summary?.total_debit_amount?.toLocaleString('en-IN') || 0}` },
+                { 'Metric': 'Credit Transactions', 'Value': summary?.credit_transactions || 0, 'Amount': `₹${summary?.total_credit_amount?.toLocaleString('en-IN') || 0}` },
+                { 'Metric': 'Final Balance', 'Value': summary?.final_balance > 0 ? 'Positive' : 'Negative', 'Amount': `₹${summary?.final_balance?.toLocaleString('en-IN') || 0}` },
+                { 'Metric': 'Net Balance Change', 'Value': '', 'Amount': `₹${summary?.net_balance_change?.toLocaleString('en-IN') || 0}` },
+                { 'Metric': 'Largest Credit', 'Value': '', 'Amount': `₹${summary?.largest_credit?.toLocaleString('en-IN') || 0}` },
+                { 'Metric': 'Largest Debit', 'Value': '', 'Amount': `₹${summary?.largest_debit?.toLocaleString('en-IN') || 0}` },
+                { 'Metric': 'Suspense Items', 'Value': summary?.suspense_items || 0, 'Amount': `₹${summary?.suspense_amount?.toLocaleString('en-IN') || 0}` },
+                { 'Metric': 'High Confidence', 'Value': summary?.high_confidence || 0, 'Amount': '' },
+                { 'Metric': 'Average Confidence', 'Value': `${summary?.average_confidence?.toFixed(1) || 0}%`, 'Amount': '' }
+            ];
+            
+            const summaryWorksheet = XLSX.utils.json_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Summary');
+            
+            // Write file
+            XLSX.writeFile(workbook, `${businessCategory}_${businessSubcategory.replace(/[^a-zA-Z0-9]/g, '_')}_analysis_${new Date().toISOString().split('T')[0]}.xlsx`);
+        } catch (error) {
+            alert('Excel export failed: ' + error.message);
         }
+    };
+
+    // Filter results based on type and search term
+    const getFilteredResults = () => {
+        if (!results) return [];
+        
+        let filtered = results;
+        
+        // Apply type filter
+        switch (filterType) {
+            case 'debit':
+                filtered = results.filter(item => item.transaction_type === 'DEBIT');
+                break;
+            case 'credit':
+                filtered = results.filter(item => item.transaction_type === 'CREDIT');
+                break;
+            case 'suspense':
+                filtered = results.filter(item => item.classification === 'SUSPENSE');
+                break;
+            case 'cash':
+                filtered = results.filter(item => 
+                    item.classification?.includes('Cash') || 
+                    item.classification?.includes('Withdrawal') || 
+                    item.classification?.includes('Deposit')
+                );
+                break;
+            default:
+                filtered = results;
+        }
+        
+        // Apply search filter
+        if (searchTerm) {
+            filtered = filtered.filter(item =>
+                (item.vendor?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (item.description?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (item.classification?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (item.category?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (item.date?.includes(searchTerm)) ||
+                (item.amount?.toString().includes(searchTerm))
+            );
+        }
+        
+        // Apply sorting
+        if (sortConfig.key) {
+            filtered.sort((a, b) => {
+                let aValue = a[sortConfig.key];
+                let bValue = b[sortConfig.key];
+                
+                // Handle different data types
+                if (sortConfig.key === 'amount' || sortConfig.key === 'balance_change' || sortConfig.key === 'running_balance') {
+                    aValue = Number(aValue) || 0;
+                    bValue = Number(bValue) || 0;
+                } else if (sortConfig.key === 'date') {
+                    aValue = new Date(aValue || '1900-01-01');
+                    bValue = new Date(bValue || '1900-01-01');
+                } else {
+                    aValue = String(aValue || '').toLowerCase();
+                    bValue = String(bValue || '').toLowerCase();
+                }
+                
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        
+        return filtered;
     };
 
     // Reset form
     const resetForm = () => {
         setCurrentStep(1);
-        setBusinessNature('');
-        setSpecificIndustry('');
-        setDocumentType('');
+        setBusinessCategory('');
+        setBusinessSubcategory('');
         setUploadedFiles([]);
         setResults(null);
+        setSummary(null);
         setError(null);
-        setFilterSuspense(false);
+        setFilterType('all');
     };
 
-    const { push } = useRouter()
+    const { push } = useRouter();
+    
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             {/* Header */}
             <div className="bg-white shadow-sm border-b">
-                <div className="max-w-6xl mx-auto px-6 py-4">
+                <div className="mx-auto px-6 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                                <button
-                                    onClick={() => {
-                                        if (currentStep === 1) {
-                                            push("/")
-                                        } else {
-                                            setCurrentStep(currentStep - 1)
-                                        }
-                                    }}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                    title="Go back"
-                                >
-                                    <ArrowLeft className="w-5 h-5 text-gray-600" />
-                                </button>
+                            <button
+                                onClick={() => {
+                                    if (currentStep === 1) {
+                                        push("/")
+                                    } else {
+                                        setCurrentStep(currentStep - 1)
+                                    }
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Go back"
+                            >
+                                <ArrowLeft className="w-5 h-5 text-gray-600" />
+                            </button>
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-900">
-                                    <span className="text-blue-600">AI</span> Expense Classifier
+                                    <span className="text-blue-600">AI</span> Business Statement Analyzer
                                 </h1>
                                 <p className="text-gray-600">
-                                    Intelligent classification for bank statements and expense bills
+                                    Smart classification with Excel support, search, and sorting features
                                 </p>
                             </div>
                         </div>
@@ -366,7 +593,7 @@ const ExpenseClassifier = () => {
                 </div>
             </div>
 
-            <div className="max-w-6xl mx-auto px-6 py-8">
+            <div className="mx-auto px-6 py-8">
                 {/* Error Alert */}
                 {error && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -380,175 +607,126 @@ const ExpenseClassifier = () => {
                     </div>
                 )}
 
-                {/* Step 1: Business Context */}
+                {/* Step 1: Business Category Selection */}
                 {currentStep === 1 && (
                     <div className="space-y-8">
                         <div className="bg-white rounded-xl shadow-sm p-8">
                             <div className="text-center mb-8">
                                 <Building2 className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-                                <h2 className="text-3xl font-bold text-gray-900">Business Information</h2>
+                                <h2 className="text-3xl font-bold text-gray-900">Select Business Category</h2>
                                 <p className="text-gray-600 mt-2 text-lg">
-                                    Help us classify your expenses with industry-specific intelligence
+                                    Choose your primary business category for accurate classification
                                 </p>
                             </div>
 
-                            <div className="space-y-8">
-                                {/* Business Nature Selection */}
-                                <div>
-                                    <h3 className="text-xl font-semibold text-gray-900 mb-6">
-                                        What's your business nature?
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {businessNatures.map((nature) => (
-                                            <button
-                                                key={nature.value}
-                                                onClick={() => setBusinessNature(nature.value)}
-                                                className={`p-6 rounded-xl border-2 transition-all text-left hover:shadow-md ${businessNature === nature.value
-                                                        ? 'border-blue-500 bg-blue-50 shadow-md'
-                                                        : 'border-gray-200 hover:border-gray-300'
-                                                    }`}
-                                            >
-                                                <div className="text-2xl mb-3">{nature.icon}</div>
-                                                <h4 className="font-semibold text-gray-900 mb-2">{nature.label}</h4>
-                                                <p className="text-gray-600 text-sm">{nature.desc}</p>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Industry Selection */}
-                                {businessNature && (
-                                    <div className="animate-fadeIn">
-                                        <h3 className="text-xl font-semibold text-gray-900 mb-6">
-                                            Select your specific industry
-                                        </h3>
-                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                            {industryOptions[businessNature]?.map((industry) => (
-                                                <button
-                                                    key={industry}
-                                                    onClick={() => setSpecificIndustry(industry)}
-                                                    className={`p-4 rounded-lg border transition-all text-center hover:shadow-sm ${specificIndustry === industry
-                                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                                                        }`}
-                                                >
-                                                    {industry}
-                                                </button>
-                                            ))}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                {businessCategories.map((category) => (
+                                    <button
+                                        key={category.value}
+                                        onClick={() => setBusinessCategory(category.value)}
+                                        className={`p-8 rounded-xl border-2 transition-all text-left hover:shadow-lg group ${businessCategory === category.value
+                                                ? `border-${category.color}-500 bg-gradient-to-br ${category.bgGradient} shadow-lg`
+                                                : 'border-gray-200 hover:border-gray-300'
+                                            }`}
+                                    >
+                                        <div className={`text-${category.color}-600 mb-4 group-hover:scale-110 transition-transform`}>
+                                            {category.icon}
                                         </div>
-                                    </div>
-                                )}
+                                        <h3 className="text-xl font-bold text-gray-900 mb-3">{category.label}</h3>
+                                        <p className="text-gray-600 text-sm leading-relaxed">{category.desc}</p>
+                                    </button>
+                                ))}
                             </div>
 
-                            {businessNature && specificIndustry && (
-                                <div className="mt-8 flex justify-between items-center p-4 bg-green-50 border border-green-200 rounded-lg">
-                                    <div>
-                                        <p className="text-green-800 font-medium">Business Context Set</p>
-                                        <p className="text-green-600 text-sm">
-                                            {businessNatures.find(n => n.value === businessNature)?.label} - {specificIndustry}
-                                        </p>
+                            {businessCategory && (
+                                <div className="animate-fadeIn">
+                                    <div className="flex justify-between items-center p-4 bg-green-50 border border-green-200 rounded-lg">
+                                        <div>
+                                            <p className="text-green-800 font-medium">Business Category Selected</p>
+                                            <p className="text-green-600 text-sm">
+                                                {businessCategories.find(c => c.value === businessCategory)?.label}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => setCurrentStep(2)}
+                                            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center font-medium"
+                                        >
+                                            Continue to Subcategory
+                                            <ChevronRight className="w-4 h-4 ml-2" />
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={() => setCurrentStep(2)}
-                                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center font-medium"
-                                    >
-                                        Continue to Document Type
-                                        <ChevronRight className="w-4 h-4 ml-2" />
-                                    </button>
                                 </div>
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* Step 2: Document Type Selection */}
+                {/* Step 2: Business Subcategory Selection */}
                 {currentStep === 2 && (
-                    <div className="bg-white rounded-xl shadow-sm p-8">
-                        <div className="text-center mb-8">
-                            <FileText className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-                            <h2 className="text-3xl font-bold text-gray-900">Choose Document Type</h2>
-                            <p className="text-gray-600 mt-2 text-lg">
-                                Select whether you want to process bank statements or expense bills
-                            </p>
-                        </div>
+                    <div className="space-y-8">
+                        <div className="bg-white rounded-xl shadow-sm p-8">
+                            <div className="text-center mb-8">
+                                {businessCategories.find(c => c.value === businessCategory)?.icon}
+                                <h2 className="text-3xl font-bold text-gray-900 mt-4">Select Business Subcategory</h2>
+                                <p className="text-gray-600 mt-2 text-lg">
+                                    Choose your specific business type within {businessCategories.find(c => c.value === businessCategory)?.label}
+                                </p>
+                            </div>
 
-                        {/* Business Context Summary */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
-                            <h3 className="text-blue-800 font-medium mb-2">Selected Business Context:</h3>
-                            <p className="text-blue-700">
-                                <span className="font-medium">
-                                    {businessNatures.find(n => n.value === businessNature)?.label}
-                                </span>
-                                {' in '}
-                                <span className="font-medium">{specificIndustry}</span>
-                            </p>
-                        </div>
+                            {/* Selected Category Summary */}
+                            <div className={`bg-gradient-to-r ${businessCategories.find(c => c.value === businessCategory)?.bgGradient} ${businessCategories.find(c => c.value === businessCategory)?.borderColor} border rounded-lg p-4 mb-8`}>
+                                <div className="flex items-center justify-center">
+                                    <div className={`text-${getCategoryColor(businessCategory)}-600 mr-4`}>
+                                        {businessCategories.find(c => c.value === businessCategory)?.icon}
+                                    </div>
+                                    <div>
+                                        <h3 className={`text-${getCategoryColor(businessCategory)}-800 font-bold text-lg`}>
+                                            {businessCategories.find(c => c.value === businessCategory)?.label}
+                                        </h3>
+                                        <p className={`text-${getCategoryColor(businessCategory)}-700 text-sm`}>
+                                            {businessCategories.find(c => c.value === businessCategory)?.desc}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
 
-                        {/* Document Type Options */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                            {documentTypes.map((docType) => {
-                                const IconComponent = docType.icon;
-                                return (
+                            {/* Subcategory Selection */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                {businessSubcategories[businessCategory]?.map((subcategory) => (
                                     <button
-                                        key={docType.value}
-                                        onClick={() => setDocumentType(docType.value)}
-                                        className={`p-6 rounded-xl border-2 transition-all text-left hover:shadow-md ${documentType === docType.value
-                                                ? 'border-blue-500 bg-blue-50 shadow-md'
+                                        key={subcategory.value}
+                                        onClick={() => setBusinessSubcategory(subcategory.value)}
+                                        className={`p-6 rounded-lg border transition-all text-left hover:shadow-md ${businessSubcategory === subcategory.value
+                                                ? `border-${getCategoryColor(businessCategory)}-500 bg-${getCategoryColor(businessCategory)}-50 shadow-md`
                                                 : 'border-gray-200 hover:border-gray-300'
                                             }`}
                                     >
-                                        <div className="flex items-center mb-4">
-                                            <IconComponent className="w-8 h-8 text-blue-600 mr-3" />
-                                            <h3 className="text-xl font-semibold text-gray-900">{docType.label}</h3>
-                                        </div>
-
-                                        <p className="text-gray-600 mb-4">{docType.description}</p>
-
-                                        <div className="space-y-3">
-                                            <div className="bg-gray-50 p-3 rounded-lg">
-                                                <p className="text-sm font-medium text-gray-700 mb-2">Supported formats:</p>
-                                                <p className="text-sm text-gray-600">{docType.fileTypes}</p>
-                                            </div>
-
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-700 mb-2">Features:</p>
-                                                <ul className="space-y-1">
-                                                    {docType.features.map((feature, index) => (
-                                                        <li key={index} className="text-sm text-gray-600 flex items-center">
-                                                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></span>
-                                                            {feature}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-
-                                            <div className="bg-blue-50 p-3 rounded-lg">
-                                                <p className="text-sm font-medium text-blue-700">Example:</p>
-                                                <p className="text-sm text-blue-600">{docType.example}</p>
-                                            </div>
-                                        </div>
+                                        <h4 className="font-semibold text-gray-900 mb-2">{subcategory.value}</h4>
+                                        <p className="text-gray-600 text-sm">{subcategory.desc}</p>
                                     </button>
-                                );
-                            })}
-                        </div>
-
-                        {documentType && (
-                            <div className="flex justify-between items-center p-4 bg-green-50 border border-green-200 rounded-lg">
-                                <div>
-                                    <p className="text-green-800 font-medium">Document Type Selected</p>
-                                    <p className="text-green-600 text-sm">
-                                        {documentTypes.find(dt => dt.value === documentType)?.label}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => setCurrentStep(3)}
-                                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center font-medium"
-                                >
-                                    Continue to Upload
-                                    <ChevronRight className="w-4 h-4 ml-2" />
-                                </button>
+                                ))}
                             </div>
-                        )}
+
+                            {businessSubcategory && (
+                                <div className="animate-fadeIn">
+                                    <div className="flex justify-between items-center p-4 bg-green-50 border border-green-200 rounded-lg">
+                                        <div>
+                                            <p className="text-green-800 font-medium">Business Subcategory Selected</p>
+                                            <p className="text-green-600 text-sm">
+                                                {businessSubcategory} in {businessCategories.find(c => c.value === businessCategory)?.label}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => setCurrentStep(3)}
+                                            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center font-medium"
+                                        >
+                                            Continue to Upload
+                                            <ChevronRight className="w-4 h-4 ml-2" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -556,28 +734,56 @@ const ExpenseClassifier = () => {
                 {currentStep === 3 && (
                     <div className="bg-white rounded-xl shadow-sm p-8">
                         <div className="text-center mb-8">
-                            <Upload className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-                            <h2 className="text-3xl font-bold text-gray-900">
-                                Upload {documentTypes.find(dt => dt.value === documentType)?.label}
-                            </h2>
+                            <CreditCard className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+                            <h2 className="text-3xl font-bold text-gray-900">Upload Bank Statements</h2>
                             <p className="text-gray-600 mt-2 text-lg">
-                                {documentTypes.find(dt => dt.value === documentType)?.description}
+                                Upload PDF or Excel bank statements for {businessSubcategory} analysis
                             </p>
                         </div>
 
-                        {/* Context Summary */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <h3 className="text-blue-800 font-medium mb-1">Business Context:</h3>
-                                <p className="text-blue-700 text-sm">
-                                    {businessNatures.find(n => n.value === businessNature)?.label} - {specificIndustry}
-                                </p>
+                        {/* Business Context Summary */}
+                        <div className={`bg-gradient-to-r ${businessCategories.find(c => c.value === businessCategory)?.bgGradient} ${businessCategories.find(c => c.value === businessCategory)?.borderColor} border rounded-lg p-6 mb-8`}>
+                            <div className="flex items-center justify-center mb-4">
+                                <div className={`text-${getCategoryColor(businessCategory)}-600 mr-4`}>
+                                    {businessCategories.find(c => c.value === businessCategory)?.icon}
+                                </div>
+                                <div className="text-center">
+                                    <h3 className={`text-${getCategoryColor(businessCategory)}-800 font-bold text-xl`}>
+                                        {businessSubcategory}
+                                    </h3>
+                                    <p className={`text-${getCategoryColor(businessCategory)}-700 text-sm`}>
+                                        {businessCategories.find(c => c.value === businessCategory)?.label} • AI will classify with {businessSubcategory} context
+                                    </p>
+                                </div>
                             </div>
-                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                                <h3 className="text-purple-800 font-medium mb-1">Document Type:</h3>
-                                <p className="text-purple-700 text-sm">
-                                    {documentTypes.find(dt => dt.value === documentType)?.label}
-                                </p>
+                        </div>
+
+                        {/* Feature Highlights */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-lg p-6">
+                                <div className="flex items-center mb-4">
+                                    <ArrowDownCircle className="w-8 h-8 text-red-600 mr-3" />
+                                    <h3 className="text-lg font-semibold text-red-900">Expense Analysis</h3>
+                                </div>
+                                <ul className="space-y-2 text-sm text-red-800">
+                                    <li>• Fixed Assets & Capital Goods</li>
+                                    <li>• Direct Business Expenses</li>
+                                    <li>• Administrative Expenses</li>
+                                    <li>• Cash Withdrawals & ATM</li>
+                                </ul>
+                            </div>
+
+                            <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg p-6">
+                                <div className="flex items-center mb-4">
+                                    <ArrowUpCircle className="w-8 h-8 text-green-600 mr-3" />
+                                    <h3 className="text-lg font-semibold text-green-900">Income Analysis</h3>
+                                </div>
+                                <ul className="space-y-2 text-sm text-green-800">
+                                    <li>• Primary Business Revenue</li>
+                                    <li>• Secondary Income Sources</li>
+                                    <li>• Cash Deposits</li>
+                                    <li>• Interest & Other Income</li>
+                                </ul>
                             </div>
                         </div>
 
@@ -587,12 +793,12 @@ const ExpenseClassifier = () => {
                             <div className="mb-4">
                                 <label className="cursor-pointer">
                                     <span className="text-blue-600 hover:text-blue-700 font-medium text-lg">
-                                        Click to upload {documentTypes.find(dt => dt.value === documentType)?.label.toLowerCase()}
+                                        Click to upload bank statement files
                                     </span>
                                     <input
                                         type="file"
-                                        multiple={documentType === 'expense_bills'}
-                                        accept={documentTypes.find(dt => dt.value === documentType)?.acceptedFiles}
+                                        multiple
+                                        accept=".pdf,.xls,.xlsx"
                                         onChange={handleFileUpload}
                                         className="hidden"
                                     />
@@ -601,18 +807,12 @@ const ExpenseClassifier = () => {
                             </div>
 
                             <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                                <p className="text-sm font-medium text-gray-700 mb-2">
-                                    {documentTypes.find(dt => dt.value === documentType)?.label} Requirements:
-                                </p>
+                                <p className="text-sm font-medium text-gray-700 mb-2">Requirements:</p>
                                 <div className="space-y-1 text-sm text-gray-600">
-                                    <p>📁 <strong>Formats:</strong> {documentTypes.find(dt => dt.value === documentType)?.fileTypes}</p>
+                                    <p>📁 <strong>Format:</strong> PDF or Excel files (.xls, .xlsx)</p>
                                     <p>📏 <strong>Size limit:</strong> 20MB per file</p>
-                                    {documentType === 'bank_statement' && (
-                                        <p>📄 <strong>Content:</strong> PDF bank statements with transaction details</p>
-                                    )}
-                                    {documentType === 'expense_bills' && (
-                                        <p>🧾 <strong>Content:</strong> Clear images or PDFs of bills/invoices</p>
-                                    )}
+                                    <p>📄 <strong>Content:</strong> Bank statements with transaction details</p>
+                                    <p>🤖 <strong>AI:</strong> DeepSeek with {businessSubcategory} context</p>
                                 </div>
                             </div>
 
@@ -628,7 +828,7 @@ const ExpenseClassifier = () => {
                                                 className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
                                             >
                                                 <div className="flex items-center">
-                                                    <span className="text-lg mr-3">{getFileIcon(file.name)}</span>
+                                                    <span className="text-lg mr-3">📄</span>
                                                     <div>
                                                         <p className="text-sm font-medium text-gray-900 truncate max-w-48">
                                                             {file.name}
@@ -673,7 +873,7 @@ const ExpenseClassifier = () => {
                                         </>
                                     ) : (
                                         <>
-                                            Process {documentTypes.find(dt => dt.value === documentType)?.label}
+                                            Analyze Bank Statements
                                             <ChevronRight className="w-4 h-4 ml-2" />
                                         </>
                                     )}
@@ -690,18 +890,14 @@ const ExpenseClassifier = () => {
                             <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
                             <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
                             <div className="absolute inset-0 flex items-center justify-center">
-                                {documentType === 'bank_statement' ? (
-                                    <CreditCard className="w-8 h-8 text-blue-600" />
-                                ) : (
-                                    <Receipt className="w-8 h-8 text-blue-600" />
-                                )}
+                                {businessCategories.find(c => c.value === businessCategory)?.icon}
                             </div>
                         </div>
                         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                            Processing {documentTypes.find(dt => dt.value === documentType)?.label}
+                            Processing {businessSubcategory} Statements
                         </h2>
                         <p className="text-gray-600 mb-6">
-                            AI is analyzing your {documentType === 'bank_statement' ? 'bank statement' : 'expense bills'} and classifying transactions...
+                            DeepSeek AI is analyzing your bank statements (PDF/Excel) with {businessSubcategory} business context...
                         </p>
                         <div className="max-w-md mx-auto">
                             <div className="flex justify-between text-sm text-gray-600 mb-2">
@@ -719,7 +915,7 @@ const ExpenseClassifier = () => {
                 )}
 
                 {/* Step 4: Results */}
-                {currentStep === 4 && results && (
+                {currentStep === 4 && results && summary && (
                     <div className="space-y-6">
                         {/* Classification Guide */}
                         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
@@ -727,13 +923,27 @@ const ExpenseClassifier = () => {
                                 <div>
                                     <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
                                         <Info className="w-5 h-5 mr-2" />
-                                        Classification Results for {documentTypes.find(dt => dt.value === documentType)?.label}
+                                        {businessSubcategory} Analysis Results
                                     </h3>
-                                    <div className="space-y-2 text-sm text-blue-800">
-                                        <p><span className="inline-block w-4 h-4 bg-blue-500 rounded mr-2"></span><strong>Fixed:</strong> Capital goods & assets (life > 1 year)</p>
-                                        <p><span className="inline-block w-4 h-4 bg-green-500 rounded mr-2"></span><strong>Trading Variable:</strong> Direct business revenue-related expenses</p>
-                                        <p><span className="inline-block w-4 h-4 bg-purple-500 rounded mr-2"></span><strong>Non-Trading Variable:</strong> Indirect/administrative expenses</p>
-                                        <p><span className="inline-block w-4 h-4 bg-orange-500 rounded mr-2"></span><strong>Suspense:</strong> Items needing manual review/clarification</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-blue-800">
+                                        <div>
+                                            <h4 className="font-semibold mb-2 text-red-800">EXPENSE Classifications:</h4>
+                                            <div className="space-y-1">
+                                                <p><span className="inline-block w-4 h-4 bg-blue-500 rounded mr-2"></span><strong>Fixed:</strong> Capital goods & assets</p>
+                                                <p><span className="inline-block w-4 h-4 bg-green-500 rounded mr-2"></span><strong>Trading Variable:</strong> Direct business expenses</p>
+                                                <p><span className="inline-block w-4 h-4 bg-purple-500 rounded mr-2"></span><strong>Non-Trading Variable:</strong> Support expenses</p>
+                                                <p><span className="inline-block w-4 h-4 bg-amber-500 rounded mr-2"></span><strong>Cash Withdrawal:</strong> ATM & cash</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold mb-2 text-green-800">INCOME Classifications:</h4>
+                                            <div className="space-y-1">
+                                                <p><span className="inline-block w-4 h-4 bg-emerald-500 rounded mr-2"></span><strong>Direct Income:</strong> Business revenue</p>
+                                                <p><span className="inline-block w-4 h-4 bg-teal-500 rounded mr-2"></span><strong>Other Income:</strong> Non-business income</p>
+                                                <p><span className="inline-block w-4 h-4 bg-amber-500 rounded mr-2"></span><strong>Cash Deposit:</strong> Cash deposits</p>
+                                                <p><span className="inline-block w-4 h-4 bg-orange-500 rounded mr-2"></span><strong>Suspense:</strong> Review needed</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <button
@@ -750,15 +960,22 @@ const ExpenseClassifier = () => {
                         <div className="bg-white rounded-xl shadow-sm p-6">
                             <div className="flex justify-between items-center mb-6">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">Classification Results</h2>
+                                    <h2 className="text-2xl font-bold text-gray-900">Transaction Analysis</h2>
                                     <p className="text-gray-600 text-sm mt-1">
-                                        Processed {documentTypes.find(dt => dt.value === documentType)?.label} for {businessNatures.find(n => n.value === businessNature)?.label} in {specificIndustry}
+                                        Bank statements processed for {businessSubcategory} ({businessCategories.find(c => c.value === businessCategory)?.label})
                                     </p>
                                 </div>
                                 <div className="flex space-x-3">
                                     <button
-                                        onClick={exportToCSV}
+                                        onClick={exportToExcel}
                                         className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center font-medium"
+                                    >
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Export Excel
+                                    </button>
+                                    <button
+                                        onClick={exportToCSV}
+                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center font-medium"
                                     >
                                         <Download className="w-4 h-4 mr-2" />
                                         Export CSV
@@ -773,112 +990,199 @@ const ExpenseClassifier = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+                            {/* Enhanced Summary Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-6">
                                 <div className="bg-slate-50 p-4 rounded-lg border">
                                     <div className="flex items-center justify-between mb-2">
                                         <FileSpreadsheet className="w-5 h-5 text-slate-600" />
-                                        <span className="text-2xl font-bold text-gray-900">{results.length}</span>
+                                        <span className="text-2xl font-bold text-gray-900">{summary.total_items}</span>
                                     </div>
                                     <p className="text-slate-600 font-medium text-sm">Total Items</p>
                                 </div>
 
-                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                                     <div className="flex items-center justify-between mb-2">
-                                        <div className="w-5 h-5 bg-blue-500 rounded"></div>
-                                        <span className="text-2xl font-bold text-gray-900">
-                                            {results.filter(r => r.classification?.includes('Fixed')).length}
-                                        </span>
+                                        <ArrowDownCircle className="w-5 h-5 text-red-600" />
+                                        <span className="text-2xl font-bold text-gray-900">{summary.debit_transactions}</span>
                                     </div>
-                                    <p className="text-blue-600 font-medium text-sm">Fixed Assets</p>
+                                    <p className="text-red-600 font-medium text-sm">Debits</p>
                                 </div>
 
                                 <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                                     <div className="flex items-center justify-between mb-2">
-                                        <div className="w-5 h-5 bg-green-500 rounded"></div>
-                                        <span className="text-2xl font-bold text-gray-900">
-                                            {results.filter(r => r.classification?.includes('Trading Variable')).length}
-                                        </span>
+                                        <ArrowUpCircle className="w-5 h-5 text-green-600" />
+                                        <span className="text-2xl font-bold text-gray-900">{summary.credit_transactions}</span>
                                     </div>
-                                    <p className="text-green-600 font-medium text-sm">Trading Variable</p>
+                                    <p className="text-green-600 font-medium text-sm">Credits</p>
                                 </div>
 
-                                <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                                     <div className="flex items-center justify-between mb-2">
-                                        <div className="w-5 h-5 bg-purple-500 rounded"></div>
+                                        <Banknote className="w-5 h-5 text-amber-600" />
                                         <span className="text-2xl font-bold text-gray-900">
-                                            {results.filter(r => r.classification?.includes('Non-Trading Variable')).length}
+                                            {(summary.debit_classification_breakdown?.cash_withdrawal || 0) + 
+                                             (summary.credit_classification_breakdown?.cash_deposit || 0)}
                                         </span>
                                     </div>
-                                    <p className="text-purple-600 font-medium text-sm">Non-Trading Variable</p>
+                                    <p className="text-amber-600 font-medium text-sm">Cash</p>
                                 </div>
 
                                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                                     <div className="flex items-center justify-between mb-2">
                                         <AlertCircle className="w-5 h-5 text-orange-600" />
-                                        <span className="text-2xl font-bold text-gray-900">
-                                            {results.filter(r => r.classification === 'SUSPENSE').length}
-                                        </span>
+                                        <span className="text-2xl font-bold text-gray-900">{summary.suspense_items}</span>
                                     </div>
-                                    <p className="text-orange-600 font-medium text-sm">Suspense Items</p>
+                                    <p className="text-orange-600 font-medium text-sm">Suspense</p>
                                 </div>
 
                                 <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
                                     <div className="flex items-center justify-between mb-2">
                                         <TrendingUp className="w-5 h-5 text-emerald-600" />
-                                        <span className="text-2xl font-bold text-gray-900">
-                                            {results.filter(r => r.confidence >= 95 && r.classification !== 'SUSPENSE').length}
-                                        </span>
+                                        <span className="text-2xl font-bold text-gray-900">{summary.high_confidence}</span>
                                     </div>
                                     <p className="text-emerald-600 font-medium text-sm">High Confidence</p>
                                 </div>
                             </div>
 
-                            {/* Total Amount Summary */}
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center">
-                                        <DollarSign className="w-5 h-5 text-gray-600 mr-2" />
-                                        <span className="font-medium text-gray-700">Total Amount Processed:</span>
+                            {/* Amount and Balance Summary */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <ArrowDownCircle className="w-5 h-5 text-red-600 mr-2" />
+                                            <span className="font-medium text-red-700">Total Debits:</span>
+                                        </div>
+                                        <span className="text-xl font-bold text-red-900">
+                                            ₹{summary.total_debit_amount?.toLocaleString('en-IN') || 0}
+                                        </span>
                                     </div>
-                                    <span className="text-xl font-bold text-gray-900">
-                                        ₹{results.reduce((sum, item) => sum + (item.amount || 0), 0).toLocaleString('en-IN')}
-                                    </span>
+                                </div>
+                                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <ArrowUpCircle className="w-5 h-5 text-green-600 mr-2" />
+                                            <span className="font-medium text-green-700">Total Credits:</span>
+                                        </div>
+                                        <span className="text-xl font-bold text-green-900">
+                                            ₹{summary.total_credit_amount?.toLocaleString('en-IN') || 0}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className={`p-4 rounded-lg border ${(summary.final_balance || 0) >= 0 ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <DollarSign className={`w-5 h-5 mr-2 ${(summary.final_balance || 0) >= 0 ? 'text-blue-600' : 'text-orange-600'}`} />
+                                            <span className={`font-medium ${(summary.final_balance || 0) >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>Net Balance:</span>
+                                        </div>
+                                        <span className={`text-xl font-bold ${(summary.final_balance || 0) >= 0 ? 'text-blue-900' : 'text-orange-900'}`}>
+                                            {(summary.final_balance || 0) >= 0 ? '+' : ''}₹{(summary.final_balance || 0).toLocaleString('en-IN')}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Results Table */}
+                        {/* Filter Buttons and Results Table */}
                         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                             <div className="p-6 border-b border-gray-200">
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center mb-4">
                                     <div>
-                                        <h3 className="text-lg font-semibold text-gray-900">
-                                            {documentType === 'bank_statement' ? 'Bank Statement Transactions' : 'Expense Bill Details'}
-                                        </h3>
+                                        <h3 className="text-lg font-semibold text-gray-900">Transaction Details</h3>
                                         <p className="text-sm text-gray-600 mt-1">
-                                            {documentType === 'bank_statement'
-                                                ? 'All debit transactions extracted and classified'
-                                                : 'Individual bills and invoices processed'
-                                            }
+                                            All transactions classified for {businessSubcategory}
                                         </p>
                                     </div>
-                                    <div className="flex items-center space-x-3">
-                                        <button
-                                            onClick={() => setFilterSuspense(!filterSuspense)}
-                                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterSuspense
-                                                    ? 'bg-orange-100 text-orange-700 border border-orange-300'
-                                                    : 'bg-gray-100 text-gray-600 border border-gray-300'
-                                                }`}
-                                        >
-                                            <AlertCircle className="w-4 h-4 mr-2" />
-                                            {filterSuspense ? 'Show All' : 'Show Suspense Only'}
-                                            {filterSuspense && (
-                                                <span className="ml-2 bg-orange-200 text-orange-800 px-2 py-1 rounded-full text-xs">
-                                                    {results.filter(r => r.classification === 'SUSPENSE').length}
-                                                </span>
-                                            )}
-                                        </button>
+                                </div>
+                                
+                                {/* Search Input */}
+                                <div className="mb-4">
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="Search transactions by vendor, description, amount, or date..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                        </div>
+                                        {searchTerm && (
+                                            <button
+                                                onClick={() => setSearchTerm('')}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                            >
+                                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        )}
                                     </div>
+                                </div>
+                                
+                                {/* Search Results Indicator */}
+                                {searchTerm && (
+                                    <div className="mb-4 text-sm text-gray-600">
+                                        Showing {getFilteredResults().length} of {summary.total_items} transactions
+                                        {searchTerm && ` matching "${searchTerm}"`}
+                                    </div>
+                                )}
+                                
+                                {/* Filter Buttons */}
+                                <div className="flex flex-wrap gap-3">
+                                    <button
+                                        onClick={() => setFilterType('all')}
+                                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === 'all'
+                                                ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                : 'bg-gray-100 text-gray-600 border border-gray-300'
+                                            }`}
+                                    >
+                                        <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                        All ({summary.total_items})
+                                    </button>
+                                    <button
+                                        onClick={() => setFilterType('debit')}
+                                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === 'debit'
+                                                ? 'bg-red-100 text-red-700 border border-red-300'
+                                                : 'bg-gray-100 text-gray-600 border border-gray-300'
+                                            }`}
+                                    >
+                                        <ArrowDownCircle className="w-4 h-4 mr-2" />
+                                        Debits ({summary.debit_transactions})
+                                    </button>
+                                    <button
+                                        onClick={() => setFilterType('credit')}
+                                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === 'credit'
+                                                ? 'bg-green-100 text-green-700 border border-green-300'
+                                                : 'bg-gray-100 text-gray-600 border border-gray-300'
+                                            }`}
+                                    >
+                                        <ArrowUpCircle className="w-4 h-4 mr-2" />
+                                        Credits ({summary.credit_transactions})
+                                    </button>
+                                    <button
+                                        onClick={() => setFilterType('cash')}
+                                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === 'cash'
+                                                ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                                                : 'bg-gray-100 text-gray-600 border border-gray-300'
+                                            }`}
+                                    >
+                                        <Banknote className="w-4 h-4 mr-2" />
+                                        Cash ({(summary.debit_classification_breakdown?.cash_withdrawal || 0) + 
+                                             (summary.credit_classification_breakdown?.cash_deposit || 0)})
+                                    </button>
+                                    <button
+                                        onClick={() => setFilterType('suspense')}
+                                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === 'suspense'
+                                                ? 'bg-orange-100 text-orange-700 border border-orange-300'
+                                                : 'bg-gray-100 text-gray-600 border border-gray-300'
+                                            }`}
+                                    >
+                                        <AlertCircle className="w-4 h-4 mr-2" />
+                                        Suspense ({summary.suspense_items})
+                                    </button>
                                 </div>
                             </div>
 
@@ -886,25 +1190,83 @@ const ExpenseClassifier = () => {
                                 <table className="w-full">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Vendor</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Amount</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">
-                                                {documentType === 'bank_statement' ? 'Transaction Date' : 'Bill Date'}
+                                            <th 
+                                                className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
+                                                onClick={() => handleSort('date')}
+                                            >
+                                                <div className="flex items-center">
+                                                    Date {getSortIcon('date')}
+                                                </div>
                                             </th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Classification</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Category</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Status</th>
-                                            <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">
-                                                {documentType === 'bank_statement' ? 'Statement' : 'Bill Source'}
+                                            <th 
+                                                className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
+                                                onClick={() => handleSort('vendor')}
+                                            >
+                                                <div className="flex items-center">
+                                                    Vendor/Description {getSortIcon('vendor')}
+                                                </div>
+                                            </th>
+                                            <th 
+                                                className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
+                                                onClick={() => handleSort('amount')}
+                                            >
+                                                <div className="flex items-center">
+                                                    Amount {getSortIcon('amount')}
+                                                </div>
+                                            </th>
+                                            <th 
+                                                className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
+                                                onClick={() => handleSort('balance_change')}
+                                            >
+                                                <div className="flex items-center">
+                                                    Balance Change {getSortIcon('balance_change')}
+                                                </div>
+                                            </th>
+                                            <th 
+                                                className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
+                                                onClick={() => handleSort('running_balance')}
+                                            >
+                                                <div className="flex items-center">
+                                                    Running Balance {getSortIcon('running_balance')}
+                                                </div>
+                                            </th>
+                                            <th 
+                                                className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
+                                                onClick={() => handleSort('transaction_type')}
+                                            >
+                                                <div className="flex items-center">
+                                                    Type {getSortIcon('transaction_type')}
+                                                </div>
+                                            </th>
+                                            <th 
+                                                className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
+                                                onClick={() => handleSort('classification')}
+                                            >
+                                                <div className="flex items-center">
+                                                    Classification {getSortIcon('classification')}
+                                                </div>
+                                            </th>
+                                            <th 
+                                                className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
+                                                onClick={() => handleSort('category')}
+                                            >
+                                                <div className="flex items-center">
+                                                    Category {getSortIcon('category')}
+                                                </div>
+                                            </th>
+                                            <th 
+                                                className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
+                                                onClick={() => handleSort('confidence')}
+                                            >
+                                                <div className="flex items-center">
+                                                    Status {getSortIcon('confidence')}
+                                                </div>
                                             </th>
                                             <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
-                                        {(filterSuspense
-                                            ? results.filter(item => item.classification === 'SUSPENSE')
-                                            : results
-                                        ).map((item) => (
+                                        {getFilteredResults().map((item) => (
                                             <tr
                                                 key={item.id}
                                                 className={`hover:bg-gray-50 transition-colors ${item.classification === 'SUSPENSE'
@@ -912,30 +1274,62 @@ const ExpenseClassifier = () => {
                                                         : ''
                                                     }`}
                                             >
+                                                <td className="px-6 py-4 text-sm text-gray-600">
+                                                    {item.date || 'N/A'}
+                                                </td>
                                                 <td className="px-6 py-4">
                                                     <div className="text-sm font-medium text-gray-900">
                                                         {item.vendor || 'Unknown Vendor'}
                                                     </div>
+                                                    {item.description && (
+                                                        <div className="text-xs text-gray-500 mt-1 truncate max-w-48">
+                                                            {item.description}
+                                                        </div>
+                                                    )}
                                                     {item.classification === 'SUSPENSE' && (
                                                         <div className="text-xs text-orange-600 font-medium mt-1">
                                                             ⚠️ Needs Review
                                                         </div>
                                                     )}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                                                    ₹{(item.amount || 0).toLocaleString('en-IN')}
+                                                <td className="px-6 py-4 text-sm font-medium">
+                                                    <span className={`${item.transaction_type === 'DEBIT' ? 'text-red-900' : 'text-green-900'}`}>
+                                                        {item.transaction_type === 'DEBIT' ? '-' : '+'}₹{(item.amount || 0).toLocaleString('en-IN')}
+                                                    </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">
-                                                    {item.date || 'N/A'}
+                                                <td className="px-6 py-4 text-sm font-medium">
+                                                    <span className={`${(item.balance_change || 0) >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                                                        {(item.balance_change || 0) >= 0 ? '+' : ''}₹{(item.balance_change || 0).toLocaleString('en-IN')}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-medium">
+                                                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${(item.running_balance || 0) >= 0 ? 'text-blue-700 bg-blue-100' : 'text-orange-700 bg-orange-100'}`}>
+                                                        ₹{(item.running_balance || 0).toLocaleString('en-IN')}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(item.transaction_type)}`}>
+                                                        {item.transaction_type === 'DEBIT' ? (
+                                                            <>
+                                                                <ArrowDownCircle className="w-3 h-3 inline mr-1" />
+                                                                DEBIT
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <ArrowUpCircle className="w-3 h-3 inline mr-1" />
+                                                                CREDIT
+                                                            </>
+                                                        )}
+                                                    </span>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     {editingRow === item.id ? (
                                                         <select
-                                                            value={item.classification}
-                                                            onChange={(e) => handleEditClassification(item.id, e.target.value)}
-                                                            className="border border-gray-300 rounded px-3 py-1 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                            data-item-id={item.id}
+                                                            defaultValue={item.classification}
+                                                            className="border text-black border-gray-300 rounded px-3 py-1 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                         >
-                                                            {classificationOptions.map(option => (
+                                                            {(item.transaction_type === 'DEBIT' ? debitClassificationOptions : creditClassificationOptions).map(option => (
                                                                 <option key={option} value={option}>{option}</option>
                                                             ))}
                                                         </select>
@@ -948,38 +1342,67 @@ const ExpenseClassifier = () => {
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">
-                                                    {item.category || 'Uncategorized'}
+                                                <td className="px-6 py-4">
+                                                    {editingCategory === item.id ? (
+                                                        <input
+                                                            type="text"
+                                                            value={tempCategoryValue}
+                                                            onChange={(e) => setTempCategoryValue(e.target.value)}
+                                                            className="border text-black border-gray-300 rounded px-2 py-1 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                            placeholder="Enter category..."
+                                                        />
+                                                    ) : (
+                                                        <span className="text-sm text-gray-600 px-2 py-1 rounded">
+                                                            {item.category || 'Not set'}
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getConfidenceColor(item.confidence, item.classification)}`}>
                                                         {item.classification === 'SUSPENSE' ? 'REVIEW' : `${item.confidence}%`}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-500">
-                                                    <div className="truncate max-w-32" title={item.source_file}>
-                                                        {getFileIcon(item.source_file || '')} {item.source_file || 'Unknown'}
-                                                    </div>
-                                                </td>
                                                 <td className="px-6 py-4">
                                                     {editingRow === item.id ? (
-                                                        <button
-                                                            onClick={() => setEditingRow(null)}
-                                                            className="text-green-600 hover:text-green-700 p-1 rounded"
-                                                            title="Save changes"
-                                                        >
-                                                            <Save className="w-4 h-4" />
-                                                        </button>
+                                                        <div className="flex flex-col space-y-2">
+                                                            <div className="flex space-x-2">
+                                                                <button
+                                                                    onClick={() => saveRowChanges(item.id)}
+                                                                    className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors flex items-center"
+                                                                    title="Save changes"
+                                                                >
+                                                                    <Save className="w-3 h-3 mr-1" />
+                                                                    Save
+                                                                </button>
+                                                                <button
+                                                                    onClick={cancelRowEdit}
+                                                                    className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors flex items-center"
+                                                                    title="Cancel editing"
+                                                                >
+                                                                    <X className="w-3 h-3 mr-1" />
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                            {(() => {
+                                                                const matchingCount = getMatchingVendorCount(item.id, item.vendor);
+                                                                return matchingCount > 0 ? (
+                                                                    <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded border">
+                                                                        💡 Will update {matchingCount + 1} similar transactions
+                                                                    </div>
+                                                                ) : null;
+                                                            })()}
+                                                        </div>
                                                     ) : (
                                                         <button
-                                                            onClick={() => setEditingRow(item.id)}
-                                                            className={`p-1 rounded transition-colors ${item.classification === 'SUSPENSE'
-                                                                    ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50'
-                                                                    : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                            onClick={() => startRowEdit(item.id, item.classification, item.category)}
+                                                            className={`bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center ${item.classification === 'SUSPENSE'
+                                                                    ? 'bg-orange-600 hover:bg-orange-700'
+                                                                    : ''
                                                                 }`}
-                                                            title="Edit classification"
+                                                            title="Edit classification and category"
                                                         >
-                                                            <Edit3 className="w-4 h-4" />
+                                                            <Edit3 className="w-3 h-3 mr-1" />
+                                                            Edit
                                                         </button>
                                                     )}
                                                 </td>
@@ -990,26 +1413,17 @@ const ExpenseClassifier = () => {
                             </div>
 
                             {/* Empty state for filtered view */}
-                            {filterSuspense && results.filter(item => item.classification === 'SUSPENSE').length === 0 && (
+                            {getFilteredResults().length === 0 && (
                                 <div className="text-center py-12">
                                     <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Suspense Items Found!</h3>
-                                    <p className="text-gray-600 mb-2">
-                                        All {documentType === 'bank_statement' ? 'transactions' : 'bills'} were classified with confidence.
-                                    </p>
-                                    <p className="text-sm text-gray-500">
-                                        Your {documentTypes.find(dt => dt.value === documentType)?.label.toLowerCase()} processing was successful!
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Empty state for no results */}
-                            {!filterSuspense && results.length === 0 && (
-                                <div className="text-center py-12">
-                                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Data Found</h3>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                        No {filterType === 'all' ? 'transactions' : filterType} found!
+                                    </h3>
                                     <p className="text-gray-600">
-                                        No {documentType === 'bank_statement' ? 'expense transactions' : 'processable bills'} were found in your {documentTypes.find(dt => dt.value === documentType)?.label.toLowerCase()}.
+                                        {filterType === 'suspense' && 'All transactions were classified with confidence.'}
+                                        {filterType === 'cash' && 'No cash transactions found in the statements.'}
+                                        {filterType === 'debit' && 'No debit transactions found.'}
+                                        {filterType === 'credit' && 'No credit transactions found.'}
                                     </p>
                                 </div>
                             )}

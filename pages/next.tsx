@@ -677,12 +677,12 @@ export default function IndexPage() {
                 <div className="ml-4 flex-1">
                   <div className="flex justify-between items-center mb-1">
                     <h2 className="text-lg font-medium text-gray-900">
-                      Payment Workflow
+                      Bank Workflow
                     </h2>
                     <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all duration-200" />
                   </div>
                   <p className="text-gray-600">
-                    Export Payment Data intelligently into accounting software using AI
+                    Export Bank Data intelligently into accounting software using AI
                   </p>
                   <div className="mt-4 flex items-center text-xs text-indigo-600">
                     <span className="font-medium">Get started</span>
