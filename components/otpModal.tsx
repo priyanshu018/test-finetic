@@ -163,8 +163,8 @@ export function EmailOtpModal() {
                                     Email Verification
                                 </h2>
                                 {email && otpSent&& (
-                                    <h2 className="text-xl font-bold text-white mt-2">
-                                        {email}
+                                    <h2 className="text-xl font-bold text-black mt-2">
+                                        {email?.toUpperCase()}
                                     </h2>
                                 )}
                                 <p className="text-slate-400 mt-2">

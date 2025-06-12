@@ -1,5 +1,6 @@
 // ExpenseClassifier.jsx - Complete Business Classifier with Category & Subcategory Selection
-import React, { useState } from 'react';
+"use client"
+import React, { useEffect, useState } from 'react';
 import {
     Upload,
     Building2,
@@ -30,6 +31,8 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
+import { BackendLink } from '../service/api';
+import { extractLedgerCategories, fetchLedgerList, generatePaymentVoucherXMLFromPayload, generateTallyLedgerXML } from '../service/TALLY/payment-flow';
 
 const ExpenseClassifier = () => {
     // State management
@@ -50,8 +53,551 @@ const ExpenseClassifier = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
-    // Python API configuration
-    const PYTHON_API_BASE = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://localhost:8000';
+    const yourTransactionsArray = [
+        {
+            vendor: "SELF",
+            amount: 15000,
+            date: "2024-08-20",
+            description: "CASH DEPOSIT SELF",
+            transaction_type: "CREDIT",
+            classification: "Cash Deposit",
+            confidence: 95,
+            category: "Cash Deposit",
+            id: "78337c54-202f-49a2-a573-b1469496c09a",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056467",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: 15000,
+            running_balance: 15000,
+            transaction_impact: "positive"
+        },
+        {
+            vendor: "ICI NEXT 57 CO",
+            amount: 5074,
+            date: "2024-09-09",
+            description: "Chq No. 786048 ICI NEXT 57 CO 786048",
+            transaction_type: "DEBIT",
+            classification: "Trading Variable (Direct Business)",
+            confidence: 85,
+            category: "Software Subscription",
+            id: "817a1f3e-c639-433c-83c5-55fba8425c95",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056518",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -5074,
+            running_balance: 9926,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "SELF",
+            amount: 15000,
+            date: "2024-10-04",
+            description: "CASH DEPOSIT SELF",
+            transaction_type: "CREDIT",
+            classification: "Cash Deposit",
+            confidence: 95,
+            category: "Cash Deposit",
+            id: "1dd81488-93e4-4f4d-8f6c-6ba116887b10",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056539",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: 15000,
+            running_balance: 24926,
+            transaction_impact: "positive"
+        },
+        {
+            vendor: "ICI NEXT 57",
+            amount: 5074,
+            date: "2024-10-10",
+            description: "Chq No. 786049 ICI NEXT 57 786049",
+            transaction_type: "DEBIT",
+            classification: "Trading Variable (Direct Business)",
+            confidence: 85,
+            category: "Software Subscription",
+            id: "03df8036-aca8-4a94-84ea-638cd7960ce8",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056558",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -5074,
+            running_balance: 19852,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "Mrs. GURDEV KAUR",
+            amount: 11900,
+            date: "2024-10-16",
+            description: "CHEQUE TRANSFER TO 786050 0030904374591 OF Mrs. GURDEV KAUR",
+            transaction_type: "DEBIT",
+            classification: "Non-Trading Variable (Indirect Business)",
+            confidence: 80,
+            category: "Consultant Payment",
+            id: "54b48806-b3f0-411f-a091-e459b29eb30b",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056576",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -11900,
+            running_balance: 7952,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "SELF",
+            amount: 25000,
+            date: "2024-10-19",
+            description: "CASH DEPOSIT SELF",
+            transaction_type: "CREDIT",
+            classification: "Cash Deposit",
+            confidence: 95,
+            category: "Cash Deposit",
+            id: "637753c7-dd49-4bdf-871d-4ac592605568",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056594",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: 25000,
+            running_balance: 32952,
+            transaction_impact: "positive"
+        },
+        {
+            vendor: "Mrs. Vibha Pundir",
+            amount: 9000,
+            date: "2024-10-30",
+            description: "CHEQUE TRANSFER TO 786051 0039550763614 OF Mrs. Vibha Pundir",
+            transaction_type: "DEBIT",
+            classification: "Non-Trading Variable (Indirect Business)",
+            confidence: 80,
+            category: "Consultant Payment",
+            id: "90fb62b5-09a7-4f33-b0b0-fa82c0f4aa9d",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056610",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -9000,
+            running_balance: 23952,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "SELF",
+            amount: 10000,
+            date: "2024-11-06",
+            description: "CASH DEPOSIT SELF",
+            transaction_type: "CREDIT",
+            classification: "Cash Deposit",
+            confidence: 95,
+            category: "Cash Deposit",
+            id: "0cb1659b-7aeb-4356-818a-72c804b9b9a1",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056628",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: 10000,
+            running_balance: 33952,
+            transaction_impact: "positive"
+        },
+        {
+            vendor: "ICI NEXT 57",
+            amount: 5074,
+            date: "2024-11-22",
+            description: "Chq No. 786052 ICI NEXT 57 786052",
+            transaction_type: "DEBIT",
+            classification: "Trading Variable (Direct Business)",
+            confidence: 85,
+            category: "Software Subscription",
+            id: "35c54378-18cd-4c98-8da5-e8a30228447b",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056645",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -5074,
+            running_balance: 28878,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "Amritsar Lounge",
+            amount: 2,
+            date: "2024-11-22",
+            description: "OTHPOS432715338196Amritsar Lounge AMRITSAR",
+            transaction_type: "DEBIT",
+            classification: "Non-Trading Variable (Indirect Business)",
+            confidence: 75,
+            category: "Miscellaneous Expense",
+            id: "8111c3de-d3ea-4443-a560-9b4508577539",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056662",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -2,
+            running_balance: 28876,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "Amritsar Lounge",
+            amount: 2,
+            date: "2024-11-23",
+            description: "OTHPOS432717501469Amritsar Lounge AMRITSAR",
+            transaction_type: "DEBIT",
+            classification: "Non-Trading Variable (Indirect Business)",
+            confidence: 75,
+            category: "Miscellaneous Expense",
+            id: "ce30c39c-7919-4b30-a0ea-83afa19b1853",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056678",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -2,
+            running_balance: 28874,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "UNKNOWN VENDOR",
+            amount: 9000,
+            date: "2024-12-11",
+            description: "CSH DEP (CDM) 9800000000",
+            transaction_type: "CREDIT",
+            classification: "Cash Deposit",
+            confidence: 90,
+            category: "Cash Deposit",
+            id: "317c786b-4084-4899-bc2d-ac27672403f9",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056695",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: 9000,
+            running_balance: 37874,
+            transaction_impact: "positive"
+        },
+        {
+            vendor: "ICI NEXT 57",
+            amount: 5074,
+            date: "2024-12-16",
+            description: "Chq No. 786053 ICI NEXT 57 786053",
+            transaction_type: "DEBIT",
+            classification: "Trading Variable (Direct Business)",
+            confidence: 85,
+            category: "Software Subscription",
+            id: "8349c767-82af-43f9-a814-55d441ea91eb",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056712",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -5074,
+            running_balance: 32800,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "CHINMAY GUPTA",
+            amount: 6000,
+            date: "2025-01-01",
+            description: "Chq No. 786054 CHINMAY GUPTA 786054",
+            transaction_type: "DEBIT",
+            classification: "Non-Trading Variable (Indirect Business)",
+            confidence: 80,
+            category: "Consultant Payment",
+            id: "5a0e5463-1f4d-4928-98db-a06d7a881401",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056728",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -6000,
+            running_balance: 26800,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "SELF",
+            amount: 35000,
+            date: "2025-01-02",
+            description: "CASH DEPOSIT SELF",
+            transaction_type: "CREDIT",
+            classification: "Cash Deposit",
+            confidence: 95,
+            category: "Cash Deposit",
+            id: "bbe68347-abbe-4a84-b547-4438828ca073",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056744",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: 35000,
+            running_balance: 61800,
+            transaction_impact: "positive"
+        },
+        {
+            vendor: "AMAZON PAY INDIA",
+            amount: 928,
+            date: "2025-01-02",
+            description: "OTHPG 500215296318AMAZON PAY INDIA PRIVA124662480",
+            transaction_type: "DEBIT",
+            classification: "Trading Variable (Direct Business)",
+            confidence: 85,
+            category: "Software/Service Purchase",
+            id: "36730ee2-7ed5-4e8a-b3e0-67b69bed6013",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056761",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -928,
+            running_balance: 60872,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "ATM CASH 1712 AERO ARCADE",
+            amount: 10000,
+            date: "2025-01-07",
+            description: "ATM WDL ATM CASH 1712 AERO ARCADE",
+            transaction_type: "DEBIT",
+            classification: "Cash Withdrawal",
+            confidence: 95,
+            category: "Cash Withdrawal",
+            id: "006e6e10-6422-4caf-8b67-6ecee8edd68e",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056777",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -10000,
+            running_balance: 50872,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "ICI ENLIGHT INFOTECH",
+            amount: 3540,
+            date: "2025-01-28",
+            description: "Chq No. 786056 ICI ENLIGHT INFOTECH 786056",
+            transaction_type: "DEBIT",
+            classification: "Trading Variable (Direct Business)",
+            confidence: 85,
+            category: "Software Subscription",
+            id: "7395f2ac-6ec6-4f34-8114-ee40424496e9",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056793",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -3540,
+            running_balance: 47332,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "RAZ*apnaco Mumbai",
+            amount: 707,
+            date: "2025-01-29",
+            description: "OTHPG 502908670535RAZ*apnaco Mumbai",
+            transaction_type: "DEBIT",
+            classification: "Non-Trading Variable (Indirect Business)",
+            confidence: 80,
+            category: "Miscellaneous Expense",
+            id: "5615c3dc-5cf0-466c-88bb-f6b4f39812d8",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056810",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -707,
+            running_balance: 46625,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "ICI ENLIGHT INFOTECH",
+            amount: 3540,
+            date: "2025-02-11",
+            description: "Chq No. 786057 ICI ENLIGHT INFOTECH 786057",
+            transaction_type: "DEBIT",
+            classification: "Trading Variable (Direct Business)",
+            confidence: 85,
+            category: "Software Subscription",
+            id: "6027f48b-a7d3-4c75-8836-19cd4d1a14b0",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056826",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -3540,
+            running_balance: 43085,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "ICI NEXT 57",
+            amount: 5074,
+            date: "2025-02-15",
+            description: "Chq No. 786058 ICI NEXT 57 786058",
+            transaction_type: "DEBIT",
+            classification: "Trading Variable (Direct Business)",
+            confidence: 85,
+            category: "Software Subscription",
+            id: "12d10924-f596-4295-959b-107da59e0566",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056843",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -5074,
+            running_balance: 38011,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "STATE BANK OF INDIA",
+            amount: 394.51,
+            date: "2025-03-12",
+            description: "AC KEEPING FEES",
+            transaction_type: "DEBIT",
+            classification: "Non-Trading Variable (Indirect Business)",
+            confidence: 90,
+            category: "Bank Charges",
+            id: "5a07c6c0-925b-4d86-943f-bad06fed2277",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056859",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -394.51,
+            running_balance: 37616.49,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "Mrs. Vibha Pundir",
+            amount: 14000,
+            date: "2025-03-15",
+            description: "CHEQUE TRANSFER TO 786062 0039550763614 OF Mrs. Vibha Pundir",
+            transaction_type: "DEBIT",
+            classification: "Non-Trading Variable (Indirect Business)",
+            confidence: 80,
+            category: "Consultant Payment",
+            id: "ea899ef3-e15c-4285-ab15-08c9d10211af",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056876",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -14000,
+            running_balance: 23616.489999999998,
+            transaction_impact: "negative"
+        },
+        {
+            vendor: "ICI ENLIGHT INFOTECH",
+            amount: 3540,
+            date: "2025-03-17",
+            description: "Chq No. 786060 ICI ENLIGHT INFOTECH 786060",
+            transaction_type: "DEBIT",
+            classification: "Trading Variable (Direct Business)",
+            confidence: 85,
+            category: "Software Subscription",
+            id: "6af93d1d-1eb8-498e-97d6-5c443786348b",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056894",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -3540,
+            running_balance: 20076.489999999998,
+            transaction_impact: "negative"
+        }
+    ]
+
+    useEffect(() => {
+        // const getLedgerData = async () => {
+        //     try {
+        //         const response = await fetchLedgerList();
+
+        //     } catch (error) {
+        //         console.error("Error fetching ledger list:", error);
+        //     }
+        // };
+
+        //   getLedgerData();
+
+        // const xml = generateTallyLedgerXML([
+        //     { ledgerName: "Software Subscription", type: "Indirect Expenses" },
+        //     { ledgerName: "Direct Subscription", type: "Direct Expenses" }
+        // ]);
+
+        // console.log(xml)
+
+        // const payload = [
+        //     {
+        //         account: "Dollar Ducks TEST",
+        //         category: "Software Subscription",
+        //         amount: 15555000
+        //     }
+        // ];
+
+        // const xml2 = generatePaymentVoucherXMLFromPayload(payload);
+        // console.log(xml2);
+
+
+
+        (async () => {
+            const categoriesToCreate = await extractLedgerCategories(yourTransactionsArray);
+            console.log("Missing ledgers:", categoriesToCreate);
+        })();
+
+    }, []);
 
     // Main business categories
     const businessCategories = [
@@ -149,13 +695,13 @@ const ExpenseClassifier = () => {
                 setProcessingProgress(prev => Math.min(prev + 10, 90));
             }, 500);
 
-            console.log('Sending request with:', { 
-                business_category: businessCategory, 
+            console.log('Sending request with:', {
+                business_category: businessCategory,
                 business_subcategory: businessSubcategory,
-                files: uploadedFiles.length 
+                files: uploadedFiles.length
             });
 
-            const response = await fetch(`${PYTHON_API_BASE}/paymentflow/process`, {
+            const response = await fetch(`${BackendLink}/paymentflow/process`, {
                 method: 'POST',
                 body: formData,
             });
@@ -229,10 +775,10 @@ const ExpenseClassifier = () => {
     // Helper function to count matching vendor transactions - NEW
     const getMatchingVendorCount = (currentId, vendorName) => {
         if (!vendorName || !results) return 0;
-        
+
         const vendorPrefix = vendorName.trim().toUpperCase().substring(0, 6);
         if (vendorPrefix.length < 6) return 0;
-        
+
         return results.filter(item => {
             const itemVendorPrefix = (item.vendor || '').trim().toUpperCase().substring(0, 6);
             return item.id !== currentId && itemVendorPrefix === vendorPrefix;
@@ -244,20 +790,20 @@ const ExpenseClassifier = () => {
         // Get current classification value from the select element
         const selectElement = document.querySelector(`select[data-item-id="${id}"]`);
         const newClassification = selectElement ? selectElement.value : null;
-        
+
         // Find the current item to get its vendor name
         const currentItem = results.find(item => item.id === id);
         if (!currentItem) return;
-        
+
         // Get the first 6 characters of the vendor name (trimmed and uppercase for comparison)
         const vendorPrefix = (currentItem.vendor || '').trim().toUpperCase().substring(0, 6);
-        
+
         // Update the results with both classification and category
         setResults(results.map(item => {
             // Check if this item's vendor starts with the same 6 characters
             const itemVendorPrefix = (item.vendor || '').trim().toUpperCase().substring(0, 6);
             const shouldUpdate = item.id === id || (vendorPrefix.length >= 6 && itemVendorPrefix === vendorPrefix);
-            
+
             if (shouldUpdate) {
                 const updates = {};
                 if (newClassification) updates.classification = newClassification;
@@ -266,7 +812,7 @@ const ExpenseClassifier = () => {
             }
             return item;
         }));
-        
+
         // Reset editing states
         setEditingRow(null);
         setEditingCategory(null);
@@ -366,8 +912,8 @@ const ExpenseClassifier = () => {
     const exportToCSV = () => {
         try {
             const headers = [
-                'Date', 'Vendor', 'Amount', 'Transaction Type', 'Balance Change', 'Running Balance', 
-                'Classification', 'Category', 'Confidence', 'Source File', 'Description', 
+                'Date', 'Vendor', 'Amount', 'Transaction Type', 'Balance Change', 'Running Balance',
+                'Classification', 'Category', 'Confidence', 'Source File', 'Description',
                 'Business Category', 'Business Subcategory'
             ];
 
@@ -408,7 +954,7 @@ const ExpenseClassifier = () => {
     const exportToExcel = () => {
         try {
             const workbook = XLSX.utils.book_new();
-            
+
             // Prepare data for Excel
             const excelData = results.map(item => ({
                 'Date': item.date || new Date().toISOString().split('T')[0],
@@ -429,7 +975,7 @@ const ExpenseClassifier = () => {
             // Create worksheet
             const worksheet = XLSX.utils.json_to_sheet(excelData);
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');
-            
+
             // Create summary sheet
             const summaryData = [
                 { 'Metric': 'Business Category', 'Value': businessCategory.toUpperCase(), 'Amount': '' },
@@ -445,10 +991,10 @@ const ExpenseClassifier = () => {
                 { 'Metric': 'High Confidence', 'Value': summary?.high_confidence || 0, 'Amount': '' },
                 { 'Metric': 'Average Confidence', 'Value': `${summary?.average_confidence?.toFixed(1) || 0}%`, 'Amount': '' }
             ];
-            
+
             const summaryWorksheet = XLSX.utils.json_to_sheet(summaryData);
             XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Summary');
-            
+
             // Write file
             XLSX.writeFile(workbook, `${businessCategory}_${businessSubcategory.replace(/[^a-zA-Z0-9]/g, '_')}_analysis_${new Date().toISOString().split('T')[0]}.xlsx`);
         } catch (error) {
@@ -459,9 +1005,9 @@ const ExpenseClassifier = () => {
     // Filter results based on type and search term
     const getFilteredResults = () => {
         if (!results) return [];
-        
+
         let filtered = results;
-        
+
         // Apply type filter
         switch (filterType) {
             case 'debit':
@@ -474,16 +1020,16 @@ const ExpenseClassifier = () => {
                 filtered = results.filter(item => item.classification === 'SUSPENSE');
                 break;
             case 'cash':
-                filtered = results.filter(item => 
-                    item.classification?.includes('Cash') || 
-                    item.classification?.includes('Withdrawal') || 
+                filtered = results.filter(item =>
+                    item.classification?.includes('Cash') ||
+                    item.classification?.includes('Withdrawal') ||
                     item.classification?.includes('Deposit')
                 );
                 break;
             default:
                 filtered = results;
         }
-        
+
         // Apply search filter
         if (searchTerm) {
             filtered = filtered.filter(item =>
@@ -495,13 +1041,13 @@ const ExpenseClassifier = () => {
                 (item.amount?.toString().includes(searchTerm))
             );
         }
-        
+
         // Apply sorting
         if (sortConfig.key) {
             filtered.sort((a, b) => {
                 let aValue = a[sortConfig.key];
                 let bValue = b[sortConfig.key];
-                
+
                 // Handle different data types
                 if (sortConfig.key === 'amount' || sortConfig.key === 'balance_change' || sortConfig.key === 'running_balance') {
                     aValue = Number(aValue) || 0;
@@ -513,7 +1059,7 @@ const ExpenseClassifier = () => {
                     aValue = String(aValue || '').toLowerCase();
                     bValue = String(bValue || '').toLowerCase();
                 }
-                
+
                 if (aValue < bValue) {
                     return sortConfig.direction === 'asc' ? -1 : 1;
                 }
@@ -523,7 +1069,7 @@ const ExpenseClassifier = () => {
                 return 0;
             });
         }
-        
+
         return filtered;
     };
 
@@ -540,7 +1086,7 @@ const ExpenseClassifier = () => {
     };
 
     const { push } = useRouter();
-    
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             {/* Header */}
@@ -577,8 +1123,8 @@ const ExpenseClassifier = () => {
                                 <div
                                     key={step}
                                     className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${step <= currentStep
-                                            ? 'bg-blue-600 text-white shadow-md'
-                                            : 'bg-gray-200 text-gray-600'
+                                        ? 'bg-blue-600 text-white shadow-md'
+                                        : 'bg-gray-200 text-gray-600'
                                         }`}
                                 >
                                     {step < currentStep ? (
@@ -625,8 +1171,8 @@ const ExpenseClassifier = () => {
                                         key={category.value}
                                         onClick={() => setBusinessCategory(category.value)}
                                         className={`p-8 rounded-xl border-2 transition-all text-left hover:shadow-lg group ${businessCategory === category.value
-                                                ? `border-${category.color}-500 bg-gradient-to-br ${category.bgGradient} shadow-lg`
-                                                : 'border-gray-200 hover:border-gray-300'
+                                            ? `border-${category.color}-500 bg-gradient-to-br ${category.bgGradient} shadow-lg`
+                                            : 'border-gray-200 hover:border-gray-300'
                                             }`}
                                     >
                                         <div className={`text-${category.color}-600 mb-4 group-hover:scale-110 transition-transform`}>
@@ -697,8 +1243,8 @@ const ExpenseClassifier = () => {
                                         key={subcategory.value}
                                         onClick={() => setBusinessSubcategory(subcategory.value)}
                                         className={`p-6 rounded-lg border transition-all text-left hover:shadow-md ${businessSubcategory === subcategory.value
-                                                ? `border-${getCategoryColor(businessCategory)}-500 bg-${getCategoryColor(businessCategory)}-50 shadow-md`
-                                                : 'border-gray-200 hover:border-gray-300'
+                                            ? `border-${getCategoryColor(businessCategory)}-500 bg-${getCategoryColor(businessCategory)}-50 shadow-md`
+                                            : 'border-gray-200 hover:border-gray-300'
                                             }`}
                                     >
                                         <h4 className="font-semibold text-gray-900 mb-2">{subcategory.value}</h4>
@@ -1020,8 +1566,8 @@ const ExpenseClassifier = () => {
                                     <div className="flex items-center justify-between mb-2">
                                         <Banknote className="w-5 h-5 text-amber-600" />
                                         <span className="text-2xl font-bold text-gray-900">
-                                            {(summary.debit_classification_breakdown?.cash_withdrawal || 0) + 
-                                             (summary.credit_classification_breakdown?.cash_deposit || 0)}
+                                            {(summary.debit_classification_breakdown?.cash_withdrawal || 0) +
+                                                (summary.credit_classification_breakdown?.cash_deposit || 0)}
                                         </span>
                                     </div>
                                     <p className="text-amber-600 font-medium text-sm">Cash</p>
@@ -1093,7 +1639,7 @@ const ExpenseClassifier = () => {
                                         </p>
                                     </div>
                                 </div>
-                                
+
                                 {/* Search Input */}
                                 <div className="mb-4">
                                     <div className="relative">
@@ -1121,7 +1667,7 @@ const ExpenseClassifier = () => {
                                         )}
                                     </div>
                                 </div>
-                                
+
                                 {/* Search Results Indicator */}
                                 {searchTerm && (
                                     <div className="mb-4 text-sm text-gray-600">
@@ -1129,14 +1675,14 @@ const ExpenseClassifier = () => {
                                         {searchTerm && ` matching "${searchTerm}"`}
                                     </div>
                                 )}
-                                
+
                                 {/* Filter Buttons */}
                                 <div className="flex flex-wrap gap-3">
                                     <button
                                         onClick={() => setFilterType('all')}
                                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === 'all'
-                                                ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                                                : 'bg-gray-100 text-gray-600 border border-gray-300'
+                                            ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                            : 'bg-gray-100 text-gray-600 border border-gray-300'
                                             }`}
                                     >
                                         <FileSpreadsheet className="w-4 h-4 mr-2" />
@@ -1145,8 +1691,8 @@ const ExpenseClassifier = () => {
                                     <button
                                         onClick={() => setFilterType('debit')}
                                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === 'debit'
-                                                ? 'bg-red-100 text-red-700 border border-red-300'
-                                                : 'bg-gray-100 text-gray-600 border border-gray-300'
+                                            ? 'bg-red-100 text-red-700 border border-red-300'
+                                            : 'bg-gray-100 text-gray-600 border border-gray-300'
                                             }`}
                                     >
                                         <ArrowDownCircle className="w-4 h-4 mr-2" />
@@ -1155,8 +1701,8 @@ const ExpenseClassifier = () => {
                                     <button
                                         onClick={() => setFilterType('credit')}
                                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === 'credit'
-                                                ? 'bg-green-100 text-green-700 border border-green-300'
-                                                : 'bg-gray-100 text-gray-600 border border-gray-300'
+                                            ? 'bg-green-100 text-green-700 border border-green-300'
+                                            : 'bg-gray-100 text-gray-600 border border-gray-300'
                                             }`}
                                     >
                                         <ArrowUpCircle className="w-4 h-4 mr-2" />
@@ -1165,19 +1711,19 @@ const ExpenseClassifier = () => {
                                     <button
                                         onClick={() => setFilterType('cash')}
                                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === 'cash'
-                                                ? 'bg-amber-100 text-amber-700 border border-amber-300'
-                                                : 'bg-gray-100 text-gray-600 border border-gray-300'
+                                            ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                                            : 'bg-gray-100 text-gray-600 border border-gray-300'
                                             }`}
                                     >
                                         <Banknote className="w-4 h-4 mr-2" />
-                                        Cash ({(summary.debit_classification_breakdown?.cash_withdrawal || 0) + 
-                                             (summary.credit_classification_breakdown?.cash_deposit || 0)})
+                                        Cash ({(summary.debit_classification_breakdown?.cash_withdrawal || 0) +
+                                            (summary.credit_classification_breakdown?.cash_deposit || 0)})
                                     </button>
                                     <button
                                         onClick={() => setFilterType('suspense')}
                                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === 'suspense'
-                                                ? 'bg-orange-100 text-orange-700 border border-orange-300'
-                                                : 'bg-gray-100 text-gray-600 border border-gray-300'
+                                            ? 'bg-orange-100 text-orange-700 border border-orange-300'
+                                            : 'bg-gray-100 text-gray-600 border border-gray-300'
                                             }`}
                                     >
                                         <AlertCircle className="w-4 h-4 mr-2" />
@@ -1190,7 +1736,7 @@ const ExpenseClassifier = () => {
                                 <table className="w-full">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th 
+                                            <th
                                                 className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                                                 onClick={() => handleSort('date')}
                                             >
@@ -1198,7 +1744,7 @@ const ExpenseClassifier = () => {
                                                     Date {getSortIcon('date')}
                                                 </div>
                                             </th>
-                                            <th 
+                                            <th
                                                 className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                                                 onClick={() => handleSort('vendor')}
                                             >
@@ -1206,7 +1752,7 @@ const ExpenseClassifier = () => {
                                                     Vendor/Description {getSortIcon('vendor')}
                                                 </div>
                                             </th>
-                                            <th 
+                                            <th
                                                 className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                                                 onClick={() => handleSort('amount')}
                                             >
@@ -1214,7 +1760,7 @@ const ExpenseClassifier = () => {
                                                     Amount {getSortIcon('amount')}
                                                 </div>
                                             </th>
-                                            <th 
+                                            <th
                                                 className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                                                 onClick={() => handleSort('balance_change')}
                                             >
@@ -1222,7 +1768,7 @@ const ExpenseClassifier = () => {
                                                     Balance Change {getSortIcon('balance_change')}
                                                 </div>
                                             </th>
-                                            <th 
+                                            <th
                                                 className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                                                 onClick={() => handleSort('running_balance')}
                                             >
@@ -1230,7 +1776,7 @@ const ExpenseClassifier = () => {
                                                     Running Balance {getSortIcon('running_balance')}
                                                 </div>
                                             </th>
-                                            <th 
+                                            <th
                                                 className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                                                 onClick={() => handleSort('transaction_type')}
                                             >
@@ -1238,7 +1784,7 @@ const ExpenseClassifier = () => {
                                                     Type {getSortIcon('transaction_type')}
                                                 </div>
                                             </th>
-                                            <th 
+                                            <th
                                                 className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                                                 onClick={() => handleSort('classification')}
                                             >
@@ -1246,7 +1792,7 @@ const ExpenseClassifier = () => {
                                                     Classification {getSortIcon('classification')}
                                                 </div>
                                             </th>
-                                            <th 
+                                            <th
                                                 className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                                                 onClick={() => handleSort('category')}
                                             >
@@ -1254,7 +1800,7 @@ const ExpenseClassifier = () => {
                                                     Category {getSortIcon('category')}
                                                 </div>
                                             </th>
-                                            <th 
+                                            <th
                                                 className="px-6 py-4 text-left text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100"
                                                 onClick={() => handleSort('confidence')}
                                             >
@@ -1270,8 +1816,8 @@ const ExpenseClassifier = () => {
                                             <tr
                                                 key={item.id}
                                                 className={`hover:bg-gray-50 transition-colors ${item.classification === 'SUSPENSE'
-                                                        ? 'bg-orange-25 border-l-4 border-orange-300'
-                                                        : ''
+                                                    ? 'bg-orange-25 border-l-4 border-orange-300'
+                                                    : ''
                                                     }`}
                                             >
                                                 <td className="px-6 py-4 text-sm text-gray-600">
@@ -1396,8 +1942,8 @@ const ExpenseClassifier = () => {
                                                         <button
                                                             onClick={() => startRowEdit(item.id, item.classification, item.category)}
                                                             className={`bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center ${item.classification === 'SUSPENSE'
-                                                                    ? 'bg-orange-600 hover:bg-orange-700'
-                                                                    : ''
+                                                                ? 'bg-orange-600 hover:bg-orange-700'
+                                                                : ''
                                                                 }`}
                                                             title="Edit classification and category"
                                                         >
