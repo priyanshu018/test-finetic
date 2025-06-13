@@ -32,7 +32,7 @@ import {
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { BackendLink } from '../service/api';
-import { extractLedgerCategories, fetchLedgerList, generateAccountLedgerXML, generatePaymentVoucherXMLFromPayload, generateTallyLedgerXML, processTransactions } from '../service/TALLY/payment-flow';
+import { extractLedgerCategories, fetchLedgerList, generateAccountLedgerXML, generatePaymentVoucherXMLFromPayload, generateTallyLedgerXML, processTransactions, startTransactionProcessing, } from '../service/TALLY/payment-flow';
 
 const ExpenseClassifier = () => {
     // State management
@@ -585,8 +585,11 @@ const ExpenseClassifier = () => {
     ]
 
     const transactions = [
-              {
+        {
             account: "Dollar Ducks TEST",
+            ifsc: "SBIN0063838",
+            accountNumber: "42317498217",
+            accountHolder: "Dollar Duck",
             vendor: "ICI NEXT 57",
             amount: 5074,
             date: "2025-02-15",
@@ -609,6 +612,9 @@ const ExpenseClassifier = () => {
         },
         {
             account: "Dollar Ducks TEST",
+            ifsc: "SBIN0063838",
+            accountNumber: "42317498217",
+            accountHolder: "Dollar Duck",
             vendor: "STATE BANK OF INDIA",
             amount: 394.51,
             date: "2025-03-12",
@@ -631,6 +637,9 @@ const ExpenseClassifier = () => {
         },
         {
             account: "Dollar Ducks TEST",
+            ifsc: "SBIN0063838",
+            accountNumber: "42317498217",
+            accountHolder: "Dollar Duck",
             vendor: "Mrs. Vibha Pundir",
             amount: 14000,
             date: "2025-03-15",
@@ -653,6 +662,9 @@ const ExpenseClassifier = () => {
         },
         {
             account: "Dollar Ducks TEST",
+            ifsc: "SBIN0063838",
+            accountNumber: "42317498217",
+            accountHolder: "Dollar Duck",
             vendor: "ICI ENLIGHT INFOTECH",
             amount: 3540,
             date: "2025-03-17",
@@ -722,14 +734,21 @@ const ExpenseClassifier = () => {
 
         // console.log(response)
 
-        const response = processTransactions(transactions, {
-            companyName: "PrimeDepth Labs",
-            date: "20250401",
-            voucherType: "Payment",
-            narrationPrefix: "Auto-entry:"
-        });
+        (async () => {
+            try {
+                const response = await startTransactionProcessing(transactions, {
+                    companyName: "PrimeDepth Labs",
+                    date: "20250401",
+                    voucherType: "Payment",
+                    narrationPrefix: "Auto-entry:"
+                });
 
-        console.log(response)
+                console.log("✅ Ledger extraction response:", response);
+            } catch (error) {
+                console.error("❌ Error during transaction processing:", error);
+            }
+        })();
+
 
 
 
