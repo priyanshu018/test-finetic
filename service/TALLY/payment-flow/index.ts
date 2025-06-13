@@ -72,61 +72,87 @@ export async function fetchLedgerList(companyName = "PrimeDepth Labs") {
     }
 }
 
-export async function extractLedgerCategories(transactions) {
-    const seen = new Set();
-    const results = [];
+export async function generateAccountLedgerXML({
+    name,
+    parent = "Bank Accounts",
+    ifsc,
+    accountNumber,
+    accountHolder
+}: {
+    name: string;
+    parent?: string;
+    ifsc: string;
+    accountNumber: string;
+    accountHolder: string;
+}) {
+    const xmlPayload = `
+<ENVELOPE>
+  <HEADER>
+    <TALLYREQUEST>Import Data</TALLYREQUEST>
+  </HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC>
+        <REPORTNAME>All Masters</REPORTNAME>
+      </REQUESTDESC>
+      <REQUESTDATA>
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <LEDGER Action="Create">
+            <NAME>${name}</NAME>
+            <PARENT>${parent}</PARENT>
+            <IFSCODE>${ifsc}</IFSCODE>
+            <BANKDETAILS>${accountNumber}</BANKDETAILS>
+            <BANKACCHOLDERNAME>${accountHolder}</BANKACCHOLDERNAME>
+          </LEDGER>
+        </TALLYMESSAGE>
+      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>`.trim();
 
-    const existingLedgers = await fetchLedgerList();
-    const existingNames = new Set(
-        existingLedgers.map((l) => l.name.trim().toLowerCase())
-    );
 
-    for (const txn of transactions) {
-        const { category, classification } = txn;
-        if (!category || !classification) continue;
+    try {
+        const res = await fetch("http://localhost:8080/http://localhost:9000", {
+            method: "POST",
+            headers: { "Content-Type": "text/xml" },
+            body: xmlPayload,
+        });
 
-        let type = null;
-        if (/Direct Business/i.test(classification)) {
-            type = "Direct Expenses";
-        } else if (/Indirect Business/i.test(classification)) {
-            type = "Indirect Expenses";
-        } else {
-            continue;
-        }
-
-        const normalizedCategory = category.trim().toLowerCase();
-        const key = `${normalizedCategory}__${type.toLowerCase()}`;
-
-        const isAlreadyInTally = existingNames.has(normalizedCategory);
-
-        if (!seen.has(key) && !isAlreadyInTally) {
-            seen.add(key);
-            results.push({
-                ledgerName: category.trim(),
-                type,
-            });
-        }
+        const result = await res.text();
+        console.log("✅ Ledger Created:", result);
+        return result;
+    } catch (error) {
+        console.error("❌ Failed to create ledger:", error);
+        throw error;
     }
-
-    // Skip XML generation and API call if nothing to create
-    if (results.length === 0) {
-        console.log("✅ All ledgers already exist in Tally. Skipping creation.");
-        return {
-            newLedgers: [],
-            xml: null,
-            message: "All ledgers already present. No API call made.",
-        };
-    }
-
-    // Otherwise, generate and send to Tally
-    const xmlPayload = await generateTallyLedgerXML(results);
-
-    return {
-        newLedgers: results,
-        xml: xmlPayload,
-    };
 }
 
+
+export async function extractLedgerCategories(transactions) {
+    const ledgerSet = new Set();
+
+    for (const txn of transactions) {
+        if (txn.vendor) ledgerSet.add(txn.vendor.trim());
+        if (txn.category) ledgerSet.add(txn.category.trim());
+    }
+
+    const allLedgerNames = Array.from(ledgerSet);
+
+    // Get existing ledgers from Tally
+    const existingLedgers = await fetchLedgerList();
+
+    const newLedgers = allLedgerNames
+        .filter(name => !existingLedgers.includes(name))
+        .map(name => ({
+            ledgerName: name,
+            type: "Indirect Expenses" // You can customize this if needed
+        }));
+
+    return {
+        newLedgers,
+        xml: newLedgers.length > 0 ? generateTallyLedgerXML(newLedgers) : null
+    };
+}
 
 // STEP 2: XML Generator (already provided)
 export async function generateTallyLedgerXML(entries = []) {
@@ -165,27 +191,18 @@ export async function generateTallyLedgerXML(entries = []) {
       </REQUESTDATA>
     </IMPORTDATA>
   </BODY>
-</ENVELOPE>`.trim();
+</ENVELOPE>`;
 
-    // Now send it to Tally
-    try {
-        const response = await fetch("http://localhost:8080/http://localhost:9000", {
-            method: "POST",
-            headers: {
-                "Content-Type": "text/xml",
-            },
-            body: xml,
-        });
+    const response = await fetch("http://localhost:8080/http://localhost:9000", {
+        method: "POST",
+        headers: { "Content-Type": "text/xml" },
+        body: xml
+    });
 
-        const result = await response.text();
-        console.log("✅ Tally response:", result);
-        return result;
-    } catch (error) {
-        console.error("❌ Failed to send to Tally:", error);
-        return null;
-    }
+    const text = await response.text();
+    console.log("🧾 Ledger Creation Response:", text);
+    return text;
 }
-
 
 
 export function generatePaymentVoucherXMLFromPayload(payments, options: any = {}) {
@@ -200,14 +217,14 @@ export function generatePaymentVoucherXMLFromPayload(payments, options: any = {}
 
     const voucherBlocks = entries.map((entry, index) => {
         const {
-            account,
-            category,
+            account,      // e.g., "Dollar Ducks TEST"
+            category,     // e.g., "Software Subscription"
             amount,
-            narration = `${narrationPrefix} Payment for ${category}`
+            narration = `${narrationPrefix} Payment for ${category}`,
         } = entry;
 
         const voucherNumber = index + 1;
-        const voucherGUID = `GUID-${voucherNumber}-${Date.now()}`;
+        const uniqueRef = Math.random().toString(36).substring(2, 10).toUpperCase();
 
         return `
 <TALLYMESSAGE xmlns:UDF="TallyUDF">
@@ -237,14 +254,14 @@ export function generatePaymentVoucherXMLFromPayload(payments, options: any = {}
         <TRANSACTIONTYPE>Cheque</TRANSACTIONTYPE>
         <PAYMENTFAVOURING>${category}</PAYMENTFAVOURING>
         <CHEQUECROSSCOMMENT>A/c Payee</CHEQUECROSSCOMMENT>
-        <UNIQUEREFERENCENUMBER>${Math.random().toString(36).substring(2, 10).toUpperCase()}</UNIQUEREFERENCENUMBER>
+        <UNIQUEREFERENCENUMBER>${uniqueRef}</UNIQUEREFERENCENUMBER>
         <PAYMENTMODE>Transacted</PAYMENTMODE>
         <BANKPARTYNAME>${category}</BANKPARTYNAME>
         <AMOUNT>${amount.toFixed(2)}</AMOUNT>
       </BANKALLOCATIONS.LIST>
     </ALLLEDGERENTRIES.LIST>
   </VOUCHER>
-</TALLYMESSAGE>`;
+</TALLYMESSAGE>`.trim();
     }).join("\n");
 
     return `
@@ -261,10 +278,38 @@ export function generatePaymentVoucherXMLFromPayload(payments, options: any = {}
         </STATICVARIABLES>
       </REQUESTDESC>
       <REQUESTDATA>
-        ${voucherBlocks}
+${voucherBlocks}
       </REQUESTDATA>
     </IMPORTDATA>
   </BODY>
-</ENVELOPE>`;
+</ENVELOPE>`.trim();
 }
+export async function processTransactions(transactions, options = {}) {
+    const { newLedgers } = await extractLedgerCategories(transactions);
 
+    if (newLedgers.length > 0) {
+        console.log("Creating missing ledgers...");
+        await generateTallyLedgerXML(newLedgers);
+    }
+
+    // Wait before pushing vouchers
+    await new Promise(res => setTimeout(res, 1000));
+
+    // Expect `transactions` to already be in proper format for generatePaymentVoucherXMLFromPayload
+    // Format: [{ account, category, amount, narration }, ...]
+    const voucherXML = generatePaymentVoucherXMLFromPayload(transactions, {
+        companyName: options.companyName || "PrimeDepth Labs",
+        date: options.date || "20250401",
+        voucherType: options.voucherType || "Payment",
+        narrationPrefix: options.narrationPrefix || ""
+    });
+
+    const res = await fetch("http://localhost:8080/http://localhost:9000", {
+        method: "POST",
+        headers: { "Content-Type": "text/xml" },
+        body: voucherXML
+    });
+
+    const result = await res.text();
+    console.log("✅ Voucher Result:", result);
+}

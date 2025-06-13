@@ -1,5 +1,5 @@
 //@ts-nocheck
-export const BackendLink = "https://0218-223-178-212-11.ngrok-free.app"
+export const BackendLink = "https://068e-223-178-209-206.ngrok-free.app"
 export const localUrl = "http://localhost:8080/http://localhost:9000"
 
 

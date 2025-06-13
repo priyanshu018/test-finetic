@@ -32,7 +32,7 @@ import {
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { BackendLink } from '../service/api';
-import { extractLedgerCategories, fetchLedgerList, generatePaymentVoucherXMLFromPayload, generateTallyLedgerXML } from '../service/TALLY/payment-flow';
+import { extractLedgerCategories, fetchLedgerList, generateAccountLedgerXML, generatePaymentVoucherXMLFromPayload, generateTallyLedgerXML, processTransactions } from '../service/TALLY/payment-flow';
 
 const ExpenseClassifier = () => {
     // State management
@@ -55,6 +55,7 @@ const ExpenseClassifier = () => {
 
     const yourTransactionsArray = [
         {
+            account: "Dollar Ducks TEST",
             vendor: "SELF",
             amount: 15000,
             date: "2024-08-20",
@@ -76,6 +77,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "positive"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "ICI NEXT 57 CO",
             amount: 5074,
             date: "2024-09-09",
@@ -97,6 +99,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "SELF",
             amount: 15000,
             date: "2024-10-04",
@@ -118,6 +121,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "positive"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "ICI NEXT 57",
             amount: 5074,
             date: "2024-10-10",
@@ -139,6 +143,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "Mrs. GURDEV KAUR",
             amount: 11900,
             date: "2024-10-16",
@@ -160,6 +165,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "SELF",
             amount: 25000,
             date: "2024-10-19",
@@ -181,6 +187,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "positive"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "Mrs. Vibha Pundir",
             amount: 9000,
             date: "2024-10-30",
@@ -202,6 +209,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "SELF",
             amount: 10000,
             date: "2024-11-06",
@@ -223,6 +231,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "positive"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "ICI NEXT 57",
             amount: 5074,
             date: "2024-11-22",
@@ -244,6 +253,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "Amritsar Lounge",
             amount: 2,
             date: "2024-11-22",
@@ -265,6 +275,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "Amritsar Lounge",
             amount: 2,
             date: "2024-11-23",
@@ -286,6 +297,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "UNKNOWN VENDOR",
             amount: 9000,
             date: "2024-12-11",
@@ -307,6 +319,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "positive"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "ICI NEXT 57",
             amount: 5074,
             date: "2024-12-16",
@@ -328,6 +341,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "CHINMAY GUPTA",
             amount: 6000,
             date: "2025-01-01",
@@ -349,6 +363,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "SELF",
             amount: 35000,
             date: "2025-01-02",
@@ -370,6 +385,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "positive"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "AMAZON PAY INDIA",
             amount: 928,
             date: "2025-01-02",
@@ -391,6 +407,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "ATM CASH 1712 AERO ARCADE",
             amount: 10000,
             date: "2025-01-07",
@@ -412,6 +429,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "ICI ENLIGHT INFOTECH",
             amount: 3540,
             date: "2025-01-28",
@@ -433,6 +451,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "RAZ*apnaco Mumbai",
             amount: 707,
             date: "2025-01-29",
@@ -454,6 +473,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "ICI ENLIGHT INFOTECH",
             amount: 3540,
             date: "2025-02-11",
@@ -475,6 +495,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "ICI NEXT 57",
             amount: 5074,
             date: "2025-02-15",
@@ -496,6 +517,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "STATE BANK OF INDIA",
             amount: 394.51,
             date: "2025-03-12",
@@ -517,6 +539,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "Mrs. Vibha Pundir",
             amount: 14000,
             date: "2025-03-15",
@@ -538,6 +561,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
+            account: "Dollar Ducks TEST",
             vendor: "ICI ENLIGHT INFOTECH",
             amount: 3540,
             date: "2025-03-17",
@@ -559,6 +583,98 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         }
     ]
+
+    const transactions = [
+              {
+            account: "Dollar Ducks TEST",
+            vendor: "ICI NEXT 57",
+            amount: 5074,
+            date: "2025-02-15",
+            description: "Chq No. 786058 ICI NEXT 57 786058",
+            transaction_type: "DEBIT",
+            classification: "Trading Variable (Direct Business)",
+            confidence: 85,
+            category: "Software Subscription",
+            id: "12d10924-f596-4295-959b-107da59e0566",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056843",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -5074,
+            running_balance: 38011,
+            transaction_impact: "negative"
+        },
+        {
+            account: "Dollar Ducks TEST",
+            vendor: "STATE BANK OF INDIA",
+            amount: 394.51,
+            date: "2025-03-12",
+            description: "AC KEEPING FEES",
+            transaction_type: "DEBIT",
+            classification: "Non-Trading Variable (Indirect Business)",
+            confidence: 90,
+            category: "Bank Charges",
+            id: "5a07c6c0-925b-4d86-943f-bad06fed2277",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056859",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -394.51,
+            running_balance: 37616.49,
+            transaction_impact: "negative"
+        },
+        {
+            account: "Dollar Ducks TEST",
+            vendor: "Mrs. Vibha Pundir",
+            amount: 14000,
+            date: "2025-03-15",
+            description: "CHEQUE TRANSFER TO 786062 0039550763614 OF Mrs. Vibha Pundir",
+            transaction_type: "DEBIT",
+            classification: "Non-Trading Variable (Indirect Business)",
+            confidence: 80,
+            category: "Consultant Payment",
+            id: "ea899ef3-e15c-4285-ab15-08c9d10211af",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056876",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -14000,
+            running_balance: 23616.489999999998,
+            transaction_impact: "negative"
+        },
+        {
+            account: "Dollar Ducks TEST",
+            vendor: "ICI ENLIGHT INFOTECH",
+            amount: 3540,
+            date: "2025-03-17",
+            description: "Chq No. 786060 ICI ENLIGHT INFOTECH 786060",
+            transaction_type: "DEBIT",
+            classification: "Trading Variable (Direct Business)",
+            confidence: 85,
+            category: "Software Subscription",
+            id: "6af93d1d-1eb8-498e-97d6-5c443786348b",
+            source_file: "DOLLARDUCKS.pdf",
+            timestamp: "2025-06-12T14:01:44.056894",
+            extraction_confidence: 87.96445880452342,
+            ai_model: "deepseek-chat",
+            business_category: "service",
+            business_subcategory: "IT Services",
+            file_type: ".pdf",
+            balance_change: -3540,
+            running_balance: 20076.489999999998,
+            transaction_impact: "negative"
+        }
+    ];
+
 
     useEffect(() => {
         // const getLedgerData = async () => {
@@ -592,10 +708,30 @@ const ExpenseClassifier = () => {
 
 
 
-        (async () => {
-            const categoriesToCreate = await extractLedgerCategories(yourTransactionsArray);
-            console.log("Missing ledgers:", categoriesToCreate);
-        })();
+        // (async () => {
+        //     const categoriesToCreate = await extractLedgerCategories(yourTransactionsArray);
+        //     console.log("Missing ledgers:", categoriesToCreate);
+        // })();
+
+
+        // const response =  generatePaymentVoucherXMLFromPayload(yourTransactionsArray, {
+        //     companyName: "PrimeDepth Labs",
+        //     date: "20250401",
+        //     voucherType: "Payment"
+        // });
+
+        // console.log(response)
+
+        const response = processTransactions(transactions, {
+            companyName: "PrimeDepth Labs",
+            date: "20250401",
+            voucherType: "Payment",
+            narrationPrefix: "Auto-entry:"
+        });
+
+        console.log(response)
+
+
 
     }, []);
 
