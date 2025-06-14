@@ -167,41 +167,12 @@ const ExpenseClassifier = () => {
 
 
     useEffect(() => {
-        // const getLedgerData = async () => {
-        //     try {
-        //         const response = await fetchLedgerList();
-
-        //     } catch (error) {
-        //         console.error("Error fetching ledger list:", error);
-        //     }
-        // };
-
-        //   getLedgerData();
-
-        // const xml = generateTallyLedgerXML([
-        //     { ledgerName: "Software Subscription", type: "Indirect Expenses" },
-        //     { ledgerName: "Direct Subscription", type: "Direct Expenses" }
-        // ]);
-
-        // console.log(xml)
-
-        // const payload = [
-        //     {
-        //         account: "Dollar Ducks TEST",
-        //         category: "Software Subscription",
-        //         amount: 15555000
-        //     }
-        // ];
-
-        // const xml2 = generatePaymentVoucherXMLFromPayload(payload);
-        // console.log(xml2);
+     
+       
 
 
 
-        // (async () => {
-        //     const categoriesToCreate = await extractLedgerCategories(yourTransactionsArray);
-        //     console.log("Missing ledgers:", categoriesToCreate);
-        // })();
+       
 
 
         // const response =  generatePaymentVoucherXMLFromPayload(yourTransactionsArray, {
@@ -632,8 +603,7 @@ const ExpenseClassifier = () => {
             console.error("❌ Error during transaction processing:", error);
         }
 
-            // const categoriesToCreate = await extractLedgerCategories(transactions,tallyInfo);
-            // console.log("Missing ledgers:", categoriesToCreate);
+            
 
     }
 
