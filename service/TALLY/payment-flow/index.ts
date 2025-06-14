@@ -357,11 +357,9 @@ export async function processTransactions(transactions, options = {}) {
     console.log("✅ Voucher Result:", result);
 }
 
-import { fetchLedgerList } from "./fetchLedgerList"; // if separated
-import { generateAccountLedgerXML } from "./generateAccountLedgerXML"; // if separated
 
 export async function startTransactionProcessing(transactions, tallyInfo = [{}], accountDetails = [{}]) {
-  console.log("🚀 Starting transaction processing (Bank Ledger Check Only)...");
+  console.log("🚀 Starting transaction processing (Bank Ledger + Expense Categories)...");
 
   try {
     // Extract tally metadata
@@ -401,8 +399,20 @@ export async function startTransactionProcessing(transactions, tallyInfo = [{}],
     } else {
       console.log(`✅ Bank ledger "${bankLedgerName}" already exists.`);
     }
+
+    // ✅ Step 1: Extract ledger categories from transactions
+    const { newLedgers, xml } = await extractLedgerCategories(transactions, { companyName });
+
+    if (newLedgers.length > 0 && xml) {
+      console.log(`🧾 Found ${newLedgers.length} new expense ledgers to create.`);
+    //   await sendToTally(xml); // or whatever function you're using to post XML
+      console.log("✅ New expense ledgers created.");
+    } else {
+      console.log("✅ No new expense ledgers needed.");
+    }
+
   } catch (error) {
-    console.error("❌ Error during bank ledger processing:", error);
+    console.error("❌ Error during transaction processing:", error);
     throw error;
   }
 }

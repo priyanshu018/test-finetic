@@ -624,16 +624,16 @@ const ExpenseClassifier = () => {
     };
 
     const exportToTally = async () => {
-        // try {
-        //     const response = await startTransactionProcessing(transactions, tallyInfo, accountDetails);
+        try {
+            const response = await startTransactionProcessing(transactions, tallyInfo, accountDetails);
 
-        //     console.log("✅ Ledger extraction response:", response);
-        // } catch (error) {
-        //     console.error("❌ Error during transaction processing:", error);
-        // }
+            console.log("✅ Ledger extraction response:", response);
+        } catch (error) {
+            console.error("❌ Error during transaction processing:", error);
+        }
 
-            const categoriesToCreate = await extractLedgerCategories(transactions,tallyInfo);
-            console.log("Missing ledgers:", categoriesToCreate);
+            // const categoriesToCreate = await extractLedgerCategories(transactions,tallyInfo);
+            // console.log("Missing ledgers:", categoriesToCreate);
 
     }
 
