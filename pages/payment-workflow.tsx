@@ -27,12 +27,13 @@ import {
     Factory,
     Briefcase,
     ShoppingCart,
+    BookMarked,
     X
 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { BackendLink } from '../service/api';
-import { extractLedgerCategories, fetchLedgerList, generateAccountLedgerXML, generatePaymentVoucherXMLFromPayload, generateTallyLedgerXML, processTransactions, startTransactionProcessing, } from '../service/TALLY/payment-flow';
+import { extractBankHolderDetails, extractLedgerCategories, startTransactionProcessing, } from '../service/TALLY/payment-flow';
 
 const ExpenseClassifier = () => {
     // State management
@@ -42,6 +43,7 @@ const ExpenseClassifier = () => {
     const [uploadedFiles, setUploadedFiles] = useState([]);
     const [processing, setProcessing] = useState(false);
     const [results, setResults] = useState(null);
+    const [header, setHeader] = useState(null)
     const [summary, setSummary] = useState(null);
     const [editingRow, setEditingRow] = useState(null);
     const [editingCategory, setEditingCategory] = useState(null);
@@ -53,543 +55,9 @@ const ExpenseClassifier = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
-    const yourTransactionsArray = [
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "SELF",
-            amount: 15000,
-            date: "2024-08-20",
-            description: "CASH DEPOSIT SELF",
-            transaction_type: "CREDIT",
-            classification: "Cash Deposit",
-            confidence: 95,
-            category: "Cash Deposit",
-            id: "78337c54-202f-49a2-a573-b1469496c09a",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056467",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: 15000,
-            running_balance: 15000,
-            transaction_impact: "positive"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "ICI NEXT 57 CO",
-            amount: 5074,
-            date: "2024-09-09",
-            description: "Chq No. 786048 ICI NEXT 57 CO 786048",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "817a1f3e-c639-433c-83c5-55fba8425c95",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056518",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -5074,
-            running_balance: 9926,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "SELF",
-            amount: 15000,
-            date: "2024-10-04",
-            description: "CASH DEPOSIT SELF",
-            transaction_type: "CREDIT",
-            classification: "Cash Deposit",
-            confidence: 95,
-            category: "Cash Deposit",
-            id: "1dd81488-93e4-4f4d-8f6c-6ba116887b10",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056539",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: 15000,
-            running_balance: 24926,
-            transaction_impact: "positive"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "ICI NEXT 57",
-            amount: 5074,
-            date: "2024-10-10",
-            description: "Chq No. 786049 ICI NEXT 57 786049",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "03df8036-aca8-4a94-84ea-638cd7960ce8",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056558",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -5074,
-            running_balance: 19852,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "Mrs. GURDEV KAUR",
-            amount: 11900,
-            date: "2024-10-16",
-            description: "CHEQUE TRANSFER TO 786050 0030904374591 OF Mrs. GURDEV KAUR",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 80,
-            category: "Consultant Payment",
-            id: "54b48806-b3f0-411f-a091-e459b29eb30b",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056576",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -11900,
-            running_balance: 7952,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "SELF",
-            amount: 25000,
-            date: "2024-10-19",
-            description: "CASH DEPOSIT SELF",
-            transaction_type: "CREDIT",
-            classification: "Cash Deposit",
-            confidence: 95,
-            category: "Cash Deposit",
-            id: "637753c7-dd49-4bdf-871d-4ac592605568",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056594",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: 25000,
-            running_balance: 32952,
-            transaction_impact: "positive"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "Mrs. Vibha Pundir",
-            amount: 9000,
-            date: "2024-10-30",
-            description: "CHEQUE TRANSFER TO 786051 0039550763614 OF Mrs. Vibha Pundir",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 80,
-            category: "Consultant Payment",
-            id: "90fb62b5-09a7-4f33-b0b0-fa82c0f4aa9d",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056610",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -9000,
-            running_balance: 23952,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "SELF",
-            amount: 10000,
-            date: "2024-11-06",
-            description: "CASH DEPOSIT SELF",
-            transaction_type: "CREDIT",
-            classification: "Cash Deposit",
-            confidence: 95,
-            category: "Cash Deposit",
-            id: "0cb1659b-7aeb-4356-818a-72c804b9b9a1",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056628",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: 10000,
-            running_balance: 33952,
-            transaction_impact: "positive"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "ICI NEXT 57",
-            amount: 5074,
-            date: "2024-11-22",
-            description: "Chq No. 786052 ICI NEXT 57 786052",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "35c54378-18cd-4c98-8da5-e8a30228447b",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056645",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -5074,
-            running_balance: 28878,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "Amritsar Lounge",
-            amount: 2,
-            date: "2024-11-22",
-            description: "OTHPOS432715338196Amritsar Lounge AMRITSAR",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 75,
-            category: "Miscellaneous Expense",
-            id: "8111c3de-d3ea-4443-a560-9b4508577539",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056662",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -2,
-            running_balance: 28876,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "Amritsar Lounge",
-            amount: 2,
-            date: "2024-11-23",
-            description: "OTHPOS432717501469Amritsar Lounge AMRITSAR",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 75,
-            category: "Miscellaneous Expense",
-            id: "ce30c39c-7919-4b30-a0ea-83afa19b1853",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056678",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -2,
-            running_balance: 28874,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "UNKNOWN VENDOR",
-            amount: 9000,
-            date: "2024-12-11",
-            description: "CSH DEP (CDM) 9800000000",
-            transaction_type: "CREDIT",
-            classification: "Cash Deposit",
-            confidence: 90,
-            category: "Cash Deposit",
-            id: "317c786b-4084-4899-bc2d-ac27672403f9",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056695",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: 9000,
-            running_balance: 37874,
-            transaction_impact: "positive"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "ICI NEXT 57",
-            amount: 5074,
-            date: "2024-12-16",
-            description: "Chq No. 786053 ICI NEXT 57 786053",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "8349c767-82af-43f9-a814-55d441ea91eb",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056712",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -5074,
-            running_balance: 32800,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "CHINMAY GUPTA",
-            amount: 6000,
-            date: "2025-01-01",
-            description: "Chq No. 786054 CHINMAY GUPTA 786054",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 80,
-            category: "Consultant Payment",
-            id: "5a0e5463-1f4d-4928-98db-a06d7a881401",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056728",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -6000,
-            running_balance: 26800,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "SELF",
-            amount: 35000,
-            date: "2025-01-02",
-            description: "CASH DEPOSIT SELF",
-            transaction_type: "CREDIT",
-            classification: "Cash Deposit",
-            confidence: 95,
-            category: "Cash Deposit",
-            id: "bbe68347-abbe-4a84-b547-4438828ca073",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056744",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: 35000,
-            running_balance: 61800,
-            transaction_impact: "positive"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "AMAZON PAY INDIA",
-            amount: 928,
-            date: "2025-01-02",
-            description: "OTHPG 500215296318AMAZON PAY INDIA PRIVA124662480",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software/Service Purchase",
-            id: "36730ee2-7ed5-4e8a-b3e0-67b69bed6013",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056761",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -928,
-            running_balance: 60872,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "ATM CASH 1712 AERO ARCADE",
-            amount: 10000,
-            date: "2025-01-07",
-            description: "ATM WDL ATM CASH 1712 AERO ARCADE",
-            transaction_type: "DEBIT",
-            classification: "Cash Withdrawal",
-            confidence: 95,
-            category: "Cash Withdrawal",
-            id: "006e6e10-6422-4caf-8b67-6ecee8edd68e",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056777",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -10000,
-            running_balance: 50872,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "ICI ENLIGHT INFOTECH",
-            amount: 3540,
-            date: "2025-01-28",
-            description: "Chq No. 786056 ICI ENLIGHT INFOTECH 786056",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "7395f2ac-6ec6-4f34-8114-ee40424496e9",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056793",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -3540,
-            running_balance: 47332,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "RAZ*apnaco Mumbai",
-            amount: 707,
-            date: "2025-01-29",
-            description: "OTHPG 502908670535RAZ*apnaco Mumbai",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 80,
-            category: "Miscellaneous Expense",
-            id: "5615c3dc-5cf0-466c-88bb-f6b4f39812d8",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056810",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -707,
-            running_balance: 46625,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "ICI ENLIGHT INFOTECH",
-            amount: 3540,
-            date: "2025-02-11",
-            description: "Chq No. 786057 ICI ENLIGHT INFOTECH 786057",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "6027f48b-a7d3-4c75-8836-19cd4d1a14b0",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056826",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -3540,
-            running_balance: 43085,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "ICI NEXT 57",
-            amount: 5074,
-            date: "2025-02-15",
-            description: "Chq No. 786058 ICI NEXT 57 786058",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "12d10924-f596-4295-959b-107da59e0566",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056843",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -5074,
-            running_balance: 38011,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "STATE BANK OF INDIA",
-            amount: 394.51,
-            date: "2025-03-12",
-            description: "AC KEEPING FEES",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 90,
-            category: "Bank Charges",
-            id: "5a07c6c0-925b-4d86-943f-bad06fed2277",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056859",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -394.51,
-            running_balance: 37616.49,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "Mrs. Vibha Pundir",
-            amount: 14000,
-            date: "2025-03-15",
-            description: "CHEQUE TRANSFER TO 786062 0039550763614 OF Mrs. Vibha Pundir",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 80,
-            category: "Consultant Payment",
-            id: "ea899ef3-e15c-4285-ab15-08c9d10211af",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056876",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -14000,
-            running_balance: 23616.489999999998,
-            transaction_impact: "negative"
-        },
-        {
-            account: "Dollar Ducks TEST",
-            vendor: "ICI ENLIGHT INFOTECH",
-            amount: 3540,
-            date: "2025-03-17",
-            description: "Chq No. 786060 ICI ENLIGHT INFOTECH 786060",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "6af93d1d-1eb8-498e-97d6-5c443786348b",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056894",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -3540,
-            running_balance: 20076.489999999998,
-            transaction_impact: "negative"
-        }
-    ]
-
     const transactions = [
         {
-            account: "Dollar Ducks TEST",
-            ifsc: "SBIN0063838",
-            accountNumber: "42317498217",
-            accountHolder: "Dollar Duck",
+
             vendor: "ICI NEXT 57",
             amount: 5074,
             date: "2025-02-15",
@@ -611,10 +79,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
-            account: "Dollar Ducks TEST",
-            ifsc: "SBIN0063838",
-            accountNumber: "42317498217",
-            accountHolder: "Dollar Duck",
+
             vendor: "STATE BANK OF INDIA",
             amount: 394.51,
             date: "2025-03-12",
@@ -636,10 +101,7 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
-            account: "Dollar Ducks TEST",
-            ifsc: "SBIN0063838",
-            accountNumber: "42317498217",
-            accountHolder: "Dollar Duck",
+
             vendor: "Mrs. Vibha Pundir",
             amount: 14000,
             date: "2025-03-15",
@@ -661,16 +123,13 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         },
         {
-            account: "Dollar Ducks TEST",
-            ifsc: "SBIN0063838",
-            accountNumber: "42317498217",
-            accountHolder: "Dollar Duck",
+
             vendor: "ICI ENLIGHT INFOTECH",
             amount: 3540,
             date: "2025-03-17",
             description: "Chq No. 786060 ICI ENLIGHT INFOTECH 786060",
             transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
+            classification: "Trading Variable (Indirect Business)",
             confidence: 85,
             category: "Software Subscription",
             id: "6af93d1d-1eb8-498e-97d6-5c443786348b",
@@ -686,6 +145,25 @@ const ExpenseClassifier = () => {
             transaction_impact: "negative"
         }
     ];
+
+    const tallyInfo = [
+        {
+            companyName: "PrimeDepth Labs",
+            date: "20250401",
+            voucherType: "Payment",
+            narrationPrefix: "Auto-entry:"
+        }
+    ]
+
+    const accountDetails = [
+        {
+            holder_name: "DOLLAR DUCKS",
+            ifsc_code: "SBIN0063838",
+            account_number: "43217498217"
+        }
+    ]
+
+    console.log({ header })
 
 
     useEffect(() => {
@@ -734,25 +212,11 @@ const ExpenseClassifier = () => {
 
         // console.log(response)
 
-        (async () => {
-            try {
-                const response = await startTransactionProcessing(transactions, {
-                    companyName: "PrimeDepth Labs",
-                    date: "20250401",
-                    voucherType: "Payment",
-                    narrationPrefix: "Auto-entry:"
-                });
-
-                console.log("✅ Ledger extraction response:", response);
-            } catch (error) {
-                console.error("❌ Error during transaction processing:", error);
-            }
-        })();
-
 
 
 
     }, []);
+
 
     // Main business categories
     const businessCategories = [
@@ -874,6 +338,8 @@ const ExpenseClassifier = () => {
             if (data.success) {
                 setResults(data.results);
                 setSummary(data.summary);
+                const bankDetails = extractBankHolderDetails(data.header_information)
+                setHeader(bankDetails)
                 setCurrentStep(4);
 
                 if (data.processing_errors && data.processing_errors.length > 0) {
@@ -1156,6 +622,20 @@ const ExpenseClassifier = () => {
             alert('Excel export failed: ' + error.message);
         }
     };
+
+    const exportToTally = async () => {
+        // try {
+        //     const response = await startTransactionProcessing(transactions, tallyInfo, accountDetails);
+
+        //     console.log("✅ Ledger extraction response:", response);
+        // } catch (error) {
+        //     console.error("❌ Error during transaction processing:", error);
+        // }
+
+            const categoriesToCreate = await extractLedgerCategories(transactions,tallyInfo);
+            console.log("Missing ledgers:", categoriesToCreate);
+
+    }
 
     // Filter results based on type and search term
     const getFilteredResults = () => {
@@ -1682,11 +1162,11 @@ const ExpenseClassifier = () => {
                                         Export CSV
                                     </button>
                                     <button
-                                        onClick={resetForm}
+                                        onClick={exportToTally}
                                         className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center font-medium"
                                     >
-                                        <RefreshCw className="w-4 h-4 mr-2" />
-                                        New Analysis
+                                        <BookMarked className="w-4 h-4 mr-2" />
+                                        Export To Tally
                                     </button>
                                 </div>
                             </div>

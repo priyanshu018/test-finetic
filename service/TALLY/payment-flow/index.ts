@@ -4,6 +4,25 @@
 
 import { XMLParser } from 'fast-xml-parser';
 
+export function extractBankHolderDetails(bankDataArray) {
+    if (!Array.isArray(bankDataArray) || bankDataArray.length === 0) {
+        throw new Error("Invalid or empty bank data array");
+    }
+
+    const firstItem = bankDataArray[0];
+
+    const holderName = firstItem?.account_holder_information?.holder_name || "";
+    const ifscCode = firstItem?.account_information?.ifsc_code || "";
+    const accountNumber = firstItem?.account_information?.account_number || "";
+
+    return {
+        holder_name: holderName,
+        ifsc_code: ifscCode,
+        account_number: accountNumber
+    };
+}
+
+
 export async function fetchLedgerList(companyName = "PrimeDepth Labs") {
     const xmlPayload = `
 <ENVELOPE>
@@ -127,55 +146,55 @@ export async function generateAccountLedgerXML({
     }
 }
 
-
 export async function extractLedgerCategories(transactions, options = {}) {
-    const accountMap = new Map();   // { accountName => { ifsc, accountNumber, accountHolder } }
-    const categorySet = new Set();
+    const classificationMap = {
+        "Trading Variable (Direct Business)": "Direct Expenses",
+        "Trading Variable (Indirect Business)": "Indirect Expenses",
+        "Non-Trading Variable (Indirect Business)": "Indirect Expenses",
+    };
+
+    const ledgerMap = new Map();
 
     for (const txn of transactions) {
-        // Prepare account map
-        if (txn.account && !accountMap.has(txn.account.trim())) {
-            accountMap.set(txn.account.trim(), {
-                name: txn.account.trim(),
-                ifsc: txn.ifsc || "",
-                accountNumber: txn.accountNumber || "",
-                accountHolder: txn.accountHolder || txn.account.trim(),
+        if (!txn.category || !txn.classification) continue;
+
+        const categoryName = txn.category.trim();
+        const classification = txn.classification.trim();
+        const parent = classificationMap[classification];
+
+        if (!parent) continue;
+
+        // New ledger name includes parent tag
+        const ledgerName = `${categoryName} (${parent.includes('Direct') ? 'Direct' : 'Indirect'})`;
+
+        const key = `${ledgerName}|||${parent}`;
+        if (!ledgerMap.has(key)) {
+            ledgerMap.set(key, {
+                ledgerName,
+                type: parent,
             });
         }
-
-        // Collect categories
-        if (txn.category) {
-            categorySet.add(txn.category.trim());
-        }
     }
 
-    const allLedgerNames = [...accountMap.keys(), ...categorySet];
-
-    // Fetch existing ledgers from Tally
     const existingLedgers = await fetchLedgerList(options.companyName || "PrimeDepth Labs");
-    const existingLedgerNames = existingLedgers.map(l => l.name.trim());
 
-    // Step 1: Create missing account ledgers
-    for (const [accountName, details] of accountMap.entries()) {
-        if (!existingLedgerNames.includes(accountName)) {
-            console.log(`🏦 Creating account ledger: ${accountName}`);
-            await generateAccountLedgerXML(details);
+    const existingLedgerKeys = new Set(
+        existingLedgers.map(l => `${l.name.trim()}|||${l.parent?.trim() || ""}`)
+    );
+
+    const newLedgers = [];
+
+    for (const [key, ledger] of ledgerMap) {
+        if (!existingLedgerKeys.has(key)) {
+            newLedgers.push(ledger);
         }
     }
-
-    // Step 2: Identify missing category ledgers
-    const newCategories = [...categorySet].filter(name => !existingLedgerNames.includes(name));
-    const newLedgers = newCategories.map(name => ({
-        ledgerName: name,
-        type: "Indirect Expenses",
-    }));
 
     return {
         newLedgers,
         xml: newLedgers.length > 0 ? generateTallyLedgerXML(newLedgers) : null,
     };
 }
-
 
 
 // STEP 2: XML Generator (already provided)
@@ -338,62 +357,96 @@ export async function processTransactions(transactions, options = {}) {
     console.log("✅ Voucher Result:", result);
 }
 
+import { fetchLedgerList } from "./fetchLedgerList"; // if separated
+import { generateAccountLedgerXML } from "./generateAccountLedgerXML"; // if separated
+
+export async function startTransactionProcessing(transactions, tallyInfo = [{}], accountDetails = [{}]) {
+  console.log("🚀 Starting transaction processing (Bank Ledger Check Only)...");
+
+  try {
+    // Extract tally metadata
+    const {
+      companyName = "PrimeDepth Labs"
+    } = tallyInfo[0] || {};
+
+    // Extract bank account details
+    const {
+      holder_name = "",
+      ifsc_code = "",
+      account_number = ""
+    } = accountDetails[0] || {};
+
+    const bankLedgerName = holder_name?.trim();
+
+    if (!bankLedgerName) {
+      throw new Error("❌ Missing holder_name in accountDetails");
+    }
+
+    // Step 0: Fetch all ledgers and check if bank exists
+    const existingLedgers = await fetchLedgerList(companyName);
+    const existingLedgerNames = existingLedgers.map(l => l.name?.trim());
+
+    if (!existingLedgerNames.includes(bankLedgerName)) {
+      console.log(`🏦 Bank ledger "${bankLedgerName}" not found. Creating...`);
+
+      await generateAccountLedgerXML({
+        name: bankLedgerName,
+        parent: "Bank Accounts",
+        ifsc: ifsc_code,
+        accountNumber: account_number,
+        accountHolder: bankLedgerName
+      });
+
+      console.log("✅ Bank ledger created successfully.");
+    } else {
+      console.log(`✅ Bank ledger "${bankLedgerName}" already exists.`);
+    }
+  } catch (error) {
+    console.error("❌ Error during bank ledger processing:", error);
+    throw error;
+  }
+}
+
+
+
 // export async function startTransactionProcessing(transactions, options = {}) {
-//     console.log("first")
+//     console.log("🚀 Starting transaction processing...");
+
 //     try {
 //         const companyName = options.companyName || "PrimeDepth Labs";
 
-//         const { newLedgers, xml } = await extractLedgerCategories(transactions);
+//         // Step 1: Extract and create missing ledgers
+//         const { newLedgers, xml } = await extractLedgerCategories(transactions, options);
 
 //         console.log(`🧾 Missing Ledgers in ${companyName}:`, newLedgers.map(l => l.ledgerName));
 
-//         return { newLedgers, xml };
+//         // Step 2: Create category ledgers (batch)
+//         if (newLedgers.length > 0) {
+//             console.log("📥 Creating category ledgers...");
+//             await generateTallyLedgerXML(newLedgers);
+//         }
+
+//         // Step 3: Prepare only DEBIT transactions for voucher creation
+//         const formattedTransactions = transactions
+//             .filter(txn => txn.transaction_type?.toUpperCase() === "DEBIT")
+//             .map(txn => ({
+//                 account: txn.account?.trim(),
+//                 category: txn.category?.trim(),
+//                 amount: parseFloat(txn.amount),
+//                 narration: `${options.narrationPrefix || ""} ${txn.description || `Payment for ${txn.category}`}`,
+//             }));
+
+//         if (formattedTransactions.length === 0) {
+//             console.warn("⚠️ No DEBIT transactions found to process.");
+//             return;
+//         }
+
+//         // Step 4: Send transactions to Tally
+//         await processTransactions(formattedTransactions, options);
+
+//         console.log("✅ All transactions processed successfully.");
 //     } catch (error) {
-//         console.error("❌ Failed during ledger extraction:", error);
+//         console.error("❌ Failed during transaction processing:", error);
 //         throw error;
 //     }
 // }
-
-
-export async function startTransactionProcessing(transactions, options = {}) {
-    console.log("🚀 Starting transaction processing...");
-
-    try {
-        const companyName = options.companyName || "PrimeDepth Labs";
-
-        // Step 1: Extract and create missing ledgers
-        const { newLedgers, xml } = await extractLedgerCategories(transactions, options);
-
-        console.log(`🧾 Missing Ledgers in ${companyName}:`, newLedgers.map(l => l.ledgerName));
-
-        // Step 2: Create category ledgers (batch)
-        if (newLedgers.length > 0) {
-            console.log("📥 Creating category ledgers...");
-            await generateTallyLedgerXML(newLedgers);
-        }
-
-        // Step 3: Prepare only DEBIT transactions for voucher creation
-        const formattedTransactions = transactions
-            .filter(txn => txn.transaction_type?.toUpperCase() === "DEBIT")
-            .map(txn => ({
-                account: txn.account?.trim(),
-                category: txn.category?.trim(),
-                amount: parseFloat(txn.amount),
-                narration: `${options.narrationPrefix || ""} ${txn.description || `Payment for ${txn.category}`}`,
-            }));
-
-        if (formattedTransactions.length === 0) {
-            console.warn("⚠️ No DEBIT transactions found to process.");
-            return;
-        }
-
-        // Step 4: Send transactions to Tally
-        await processTransactions(formattedTransactions, options);
-
-        console.log("✅ All transactions processed successfully.");
-    } catch (error) {
-        console.error("❌ Failed during transaction processing:", error);
-        throw error;
-    }
-}
-
