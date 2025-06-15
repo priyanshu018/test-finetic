@@ -715,7 +715,7 @@ export default function IndexPage() {
         </div> */}
       </div>
 
-      <div className="pb-20">
+      {/* <div className="pb-20">
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleGetGstData}>GST DATA</button>
         <button className="text-black bg-red-400 p-4" onClick={handleGetComapnyData}>Get Company Data</button>
@@ -724,7 +724,7 @@ export default function IndexPage() {
         <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create unit</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
         <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create purchase</button>
-      </div>
+      </div> */}
 
       {/* Footer - professional touch */}
       <footer className="bg-white absolute bottom-0 left-0 w-full border-t border-gray-200 py-4 mt-auto">
