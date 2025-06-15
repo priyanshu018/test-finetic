@@ -225,8 +225,10 @@ export async function createItem(items: StockItem[]) {
 </ENVELOPE>`);
   const existNames = await getLedgerNames(data);
   const missing = items.filter((it) => !existNames.includes(it.Product));
+  console.log(missing)
   if (missing.length) {
     const xml = xmlCreateStockItems(missing);
+ console.log(xml,"xml")
     const resp = await postXml(xml);
     const parsed = parseResponse(resp);
     return { success: parsed.created === missing.length, data: items };
@@ -239,6 +241,7 @@ export async function createItem(items: StockItem[]) {
  */
 export async function createPurchaseEntry(payload: VoucherPayload) {
   const xml = xmlCreateVoucher(payload);
+  console.log(xml)
   const resp = await postXml(xml);
   const parsed = parseResponse(resp);
   return { success: parsed.created > 0, data: resp };

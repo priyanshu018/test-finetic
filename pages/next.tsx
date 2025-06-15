@@ -95,7 +95,7 @@ export default function IndexPage() {
       ledgerXmlData,
       "code test",
       {
-        name: "code test",
+        name: "RAJ SUPER WHOLESALE BAZAR",
         parent: "Sundry Creditors",
         address: "",
         country: "India",
@@ -172,90 +172,121 @@ export default function IndexPage() {
   };
 
   const handleCheckUnit = async () => {
-    const units = [
+   const units = [
       {
-        name: "GMS",
-        decimal: 3
+        name: "LTR",
+        decimal: 3,
       },
       {
-        name: "UNT",
-        decimal: 3
+        name: "KG",
+        decimal: 3,
       },
       {
-        name: "CCM",
-        decimal: 3
+        name: "GM",
+        decimal: 3,
       },
       {
-        name: "BTL",
-        decimal: 3
+        name: "PCS",
+        decimal: 3,
       },
-      {
-        name: "MLT",
-        decimal: 3
-      }
-    ]
-
+    ];
 
     const response = await createUnit(units);
     console.log(response, "here is ");
   };
 
   const handleExportItems = async () => {
-    const items = [
+  const items = [
       {
-        Product: "OTHR BLCHD WOVN FBRCS WGHNG >200",
-        HSN: "521222",
-        SGST: "0.00",
-        CGST: "0.00",
+        Product:
+          "SWADIST SOYA OIL 1LTR (POUCH) SPECIAL POUCH PACKING MFG BY AVI AGRO MARKETED BY DAMMANI",
+        HSN: "11223",
+        SGST: 0,
+        CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "GMS"
+        symbol: "LTR",
       },
       {
-        Product: "OTER BEANS DRIED & SHLD",
-        HSN: "071339",
-        SGST: "0.00",
-        CGST: "0.00",
+        Product: "BALAJI BASMATI RICE 1 KG",
+        HSN: "111222333",
+        SGST: 0,
+        CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "UNT"
+        symbol: "KG",
       },
       {
-        Product: "GLAZIERS & GRAFTING RFRCTRY SRFCNG PUTY, RESIN PRPN FR FLOORS, WALL ELEMNTS NON ETC",
-        HSN: "321490",
-        SGST: "0.00",
-        CGST: "0.00",
+        Product: "LIFEBUOY SOAP (LEMON) 125GM*4 94/-",
+        HSN: "111222333",
+        SGST: 0,
+        CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "CCM"
+        symbol: "GM",
       },
       {
-        Product: "OTHER, FRESH OR CHILLED",
-        HSN: "20735",
-        SGST: "0.00",
-        CGST: "0.00",
+        Product: "CAMEL TEA 500GM",
+        HSN: "111222333",
+        SGST: 0,
+        CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "BTL"
+        symbol: "GM",
       },
       {
-        Product: "OTHER COSMETIC & TOILT PRPN NES S",
-        HSN: "33079090",
-        SGST: "0.00",
-        CGST: "0.00",
+        Product: "DABUR HONEY 50GM 37/-",
+        HSN: "111222333",
+        SGST: 0,
+        CGST: 0,
         gst: 0,
         decimal: 0,
-        symbol: "MLT"
-      }
-    ]
-
+        symbol: "GM",
+      },
+      {
+        Product: "GOLD COIN BREAD 33/-",
+        HSN: "111222333",
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "PCS",
+      },
+      {
+        Product: "KISSAN TOMATO KETCHUP REFILL 450GM 50/-2ND",
+        HSN: "111222333",
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "GM",
+      },
+      {
+        Product: "BRITANIA MUFFILLS CAKE 10/-",
+        HSN: "111222333",
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "PCS",
+      },
+      {
+        Product: "KHARAK SAKHARIYA (SPECIAL) 1KG",
+        HSN: "111222333",
+        SGST: 0,
+        CGST: 0,
+        gst: 0,
+        decimal: 0,
+        symbol: "KG",
+      },
+    ];
 
     const response = await createItem(items);
     console.log(response);
   };
 
   const handlePurchaseEntry = async () => {
-    const payload = {
+     const payload = {
       invoiceNumber: "2254",
       invoiceDate: "01-04-2025",
       companyName: "PrimeDepth Labs",
