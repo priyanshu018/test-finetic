@@ -76,6 +76,7 @@ export function createUnits(units: Unit[]): string {
     <NAME>${u.name}</NAME>
     <GUID>${guid}</GUID>
     <ALTERID>${alterID}</ALTERID>
+    <ISSIMPLEUNIT>Yes</ISSIMPLEUNIT>
     <DECIMALPLACES>${u.decimal}</DECIMALPLACES>
   </UNIT>
 </TALLYMESSAGE>`;
@@ -159,9 +160,9 @@ export function createVoucher(payload: VoucherPayload): string {
 export async function getLedgerNames(xmlData: string): Promise<string[]> {
   const result: any = await parseStringPromise(xmlData, { explicitArray: false });
   const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
-  if (!collection) throw new Error('Cannot find COLLECTION element');
-  const ledgers = Array.isArray(collection.LEDGER)
-    ? collection.LEDGER
-    : [collection.LEDGER];
-  return ledgers.map((lg: any) => lg.$.NAME);
+  // if (!collection) throw new Error('Cannot find COLLECTION element');
+  const ledgers = Array.isArray(collection?.LEDGER)
+    ? collection?.LEDGER
+    : [collection?.LEDGER];
+  return ledgers?.map((lg: any) => lg?.$?.NAME);
 }

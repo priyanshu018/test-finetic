@@ -85,8 +85,8 @@ async function extractLedgerNameAndGST(xmlString: string): Promise<Array<{ name:
   const seen = new Set<string>();
   const out: Array<{ name: string; gst: string }> = [];
   for (const lg of all) {
-    const name = lg.$?.NAME || '';
-    const gst = lg['LEDGSTREGDETAILS.LIST']?.GSTIN?.trim() || '';
+    const name = lg?.$?.NAME || '';
+    const gst = lg?.['LEDGSTREGDETAILS.LIST']?.GSTIN?.trim() || '';
     if (gst && !seen.has(gst)) {
       seen.add(gst);
       out.push({ name, gst });

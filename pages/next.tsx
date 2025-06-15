@@ -174,22 +174,27 @@ export default function IndexPage() {
   const handleCheckUnit = async () => {
     const units = [
       {
-        name: "LTR",
-        decimal: 3,
+        name: "GMS",
+        decimal: 3
       },
       {
-        name: "KG",
-        decimal: 3,
+        name: "UNT",
+        decimal: 3
       },
       {
-        name: "GM",
-        decimal: 3,
+        name: "CCM",
+        decimal: 3
       },
       {
-        name: "PCS",
-        decimal: 3,
+        name: "BTL",
+        decimal: 3
       },
-    ];
+      {
+        name: "MLT",
+        decimal: 3
+      }
+    ]
+
 
     const response = await createUnit(units);
     console.log(response, "here is ");
@@ -198,88 +203,52 @@ export default function IndexPage() {
   const handleExportItems = async () => {
     const items = [
       {
-        Product:
-          "SWADIST SOYA OIL 1LTR (POUCH) SPECIAL POUCH PACKING MFG BY AVI AGRO MARKETED BY DAMMANI",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
+        Product: "OTHR BLCHD WOVN FBRCS WGHNG >200",
+        HSN: "521222",
+        SGST: "0.00",
+        CGST: "0.00",
         gst: 0,
         decimal: 0,
-        symbol: "LTR",
+        symbol: "GMS"
       },
       {
-        Product: "BALAJI BASMATI RICE 1 KG",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
+        Product: "OTER BEANS DRIED & SHLD",
+        HSN: "071339",
+        SGST: "0.00",
+        CGST: "0.00",
         gst: 0,
         decimal: 0,
-        symbol: "KG",
+        symbol: "UNT"
       },
       {
-        Product: "LIFEBUOY SOAP (LEMON) 125GM*4 94/-",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
+        Product: "GLAZIERS & GRAFTING RFRCTRY SRFCNG PUTY, RESIN PRPN FR FLOORS, WALL ELEMNTS NON ETC",
+        HSN: "321490",
+        SGST: "0.00",
+        CGST: "0.00",
         gst: 0,
         decimal: 0,
-        symbol: "GM",
+        symbol: "CCM"
       },
       {
-        Product: "CAMEL TEA 500GM",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
+        Product: "OTHER, FRESH OR CHILLED",
+        HSN: "20735",
+        SGST: "0.00",
+        CGST: "0.00",
         gst: 0,
         decimal: 0,
-        symbol: "GM",
+        symbol: "BTL"
       },
       {
-        Product: "DABUR HONEY 50GM 37/-",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
+        Product: "OTHER COSMETIC & TOILT PRPN NES S",
+        HSN: "33079090",
+        SGST: "0.00",
+        CGST: "0.00",
         gst: 0,
         decimal: 0,
-        symbol: "GM",
-      },
-      {
-        Product: "GOLD COIN BREAD 33/-",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "PCS",
-      },
-      {
-        Product: "KISSAN TOMATO KETCHUP REFILL 450GM 50/-2ND",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "GM",
-      },
-      {
-        Product: "BRITANIA MUFFILLS CAKE 10/-",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "PCS",
-      },
-      {
-        Product: "KHARAK SAKHARIYA (SPECIAL) 1KG",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "KG",
-      },
-    ];
+        symbol: "MLT"
+      }
+    ]
+
 
     const response = await createItem(items);
     console.log(response);
@@ -715,16 +684,16 @@ export default function IndexPage() {
         </div> */}
       </div>
 
-      {/* <div>
-      <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
-      <button className="text-black bg-blue-400 p-4" onClick={handleGetGstData}>GST DATA</button>
+      <div className="pb-20">
+        <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
+        <button className="text-black bg-blue-400 p-4" onClick={handleGetGstData}>GST DATA</button>
         <button className="text-black bg-red-400 p-4" onClick={handleGetComapnyData}>Get Company Data</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCreateCgstIgstSgstLedger}>Create IGST/CGST/SGST ledger</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create unit</button>
         <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
         <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create purchase</button>
-      </div> */}
+      </div>
 
       {/* Footer - professional touch */}
       <footer className="bg-white absolute bottom-0 left-0 w-full border-t border-gray-200 py-4 mt-auto">
