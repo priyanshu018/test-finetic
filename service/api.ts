@@ -7,7 +7,7 @@ export const BackendLink = "https://finetic-ai.primedepthlabs.com";
 const isElectron = typeof window !== "undefined" && window.process?.type === "renderer";
 
 // Use Electron protocol when in Electron, else use the deployed backend
-export const localUrl = "https://localhost-proxy"
+export const localUrl = "http://localhost-proxy"
 
 /**
  * Generic API request function for Electron or Web
