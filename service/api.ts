@@ -1,13 +1,10 @@
 // @ts-nocheck
 
-// Public backend (fallback for browser)
+// Deployed public backend for fallback
 export const BackendLink = "https://finetic-ai.primedepthlabs.com";
 
 // Check if running inside Electron
-const isElectron = typeof window !== "undefined" && window.process?.type === "renderer";
-
-// Use Electron protocol when in Electron, else use the deployed backend
-export const localUrl = "https://localhost-proxy"
+const isElectron = typeof window !== "undefined" && !!window.electronAPI;
 
 /**
  * Generic API request function for Electron or Web
@@ -28,8 +25,8 @@ export const apiRequest = async (
   responseType = "json"
 ) => {
   try {
-    const fullUrl = `${localUrl}${url}`;
-    console.log("🔗 Requesting:", fullUrl);
+    const targetUrl = isElectron ? url : `${BackendLink}${url}`;
+    console.log("📡 Requesting:", targetUrl, isElectron ? "[Electron]" : "[Web]");
 
     const defaultHeaders = {
       "Content-Type": contentType,
@@ -51,25 +48,23 @@ export const apiRequest = async (
       }
     }
 
-    const response = await fetch(fullUrl, options);
+    // Use Electron IPC if available
+    const response = isElectron
+      ? await window.electronAPI.proxyFetch(url, options)
+      : await fetch(targetUrl, options).then((res) => {
+          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+          switch (responseType.toLowerCase()) {
+            case "json":
+              return res.json();
+            case "text":
+            case "xml":
+              return res.text();
+            default:
+              return res.json();
+          }
+        });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Error from API: ${response.status} ${response.statusText}\n${errorText}`
-      );
-    }
-
-    switch (responseType.toLowerCase()) {
-      case "json":
-        return await response.json();
-      case "text":
-        return await response.text();
-      case "xml":
-        return await response.text(); // XML parsing can be done client-side
-      default:
-        return await response.json();
-    }
+    return response;
   } catch (error) {
     console.error(`❌ API Error [${url}]:`, error);
     throw error;
