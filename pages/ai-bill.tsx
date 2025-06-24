@@ -1803,7 +1803,7 @@ export default function BillWorkflow() {
               <span className="font-medium">Back</span>
             </button>
             <h1 className="text-2xl font-bold text-gray-800 ml-6">
-              Bill Management System
+              Purchase Bill Workflow
             </h1>
           </div>
         </header>
