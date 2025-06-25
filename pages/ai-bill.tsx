@@ -2042,13 +2042,34 @@ export default function BillWorkflow() {
                   <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors duration-200 group-hover:scale-110 transform">
                     <Upload className="w-8 h-8 text-blue-600" />
                   </div>
+
+                  {/* Show mobile upload status if files are being uploaded */}
+                  {mobileFiles.length > 0 && (
+                    <div className="mb-4 w-full max-w-md mx-auto">
+                      <div className="text-sm text-gray-600 mb-2">
+                        Uploading {mobileFiles.length} file{mobileFiles.length > 1 ? 's' : ''} from mobile...
+                      </div>
+                      <div className="space-y-2">
+                        {mobileFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                            <span className="text-sm text-gray-700 truncate max-w-[180px]">
+                              {file.key.split('/').pop()}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              Uploading...
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-3">
                     <h3 className="text-2xl md:text-3xl font-bold text-gray-800 group-hover:text-blue-700 transition-colors">
-                      Drag & Drop Bills
+                      {mobileFiles.length > 0 ? 'Add More Files' : 'Drag & Drop Bills'}
                     </h3>
                     <p className="text-gray-500 max-w-md mx-auto">
-                      Supported formats: JPG, PDF (Max {MAX_FILE_SIZE_MB}MB
-                      each)
+                      Supported formats: JPG, PDF (Max {MAX_FILE_SIZE_MB}MB each)
                     </p>
                     <button className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all mx-auto">
                       <span>Browse Files</span>
@@ -2090,6 +2111,12 @@ export default function BillWorkflow() {
                           <CheckCircle className="w-4 h-4 mr-1" />
                           Mobile session active
                         </div>
+                        {mobileFiles.length > 0 && (
+                          <div className="flex items-center text-sm text-blue-600">
+                            <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                            Receiving {mobileFiles.length} file{mobileFiles.length > 1 ? 's' : ''}
+                          </div>
+                        )}
                         {receivedFiles > 0 && (
                           <div className="w-full text-sm text-blue-600">
                             {receivedFiles}{" "}
@@ -2133,7 +2160,7 @@ export default function BillWorkflow() {
                       />
 
                       <div className="mt-3 flex flex-col items-center text-center max-w-[180px]">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex flex-col items-center justify-center gap-2">
                           <a
                             href={qrSession.mobileUploadUrl}
                             target="_blank"
@@ -2154,7 +2181,7 @@ export default function BillWorkflow() {
                             }}
                             className="text-blue-500 hover:text-blue-700 text-xs font-medium px-2 py-1 border border-blue-100 rounded-md"
                           >
-                            Copy
+                            Copy Upload Link
                           </button>
                         </div>
                       </div>
@@ -2286,7 +2313,7 @@ export default function BillWorkflow() {
               </div>
             )}
 
-            <div className="flex justify-end pt-6">
+            <div className="flex fixed bottom-0 left-0 w-screen bg-white justify-end p-4">
               <button
                 onClick={handleNextStep}
                 disabled={files.length === 0 && mobileFiles.length === 0}
