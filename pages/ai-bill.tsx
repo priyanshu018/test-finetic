@@ -2123,13 +2123,42 @@ export default function BillWorkflow() {
                   )}
 
                   {qrSession ? (
-                    <QRCode
-                      value={qrSession.mobileUploadUrl}
-                      size={180}
-                      bgColor={"#FFFFFF"}
-                      fgColor={"#1D4ED8"}
-                      style={{ height: 180, maxWidth: "100%", width: "100%" }}
-                    />
+                    <div className="flex flex-col items-center">
+                      <QRCode
+                        value={qrSession.mobileUploadUrl}
+                        size={180}
+                        bgColor={"#FFFFFF"}
+                        fgColor={"#1D4ED8"}
+                        style={{ height: 180, maxWidth: "100%", width: "100%" }}
+                      />
+
+                      <div className="mt-3 flex flex-col items-center text-center max-w-[180px]">
+                        <div className="flex items-center justify-center gap-2">
+                          <a
+                            href={qrSession.mobileUploadUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:underline truncate max-w-[120px]"
+                            title={qrSession.mobileUploadUrl}
+                          >
+                            {qrSession.mobileUploadUrl}
+                          </a>
+
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(qrSession.mobileUploadUrl);
+                              toast.success("Link copied to clipboard!", {
+                                position: "top-center",
+                                autoClose: 2000,
+                              });
+                            }}
+                            className="text-blue-500 hover:text-blue-700 text-xs font-medium px-2 py-1 border border-blue-100 rounded-md"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ) : (
                     <div
                       className="w-full h-full flex items-center justify-center"
