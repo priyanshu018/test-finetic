@@ -1045,35 +1045,110 @@ const ExpenseClassifier = () => {
                 throw new Error('Please upload at least one file');
             }
 
+            console.log('📱 Mobile files to process:', mobileFiles);
+            console.log('💻 Desktop files to process:', uploadedFiles);
+
             const formData = new FormData();
             formData.append('business_category', businessCategory);
             formData.append('business_subcategory', businessSubcategory);
 
-            // Process mobile files first
-            const mobileFilePromises = mobileFiles.map(async (file) => {
-                try {
-                    const response = await fetch(file.url);
-                    if (!response.ok) throw new Error('Failed to fetch file');
-                    const blob = await response.blob();
-                    return new File([blob], file.key.split('/').pop(), { type: blob.type });
-                } catch (error) {
-                    console.error('Error fetching mobile file:', error);
-                    throw new Error(`Failed to process mobile file: ${file.key}`);
-                }
-            });
+            // Process mobile files first with better error handling
+            let mobileFileObjects = [];
 
-            // Wait for all mobile files to be fetched
-            const mobileFileObjects = await Promise.all(mobileFilePromises);
+            if (mobileFiles.length > 0) {
+                console.log('🔄 Processing mobile files...');
+
+                const mobileFilePromises = mobileFiles.map(async (file, index) => {
+                    try {
+                        console.log(`📱 Fetching mobile file ${index + 1}:`, file);
+
+                        // Validate file structure
+                        if (!file.url || !file.key) {
+                            throw new Error(`Invalid file structure: missing url or key`);
+                        }
+
+                        const response = await fetch(file.url);
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+
+                        const blob = await response.blob();
+
+                        // Check if blob has content
+                        if (blob.size === 0) {
+                            throw new Error('Downloaded file is empty');
+                        }
+
+                        // Extract filename and ensure it has an extension
+                        let filename = file.key.split('/').pop() || `mobile_file_${index + 1}`;
+
+                        // If filename doesn't have extension, try to detect from blob type or default to .pdf
+                        if (!filename.includes('.')) {
+                            if (blob.type.includes('pdf')) {
+                                filename += '.pdf';
+                            } else if (blob.type.includes('excel') || blob.type.includes('spreadsheet')) {
+                                filename += '.xlsx';
+                            } else {
+                                // Default to .pdf if we can't detect
+                                filename += '.pdf';
+                            }
+                        }
+
+                        console.log(`✅ Mobile file ${index + 1} processed:`, {
+                            filename,
+                            size: blob.size,
+                            type: blob.type
+                        });
+
+                        return new File([blob], filename, {
+                            type: blob.type || 'application/pdf' // Default type if not detected
+                        });
+
+                    } catch (error) {
+                        console.error(`❌ Error processing mobile file ${index + 1}:`, error);
+                        throw new Error(`Failed to process mobile file "${file.key}": ${error.message}`);
+                    }
+                });
+
+                try {
+                    mobileFileObjects = await Promise.all(mobileFilePromises);
+                    console.log('✅ All mobile files processed successfully:', mobileFileObjects);
+                } catch (error) {
+                    console.error('❌ Failed to process mobile files:', error);
+                    throw error;
+                }
+            }
+
+            // Combine all files
+            const allFiles = [...mobileFileObjects, ...uploadedFiles];
+            console.log('📦 Total files to upload:', allFiles.length);
 
             // Add files to formData
-            [...mobileFileObjects, ...uploadedFiles].forEach(file => {
+            allFiles.forEach((file, index) => {
+                console.log(`📎 Adding file ${index + 1} to formData:`, {
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                });
                 formData.append('files', file);
             });
+
+            // Log formData contents for debugging
+            console.log('📋 FormData contents:');
+            for (let [key, value] of formData.entries()) {
+                if (value instanceof File) {
+                    console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+                } else {
+                    console.log(`  ${key}: ${value}`);
+                }
+            }
 
             const progressInterval = setInterval(() => {
                 setProcessingProgress(prev => Math.min(prev + 10, 90));
             }, 500);
 
+            console.log('🚀 Sending request to backend...');
             const response = await fetch(`${BackendLink}/paymentflow/process`, {
                 method: 'POST',
                 body: formData,
@@ -1084,10 +1159,12 @@ const ExpenseClassifier = () => {
 
             if (!response.ok) {
                 const errorText = await response.text();
+                console.error('❌ Backend error:', response.status, errorText);
                 throw new Error(`Server error: ${response.status} - ${errorText}`);
             }
 
             const data = await response.json();
+            console.log('✅ Backend response:', data);
 
             if (!data.success) {
                 throw new Error(data.message || 'Processing failed - no results returned');
@@ -1113,14 +1190,16 @@ const ExpenseClassifier = () => {
             setCurrentStep(4);
 
             if (data.processing_errors?.length > 0) {
-                console.warn('Processing warnings:', data.processing_errors);
+                console.warn('⚠️ Processing warnings:', data.processing_errors);
                 toast.warn(`Processed with ${data.processing_errors.length} warnings`, {
                     position: 'top-right'
                 });
             }
 
+            console.log('🎉 Processing completed successfully!');
+
         } catch (error) {
-            console.error('Processing error:', error);
+            console.error('💥 Processing error:', error);
             setError(error.message);
             toast.error(`Processing failed: ${error.message}`, {
                 position: 'top-right'
@@ -1130,6 +1209,7 @@ const ExpenseClassifier = () => {
             setProcessingProgress(0);
         }
     };
+
 
     // Handle file upload
     const handleFileUpload = (event) => {
