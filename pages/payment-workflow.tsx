@@ -28,12 +28,17 @@ import {
     Briefcase,
     ShoppingCart,
     BookMarked,
-    X
+    X,
+    Smartphone,
+    Play
 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { BackendLink } from '../service/api';
 import { extractBankHolderDetails, extractLedgerCategories, generateContraVoucherXMLFromTransactions, startTransactionProcessing, } from '../service/TALLY/payment-flow';
+import QRCode from 'react-qr-code';
+import { toast } from 'react-toastify';
+import axios from 'axios';
 
 const ExpenseClassifier = () => {
     // State management
@@ -54,6 +59,10 @@ const ExpenseClassifier = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+    const [qrSession, setQRSession] = useState(null);
+    const [qrSessionLoading, setQRSessionLoading] = useState(false);
+    const [mobileFiles, setMobileFiles] = useState([]);
+    const [receivedFiles, setReceivedFiles] = useState(0);
 
     console.log({ results })
 
@@ -792,15 +801,11 @@ const ExpenseClassifier = () => {
 
     useEffect(() => {
 
+        const xml = generateContraVoucherXMLFromTransactions(cashData, accountDetails, {
+            companyName: "PrimeDepth Labs"
+        });
 
-
-
-
-const xml = generateContraVoucherXMLFromTransactions(cashData, accountDetails, {
-  companyName: "PrimeDepth Labs"
-});
-
-console.log(xml)
+        console.log(xml)
 
 
         // const response =  generatePaymentVoucherXMLFromPayload(yourTransactionsArray, {
@@ -810,8 +815,6 @@ console.log(xml)
         // });
 
         // console.log(response)
-
-
 
 
     }, []);
@@ -893,31 +896,183 @@ console.log(xml)
         'SUSPENSE'
     ];
 
+    // Create a new QR session
+    const createQRSession = async () => {
+        setQRSessionLoading(true);
+        try {
+            const response = await fetch(
+                "https://finetic-ai-mobile.primedepthlabs.com/create-session",
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                }
+            );
+
+            if (!response.ok) throw new Error("Failed to create session");
+
+            const session = await response.json();
+            console.log(session, "here is session");
+            setQRSession(session);
+
+            // Start polling for new files
+            startPollingForFiles(session.sessionId);
+        } catch (error) {
+            console.error("Error creating session:", error);
+        } finally {
+            setQRSessionLoading(false);
+        }
+    };
+
+    // Poll for new files uploaded from mobile
+    const startPollingForFiles = (sessionId) => {
+        const pollInterval = setInterval(async () => {
+            if (!sessionId) {
+                clearInterval(pollInterval);
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `https://finetic-ai-mobile.primedepthlabs.com/check-uploads/${sessionId}`
+                );
+                if (!response.ok) throw new Error("Failed to check uploads");
+
+                const { files: newFiles } = await response.json();
+
+                if (newFiles.length > 0) {
+                    // Update files only if there are new ones
+                    setMobileFiles((prevFiles) => {
+                        const existingKeys = new Set(prevFiles.map((f) => f.key));
+                        const filteredNewFiles = newFiles.filter(
+                            (f) => !existingKeys.has(f.key)
+                        );
+
+                        if (filteredNewFiles.length > 0) {
+                            setReceivedFiles((prev) => prev + filteredNewFiles.length);
+                            return [...prevFiles, ...filteredNewFiles];
+                        }
+
+                        return prevFiles;
+                    });
+                }
+            } catch (error) {
+                console.error("Error polling for files:", error);
+            }
+        }, 3000); // Poll every 3 seconds
+
+        return () => clearInterval(pollInterval);
+    };
+
+    // Reset the QR session
+    const resetQRSession = () => {
+        setQRSession(null);
+        setReceivedFiles(0);
+    };
+
     // Process documents - FIXED: Now sends both category and subcategory
+    // const processDocuments = async () => {
+    //     setProcessing(true);
+    //     setError(null);
+    //     setProcessingProgress(0);
+
+    //     try {
+    //         const formData = new FormData();
+    //         // IMPORTANT: Send both business_category and business_subcategory
+    //         formData.append('business_category', businessCategory);
+    //         formData.append('business_subcategory', businessSubcategory);
+
+    //         uploadedFiles.forEach((file) => {
+    //             formData.append('files', file);
+    //         });
+
+    //         const progressInterval = setInterval(() => {
+    //             setProcessingProgress(prev => Math.min(prev + 10, 90));
+    //         }, 500);
+
+    //         console.log('Sending request with:', {
+    //             business_category: businessCategory,
+    //             business_subcategory: businessSubcategory,
+    //             files: uploadedFiles.length
+    //         });
+
+    //         const response = await fetch(`${BackendLink}/paymentflow/process`, {
+    //             method: 'POST',
+    //             body: formData,
+    //         });
+
+    //         clearInterval(progressInterval);
+    //         setProcessingProgress(100);
+
+    //         if (!response.ok) {
+    //             const errorData = await response.json();
+    //             throw new Error(errorData.detail || 'Processing failed');
+    //         }
+
+    //         const data = await response.json();
+
+    //         if (data.success) {
+    //             setResults(data.results);
+    //             setSummary(data.summary);
+    //             const bankDetails = extractBankHolderDetails(data.header_information)
+    //             setHeader(bankDetails)
+    //             setCurrentStep(4);
+
+    //             if (data.processing_errors && data.processing_errors.length > 0) {
+    //                 console.warn('Processing warnings:', data.processing_errors);
+    //             }
+    //         } else {
+    //             throw new Error('Processing failed - no results returned');
+    //         }
+
+    //     } catch (error) {
+    //         console.error('Processing error:', error);
+    //         setError(error.message);
+    //     } finally {
+    //         setProcessing(false);
+    //         setProcessingProgress(0);
+    //     }
+    // };
+
+
     const processDocuments = async () => {
         setProcessing(true);
         setError(null);
         setProcessingProgress(0);
 
         try {
+            // Validate we have files to process
+            if (uploadedFiles.length === 0 && mobileFiles.length === 0) {
+                throw new Error('Please upload at least one file');
+            }
+
             const formData = new FormData();
-            // IMPORTANT: Send both business_category and business_subcategory
             formData.append('business_category', businessCategory);
             formData.append('business_subcategory', businessSubcategory);
 
-            uploadedFiles.forEach((file) => {
+            // Process mobile files first
+            const mobileFilePromises = mobileFiles.map(async (file) => {
+                try {
+                    const response = await fetch(file.url);
+                    if (!response.ok) throw new Error('Failed to fetch file');
+                    const blob = await response.blob();
+                    return new File([blob], file.key.split('/').pop(), { type: blob.type });
+                } catch (error) {
+                    console.error('Error fetching mobile file:', error);
+                    throw new Error(`Failed to process mobile file: ${file.key}`);
+                }
+            });
+
+            // Wait for all mobile files to be fetched
+            const mobileFileObjects = await Promise.all(mobileFilePromises);
+
+            // Add files to formData
+            [...mobileFileObjects, ...uploadedFiles].forEach(file => {
                 formData.append('files', file);
             });
 
             const progressInterval = setInterval(() => {
                 setProcessingProgress(prev => Math.min(prev + 10, 90));
             }, 500);
-
-            console.log('Sending request with:', {
-                business_category: businessCategory,
-                business_subcategory: businessSubcategory,
-                files: uploadedFiles.length
-            });
 
             const response = await fetch(`${BackendLink}/paymentflow/process`, {
                 method: 'POST',
@@ -928,29 +1083,48 @@ console.log(xml)
             setProcessingProgress(100);
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Processing failed');
+                const errorText = await response.text();
+                throw new Error(`Server error: ${response.status} - ${errorText}`);
             }
 
             const data = await response.json();
 
-            if (data.success) {
-                setResults(data.results);
-                setSummary(data.summary);
-                const bankDetails = extractBankHolderDetails(data.header_information)
-                setHeader(bankDetails)
-                setCurrentStep(4);
+            if (!data.success) {
+                throw new Error(data.message || 'Processing failed - no results returned');
+            }
 
-                if (data.processing_errors && data.processing_errors.length > 0) {
-                    console.warn('Processing warnings:', data.processing_errors);
-                }
-            } else {
-                throw new Error('Processing failed - no results returned');
+            // Safely extract bank details with fallback
+            const bankDetails = data.header_information
+                ? extractBankHolderDetails(data.header_information)
+                : { holder_name: 'Unknown', ifsc_code: 'Unknown', account_number: 'Unknown' };
+
+            setHeader(bankDetails);
+            setResults(data.results || []);
+            setSummary(data.summary || {
+                total_items: 0,
+                debit_transactions: 0,
+                credit_transactions: 0,
+                total_debit_amount: 0,
+                total_credit_amount: 0,
+                final_balance: 0,
+                suspense_items: 0,
+                high_confidence: 0
+            });
+            setCurrentStep(4);
+
+            if (data.processing_errors?.length > 0) {
+                console.warn('Processing warnings:', data.processing_errors);
+                toast.warn(`Processed with ${data.processing_errors.length} warnings`, {
+                    position: 'top-right'
+                });
             }
 
         } catch (error) {
             console.error('Processing error:', error);
             setError(error.message);
+            toast.error(`Processing failed: ${error.message}`, {
+                position: 'top-right'
+            });
         } finally {
             setProcessing(false);
             setProcessingProgress(0);
@@ -1320,6 +1494,12 @@ console.log(xml)
 
     const { push } = useRouter();
 
+
+    useEffect(() => {
+        createQRSession();
+    }, []);
+
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             {/* Header */}
@@ -1595,7 +1775,7 @@ console.log(xml)
                                 </div>
                             </div>
 
-                            {uploadedFiles.length > 0 && (
+                            {/* {uploadedFiles.length > 0 && (
                                 <div className="mt-8 text-left">
                                     <h4 className="font-medium text-gray-900 mb-4 text-center">
                                         📁 Uploaded Files ({uploadedFiles.length})
@@ -1628,10 +1808,82 @@ console.log(xml)
                                         ))}
                                     </div>
                                 </div>
-                            )}
+                            )} */}
+
+                            {uploadedFiles.length > 0 || mobileFiles.length > 0 ? (
+                                <div className="mt-8 text-left">
+                                    <h4 className="font-medium text-gray-900 mb-4 text-center">
+                                        📁 Uploaded Files ({uploadedFiles.length + mobileFiles.length})
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {/* Desktop files */}
+                                        {uploadedFiles.map((file, index) => (
+                                            <div
+                                                key={`desktop-${index}`}
+                                                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                                            >
+                                                <div className="flex items-center">
+                                                    <span className="text-lg mr-3">📄</span>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-900 truncate max-w-48">
+                                                            {file.name}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500">
+                                                            {(file.size / 1024 / 1024).toFixed(1)} MB
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => setUploadedFiles(files => files.filter((_, i) => i !== index))}
+                                                    className="text-red-500 hover:text-red-700 p-1"
+                                                    title="Remove file"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        ))}
+
+                                        {/* Mobile files */}
+                                        {mobileFiles.map((file, index) => (
+                                            <div
+                                                key={`mobile-${index}`}
+                                                className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                            >
+                                                <div className="flex items-center">
+                                                    <span className="text-lg mr-3">📱</span>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-900 truncate max-w-48">
+                                                            {file.key.split('/').pop()}
+                                                        </p>
+                                                        <p className="text-xs text-blue-500">
+                                                            Mobile Upload
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={async () => {
+                                                        await axios.delete(
+                                                            `https://finetic-ai-mobile.primedepthlabs.com/delete-upload/${qrSession?.sessionId}`,
+                                                            {
+                                                                data: { key: file.key },
+                                                                headers: { "Content-Type": "application/json" },
+                                                            }
+                                                        );
+                                                        setMobileFiles(files => files.filter((_, i) => i !== index));
+                                                    }}
+                                                    className="text-red-500 hover:text-red-700 p-1"
+                                                    title="Remove file"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
                         </div>
 
-                        {uploadedFiles.length > 0 && (
+                        {(uploadedFiles.length > 0 || mobileFiles.length > 0) && (
                             <div className="mt-8 flex justify-between items-center">
                                 <button
                                     onClick={resetForm}
@@ -1642,7 +1894,7 @@ console.log(xml)
                                 </button>
                                 <button
                                     onClick={processDocuments}
-                                    disabled={processing}
+                                    disabled={processing || (uploadedFiles.length === 0 && mobileFiles.length === 0)}
                                     className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center font-medium disabled:opacity-50"
                                 >
                                     {processing ? (
@@ -1659,6 +1911,104 @@ console.log(xml)
                                 </button>
                             </div>
                         )}
+
+                        {/* Mobile Upload Section */}
+                        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                            <div className="flex flex-col md:flex-row items-center gap-6">
+                                <div className="flex-1">
+                                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                                        Scan Bills with Your Phone
+                                    </h3>
+                                    <p className="text-gray-500 mb-4">
+                                        Scan this QR code with your phone's camera to upload bills
+                                        directly from your mobile device
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {qrSession ? (
+                                            <>
+                                                <div className="flex items-center text-sm text-green-600 mb-2">
+                                                    <CheckCircle className="w-4 h-4 mr-1" />
+                                                    Mobile session active
+                                                </div>
+                                                {mobileFiles.length > 0 && (
+                                                    <div className="flex items-center text-sm text-blue-600">
+                                                        <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                                                        Receiving {mobileFiles.length} file{mobileFiles.length > 1 ? 's' : ''}
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="text-sm text-gray-500 italic mb-2 flex items-center">
+                                                    <AlertCircle className="w-4 h-4 mr-1 text-amber-500" />
+                                                    No active session
+                                                </div>
+                                                <button
+                                                    onClick={createQRSession}
+                                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                                                >
+                                                    <Play className="w-4 h-4" />
+                                                    Start Mobile Session
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="bg-gradient-to-br from-blue-50 to-white p-3 rounded-xl border border-blue-100 relative">
+                                    {qrSessionLoading && (
+                                        <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center rounded-xl">
+                                            <div className="w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                                        </div>
+                                    )}
+
+                                    {qrSession ? (
+                                        <div className="flex flex-col items-center">
+                                            <QRCode
+                                                value={qrSession.mobileUploadUrl}
+                                                size={180}
+                                                bgColor={"#FFFFFF"}
+                                                fgColor={"#1D4ED8"}
+                                                style={{ height: 180, maxWidth: "100%", width: "100%" }}
+                                            />
+
+                                            <div className="mt-3 flex flex-col items-center text-center max-w-[180px]">
+                                                <div className="flex flex-col items-center justify-center gap-2">
+                                                    <a
+                                                        href={qrSession.mobileUploadUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-sm text-blue-600 hover:underline truncate max-w-[120px]"
+                                                        title={qrSession.mobileUploadUrl}
+                                                    >
+                                                        {qrSession.mobileUploadUrl}
+                                                    </a>
+
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(qrSession.mobileUploadUrl);
+                                                            toast.success("Link copied to clipboard!", {
+                                                                position: "top-center",
+                                                                autoClose: 2000,
+                                                            });
+                                                        }}
+                                                        className="text-blue-500 hover:text-blue-700 text-xs font-medium px-2 py-1 border border-blue-100 rounded-md"
+                                                    >
+                                                        Copy Upload Link
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            className="w-full h-full flex items-center justify-center"
+                                            style={{ height: 180, width: 180 }}
+                                        >
+                                            <Smartphone className="w-16 h-16 text-gray-300" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
 

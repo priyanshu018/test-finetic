@@ -779,7 +779,7 @@ export default function BillWorkflow() {
     try {
       const allFiles = [...files];
 
-      /* ---------- bring mobile-captured files into the same array ---------- */
+      /* ---------- Process mobile-captured files (SINGLE LOOP) ---------- */
       for (const file of mobileFiles) {
         const res = await fetch(file.url);
         const blob = await res.blob();
@@ -798,29 +798,6 @@ export default function BillWorkflow() {
           }),
           isMobile: true,
         });
-      }
-
-
-      for (const file of mobileFiles) {
-        const res = await fetch(file.url);
-        const blob = await res.blob();
-        const dataUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(blob);
-        });
-
-        const fileObj = {
-          id: Math.random().toString(36).substr(2, 9),
-          name: file.key.split("/").pop(),
-          dataUrl, // for preview
-          file: new File([blob], file.key.split("/").pop(), {
-            type: blob.type,
-          }),
-          isMobile: true,
-        };
-
-        allFiles.push(fileObj);
       }
 
       setFiles(allFiles); // 👈 this enables preview
@@ -867,7 +844,7 @@ export default function BillWorkflow() {
           "December",
         ];
 
-        // today’s date (or swap in the bill’s real date if you have it here)
+        // today's date (or swap in the bill's real date if you have it here)
         const now = new Date();
         const monthKey = MONTHS[now.getMonth()]; // "May"
         const dayKey = String(now.getDate()); // "13"
@@ -902,7 +879,14 @@ export default function BillWorkflow() {
               (o: any) => o.imageUrl === url
             )
           ) {
-            store[company][year][month][day].push({ imageUrl: url, gst: allCurrentResultData.gstNumber, invoiceNo: allCurrentResultData.invoiceNumber, invoiceValue: allCurrentResultData.totalAmount, senderDetails: allCurrentResultData.receiverDetails, receiverDetails: allCurrentResultData.receiverDetails });
+            store[company][year][month][day].push({
+              imageUrl: url,
+              gst: allCurrentResultData.gstNumber,
+              invoiceNo: allCurrentResultData.invoiceNumber,
+              invoiceValue: allCurrentResultData.totalAmount,
+              senderDetails: allCurrentResultData.receiverDetails,
+              receiverDetails: allCurrentResultData.receiverDetails
+            });
           }
         });
 
@@ -919,7 +903,6 @@ export default function BillWorkflow() {
       setIsLoading(false);
     }
   };
-
   const handleDataChange = (field: string, value: any) => {
     const newData = [...billData];
     newData[currentBillIndex] = {
