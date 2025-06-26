@@ -901,7 +901,7 @@ const ExpenseClassifier = () => {
         setQRSessionLoading(true);
         try {
             const response = await fetch(
-                "https://finetic-ai-mobile.primedepthlabs.com/create-session",
+                "https://finetic-ai-mobile.primedepthlabs.com/create-bank-session",
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
