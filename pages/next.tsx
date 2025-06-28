@@ -19,10 +19,6 @@ export default function IndexPage() {
     setEmail(email);
   }, []);
 
-
-
-
-
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Subtle professional background pattern */}

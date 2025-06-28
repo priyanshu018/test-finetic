@@ -65,7 +65,7 @@ export const TallyConnectionOverlay = () => {
   useEffect(() => {
     fetchCompanies();
     // Check connection every 30 seconds
-    const interval = setInterval(fetchCompanies, 30000);
+    const interval = setInterval(fetchCompanies, 5000);
     return () => clearInterval(interval);
   }, []);
 
