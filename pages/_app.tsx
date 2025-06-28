@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import '../styles/globals.css'
@@ -7,8 +7,20 @@ import '../styles/globals.css'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import TallyConnectionOverlay from '../components/tallyConnected';
+import { supabase } from '../lib/supabase';
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const [user, setUser] = useState(null)
+  useEffect(() => {
+    supabase.auth.onAuthStateChange((e, session) => {
+      console.log(session?.user)
+      if (session?.user) {
+        setUser(session?.user);
+      } else {
+        setUser(null)
+      }
+    });
+  }, []);
   return (
     <>
       <Head>
@@ -16,11 +28,13 @@ function MyApp({ Component, pageProps }: AppProps) {
         {/* Tailwind CSS CDN */}
         <script src="https://cdn.tailwindcss.com"></script>
       </Head>
-      <TallyConnectionOverlay />
+      {Boolean(user) && (
+        <TallyConnectionOverlay />
+      )}
 
       <Component {...pageProps} />
       {/* The ToastContainer renders the toast notifications */}
-      <ToastContainer 
+      <ToastContainer
         position="top-right"
         autoClose={5000}
         hideProgressBar={false}
