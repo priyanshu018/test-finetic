@@ -6,14 +6,18 @@ import '../styles/globals.css'
 // Import Toastify CSS and ToastContainer component
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import TallyConnectionOverlay from '../components/tallyConnected';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
+
         {/* Tailwind CSS CDN */}
         <script src="https://cdn.tailwindcss.com"></script>
       </Head>
+      <TallyConnectionOverlay />
+
       <Component {...pageProps} />
       {/* The ToastContainer renders the toast notifications */}
       <ToastContainer 
