@@ -632,9 +632,7 @@ export default function BillWorkflow() {
   const [netAmountTotal, setNetAmountTotal] = useState<number>(0);
   const [gstTotals, setGstTotals] = useState<{ [key: string]: number }>({});
   const [companyList, setCompanyList] = useState([
-    "Prime Depth Labs",
-    "Test 1",
-    "Test 2",
+    "No Companies Avaialble please select a company in tally"
   ]);
   const [isWithinState, setIsWithinState] = useState(false);
   const [selectedCompanyName, setSelectedCompanyName] = useState("");
@@ -779,7 +777,7 @@ export default function BillWorkflow() {
     try {
       const allFiles = [...files];
 
-      /* ---------- bring mobile-captured files into the same array ---------- */
+      /* ---------- Process mobile-captured files (SINGLE LOOP) ---------- */
       for (const file of mobileFiles) {
         const res = await fetch(file.url);
         const blob = await res.blob();
@@ -798,29 +796,6 @@ export default function BillWorkflow() {
           }),
           isMobile: true,
         });
-      }
-
-
-      for (const file of mobileFiles) {
-        const res = await fetch(file.url);
-        const blob = await res.blob();
-        const dataUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(blob);
-        });
-
-        const fileObj = {
-          id: Math.random().toString(36).substr(2, 9),
-          name: file.key.split("/").pop(),
-          dataUrl, // for preview
-          file: new File([blob], file.key.split("/").pop(), {
-            type: blob.type,
-          }),
-          isMobile: true,
-        };
-
-        allFiles.push(fileObj);
       }
 
       setFiles(allFiles); // 👈 this enables preview
@@ -867,7 +842,7 @@ export default function BillWorkflow() {
           "December",
         ];
 
-        // today’s date (or swap in the bill’s real date if you have it here)
+        // today's date (or swap in the bill's real date if you have it here)
         const now = new Date();
         const monthKey = MONTHS[now.getMonth()]; // "May"
         const dayKey = String(now.getDate()); // "13"
@@ -902,7 +877,14 @@ export default function BillWorkflow() {
               (o: any) => o.imageUrl === url
             )
           ) {
-            store[company][year][month][day].push({ imageUrl: url, gst: allCurrentResultData.gstNumber, invoiceNo: allCurrentResultData.invoiceNumber, invoiceValue: allCurrentResultData.totalAmount, senderDetails: allCurrentResultData.receiverDetails, receiverDetails: allCurrentResultData.receiverDetails });
+            store[company][year][month][day].push({
+              imageUrl: url,
+              gst: allCurrentResultData.gstNumber,
+              invoiceNo: allCurrentResultData.invoiceNumber,
+              invoiceValue: allCurrentResultData.totalAmount,
+              senderDetails: allCurrentResultData.receiverDetails,
+              receiverDetails: allCurrentResultData.receiverDetails
+            });
           }
         });
 
@@ -919,7 +901,6 @@ export default function BillWorkflow() {
       setIsLoading(false);
     }
   };
-
   const handleDataChange = (field: string, value: any) => {
     const newData = [...billData];
     newData[currentBillIndex] = {
@@ -1537,8 +1518,13 @@ export default function BillWorkflow() {
   };
 
   useEffect(() => {
-    fetchCompanies();
-    fetchGstDetails();
+    const interval = setInterval(() => {
+      fetchCompanies();
+      fetchGstDetails();
+    }, 3000); // 2000ms = 2 seconds
+
+    // Clean up the interval when selectedCompanyName changes or component unmounts
+    return () => clearInterval(interval);
   }, [selectedCompanyName]);
 
   useEffect(() => {
@@ -1622,7 +1608,6 @@ export default function BillWorkflow() {
   }, [billData, currentBillIndex]);
 
   const fetchCompanies = async () => {
-    setIsLoading(true);
 
     const xmlData = `<ENVELOPE>
       <HEADER>
@@ -1803,7 +1788,7 @@ export default function BillWorkflow() {
               <span className="font-medium">Back</span>
             </button>
             <h1 className="text-2xl font-bold text-gray-800 ml-6">
-              Bill Management System
+              Purchase Bill Workflow
             </h1>
           </div>
         </header>
@@ -1951,24 +1936,7 @@ export default function BillWorkflow() {
             )}
 
             {/* --- GST Number Field --- */}
-            <div className="mb-6 px-8 text-black">
-              <div>
-                <label
-                  htmlFor="gstNumber"
-                  className="block text-sm font-medium text-black"
-                >
-                  GST Number
-                </label>
-                <input
-                  type="text"
-                  id="gstNumber"
-                  value={gstNumber}
-                  onChange={(e) => setGstNumber(e.target.value)}
-                  placeholder="Enter GST Number"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-            </div>
+
 
             <div className="flex justify-end my-6 px-4">
               <button
@@ -2042,13 +2010,34 @@ export default function BillWorkflow() {
                   <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors duration-200 group-hover:scale-110 transform">
                     <Upload className="w-8 h-8 text-blue-600" />
                   </div>
+
+                  {/* Show mobile upload status if files are being uploaded */}
+                  {mobileFiles.length > 0 && (
+                    <div className="mb-4 w-full max-w-md mx-auto">
+                      <div className="text-sm text-gray-600 mb-2">
+                        Uploading {mobileFiles.length} file{mobileFiles.length > 1 ? 's' : ''} from mobile...
+                      </div>
+                      <div className="space-y-2">
+                        {mobileFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                            <span className="text-sm text-gray-700 truncate max-w-[180px]">
+                              {file.key.split('/').pop()}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              Uploading...
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-3">
                     <h3 className="text-2xl md:text-3xl font-bold text-gray-800 group-hover:text-blue-700 transition-colors">
-                      Drag & Drop Bills
+                      {mobileFiles.length > 0 ? 'Add More Files' : 'Drag & Drop Bills'}
                     </h3>
                     <p className="text-gray-500 max-w-md mx-auto">
-                      Supported formats: JPG, PDF (Max {MAX_FILE_SIZE_MB}MB
-                      each)
+                      Supported formats: JPG, PDF (Max {MAX_FILE_SIZE_MB}MB each)
                     </p>
                     <button className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all mx-auto">
                       <span>Browse Files</span>
@@ -2090,6 +2079,12 @@ export default function BillWorkflow() {
                           <CheckCircle className="w-4 h-4 mr-1" />
                           Mobile session active
                         </div>
+                        {mobileFiles.length > 0 && (
+                          <div className="flex items-center text-sm text-blue-600">
+                            <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                            Receiving {mobileFiles.length} file{mobileFiles.length > 1 ? 's' : ''}
+                          </div>
+                        )}
                         {receivedFiles > 0 && (
                           <div className="w-full text-sm text-blue-600">
                             {receivedFiles}{" "}
@@ -2123,13 +2118,42 @@ export default function BillWorkflow() {
                   )}
 
                   {qrSession ? (
-                    <QRCode
-                      value={qrSession.mobileUploadUrl}
-                      size={180}
-                      bgColor={"#FFFFFF"}
-                      fgColor={"#1D4ED8"}
-                      style={{ height: 180, maxWidth: "100%", width: "100%" }}
-                    />
+                    <div className="flex flex-col items-center">
+                      <QRCode
+                        value={qrSession.mobileUploadUrl}
+                        size={180}
+                        bgColor={"#FFFFFF"}
+                        fgColor={"#1D4ED8"}
+                        style={{ height: 180, maxWidth: "100%", width: "100%" }}
+                      />
+
+                      <div className="mt-3 flex flex-col items-center text-center max-w-[180px]">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <a
+                            href={qrSession.mobileUploadUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:underline truncate max-w-[120px]"
+                            title={qrSession.mobileUploadUrl}
+                          >
+                            {qrSession.mobileUploadUrl}
+                          </a>
+
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(qrSession.mobileUploadUrl);
+                              toast.success("Link copied to clipboard!", {
+                                position: "top-center",
+                                autoClose: 2000,
+                              });
+                            }}
+                            className="text-blue-500 hover:text-blue-700 text-xs font-medium px-2 py-1 border border-blue-100 rounded-md"
+                          >
+                            Copy Upload Link
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ) : (
                     <div
                       className="w-full h-full flex items-center justify-center"
@@ -2257,7 +2281,7 @@ export default function BillWorkflow() {
               </div>
             )}
 
-            <div className="flex justify-end pt-6">
+            <div className="flex fixed bottom-0 left-0 w-screen bg-white justify-end p-4">
               <button
                 onClick={handleNextStep}
                 disabled={files.length === 0 && mobileFiles.length === 0}

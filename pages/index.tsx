@@ -36,10 +36,6 @@ export default function HeroSection({ setIsAuth }) {
     }
 
     switch (currentPage) {
-      case "bill-management":
-        return <BillManagement onBack={() => handleNavigation("home")} />;
-      case "ai-bill":
-        return <AiBill onBack={() => handleNavigation("home")} />;
       case "next":
         return <Next onBack={() => handleNavigation("home")} />;
       default:
