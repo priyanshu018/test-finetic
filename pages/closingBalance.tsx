@@ -73,10 +73,31 @@ export const ClosingBalanceOverlay = () => {
     };
 
     const fetchClosingBalance = async () => {
-        const response = fetchProfitAndLossReport()
-        setXmlData(response)
-        parseXmlData(response)
-    }
+        setIsLoading(true);
+        try {
+            const accounts = await fetchProfitAndLossReport(); // already returns [{ name, amount }]
+            setAccountDetails(accounts);
+
+            const closingStockItem = accounts.find(item =>
+                item.name.toLowerCase().includes('closing stock')
+            );
+
+            if (closingStockItem && closingStockItem.amount) {
+                setClosingBalance(Math.abs(parseFloat(closingStockItem.amount)).toFixed(2));
+                setHasData(true);
+            } else {
+                setClosingBalance(null);
+                setHasData(false);
+            }
+        } catch (err) {
+            console.error('Error fetching closing balance:', err);
+            setHasData(false);
+            setClosingBalance(null);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
 
     useEffect(() => {
         fetchClosingBalance()
@@ -102,8 +123,9 @@ export const ClosingBalanceOverlay = () => {
     };
 
     const handleRefresh = () => {
-        parseXmlData(xmlData);
+        fetchClosingBalance();
     };
+
 
     return (
         <>

@@ -667,7 +667,6 @@ export async function startTransactionProcessing(transactions, tallyInfo = [{}],
     throw error;
   }
 }
-
 export async function fetchProfitAndLossReport(companyName = "PrimeDepth Labs") {
   const xmlPayload = `
 <ENVELOPE>
@@ -683,39 +682,36 @@ export async function fetchProfitAndLossReport(companyName = "PrimeDepth Labs") 
           <SVCURRENTCOMPANY>${companyName}</SVCURRENTCOMPANY>
         </STATICVARIABLES>
       </REQUESTDESC>
-      <REQUESTDATA>
-        <TALLYMESSAGE>
-          <GROUP>
-            <NAME>Profit &amp; Loss A/c</NAME>
-            <ISOPENING>Yes</ISOPENING>
-            <ISCLOSING>Yes</ISCLOSING>
-          </GROUP>
-        </TALLYMESSAGE>
-      </REQUESTDATA>
     </EXPORTDATA>
   </BODY>
 </ENVELOPE>`;
 
   try {
-    const response = await postXml(xmlPayload);
-    console.log(response)
-
-    const xmlText = await response
+    const response = await postXml(xmlPayload); // raw XML text from Tally
 
     const parser = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: "",
     });
 
-    const parsed = parser.parse(xmlText);
+    const parsed = parser.parse(response);
 
-    // Access your report data here
-    const profitAndLossData = parsed?.ENVELOPE?.BODY?.DATA;
+    const dspNames = parsed?.ENVELOPE?.DSPACCNAME || [];
+    const plAmts = parsed?.ENVELOPE?.PLAMT || [];
 
-    return profitAndLossData || {};
+    // Ensure both are arrays (Tally might send a single object if only one entry)
+    const accounts = Array.isArray(dspNames) ? dspNames : [dspNames];
+    const amounts = Array.isArray(plAmts) ? plAmts : [plAmts];
+
+    // Pair up name and amount
+    const result = accounts.map((acc, index) => ({
+      name: acc?.DSPDISPNAME || '',
+      amount: amounts[index]?.PLSUBAMT || '',
+    }));
+
+    return result; // Final structured array
   } catch (error) {
     console.error("Failed to fetch Profit and Loss report:", error);
-    return {};
+    return [];
   }
 }
-
