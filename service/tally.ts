@@ -15,7 +15,7 @@ import {
 /**
  * Generic helper to POST XML to Tally HTTP interface and return raw XML response.
  */
-async function postXml(xmlData: string): Promise<string> {
+export async function postXml(xmlData: string): Promise<string> {
   return await apiRequest('', 'POST', xmlData, {}, 'application/xml', 'text');
 }
 

@@ -4,6 +4,7 @@
 
 import { v4 as uuidv4 } from "uuid";
 import { XMLParser } from 'fast-xml-parser';
+import { postXml } from "../../tally";
 
 export function extractBankHolderDetails(bankDataArray: any): {
   holder_name: string;
@@ -696,15 +697,10 @@ export async function fetchProfitAndLossReport(companyName = "PrimeDepth Labs") 
 </ENVELOPE>`;
 
   try {
-    const response = await fetch("http://localhost:8080/http://localhost:9000", {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/xml",
-      },
-      body: xmlPayload,
-    });
+    const response = await postXml(xmlPayload);
+    console.log(response)
 
-    const xmlText = await response.text();
+    const xmlText = await response
 
     const parser = new XMLParser({
       ignoreAttributes: false,

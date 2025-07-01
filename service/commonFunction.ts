@@ -94,37 +94,6 @@ export function createUnits(units: Unit[]): string {
 </ENVELOPE>`;
 }
 
-/** Generates XML for creating multiple stock items. */
-// export function createStockItems(items: StockItem[]): string {
-//   const messages = items.map((it, i) => {
-//     const guid = `bf911d27-633e-4ad7-ba7c-a871d6f9461e-${(269 + i)
-//       .toString()
-//       .padStart(8, '0')}`;
-//     const alterID = 1011 + i;
-//     return `<TALLYMESSAGE xmlns:UDF="TallyUDF">
-//   <STOCKITEM NAME="${it.Product}" RESERVEDNAME="">
-//     <GUID>${guid}</GUID>
-    
-//     <ALTERID>${alterID}</ALTERID>
-//     <BASEUNITS>${it.symbol}</BASEUNITS>
-//   </STOCKITEM>
-// </TALLYMESSAGE>`;
-//   });
-//   return `<ENVELOPE>
-//   <HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>
-//   <BODY>
-//     <IMPORTDATA>
-//       <REQUESTDESC><REPORTNAME>All Masters</REPORTNAME></REQUESTDESC>
-//       <REQUESTDATA>
-//         ${messages.join('\n')}
-//       </REQUESTDATA>
-//     </IMPORTDATA>
-//   </BODY>
-// </ENVELOPE>`;
-// }
-
-
-
 export function createStockItems(items: unknown): string {
   // Validate that the input is an array.
   if (!Array.isArray(items)) {
@@ -327,58 +296,7 @@ export function createStockItems(items: unknown): string {
   return xmlOutput;
 }
 
-/** Generates XML for creating a purchase voucher. */
-// export function createVoucher(payload: VoucherPayload): string {
-//   const remoteId = uuidv4();
-//   const vchKey = `${uuidv4()}:00001`;
-//   const itemsXml = payload.items
-//     .map(
-//       (it) => `<ALLINVENTORYENTRIES.LIST>
-//   <STOCKITEMNAME>${it.name}</STOCKITEMNAME>
-//   <RATE>${it.price}</RATE>
-//   <AMOUNT>-${it.price * it.quantity}</AMOUNT>
-//   <ACTUALQTY>${it.quantity} ${it.unit}</ACTUALQTY>
-// </ALLINVENTORYENTRIES.LIST>`
-//     )
-//     .join('');
-//   return `<ENVELOPE>
-//   <HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>
-//   <BODY>
-//     <IMPORTDATA>
-//       <REQUESTDESC><REPORTNAME>All Masters</REPORTNAME></REQUESTDESC>
-//       <REQUESTDATA>
-//         <TALLYMESSAGE xmlns:UDF="TallyUDF">
-//           <VOUCHER REMOTEID="${remoteId}" VCHKEY="${vchKey}" VCHTYPE="Purchase" ACTION="Create">
-//             <DATE>${payload.invoiceDate}</DATE>
-//             <PARTYLEDGERNAME>${payload.partyName}</PARTYLEDGERNAME>
-//             <VOUCHERNUMBER>${payload.invoiceNumber}</VOUCHERNUMBER>
-//             ${itemsXml}
-//           </VOUCHER>
-//         </TALLYMESSAGE>
-//       </REQUESTDATA>
-//     </IMPORTDATA>
-//   </BODY>
-// </ENVELOPE>`;
-// }
-
-
 export function createVoucher(payload) {
-  // Calculate item totals and tax amounts
-  // let totalAmount = 0;
-
-  // payload.items.forEach(item => {
-  //   let itemTotal = (item.price * item.quantity).toFixed(2);
-  //   totalAmount += itemTotal;
-
-  // //  if (payload.isWithinState) {
-  // //    totalAmount += itemTotal + payload.sgst.amount + payload.cgst.amount;
-  // //   } else {
-
-  // //     totalAmount += itemTotal + payload.igst.amount;
-  // //   }
-  // });
-  // console.log(totalAmount,"smdfkldsmkfmkdsmk")
-
 
   let totalAmount: number = 0; // Initialize totalAmount to 0
 
@@ -590,4 +508,23 @@ export async function getLedgerNames(xmlData: string): Promise<string[]> {
     ? collection?.LEDGER
     : [collection?.LEDGER];
   return ledgers?.map((lg: any) => lg?.$?.NAME);
+}
+
+export async function getStockItemNames(xmlData: string): Promise<string[]> {
+  const result: any = await parseStringPromise(xmlData, { explicitArray: false });
+
+  const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
+  if (!collection) {
+    throw new Error('Cannot find COLLECTION element');
+  }
+
+  const stockItems = collection?.STOCKITEM;
+
+  const stockArray = Array.isArray(stockItems) ? stockItems : [stockItems];
+
+  const names = stockArray
+    .filter((item) => item?.$?.NAME)
+    .map((item) => item.$.NAME);
+
+  return names;
 }

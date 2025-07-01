@@ -40,6 +40,7 @@ import QRCode from 'react-qr-code';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import ClosingBalanceOverlay from './closingBalance';
+import CompactItemListContainer from './ledgerList';
 
 const ExpenseClassifier = () => {
     // State management
@@ -1856,41 +1857,6 @@ const ExpenseClassifier = () => {
                                 </div>
                             </div>
 
-                            {/* {uploadedFiles.length > 0 && (
-                                <div className="mt-8 text-left">
-                                    <h4 className="font-medium text-gray-900 mb-4 text-center">
-                                        📁 Uploaded Files ({uploadedFiles.length})
-                                    </h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {uploadedFiles.map((file, index) => (
-                                            <div
-                                                key={index}
-                                                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
-                                            >
-                                                <div className="flex items-center">
-                                                    <span className="text-lg mr-3">📄</span>
-                                                    <div>
-                                                        <p className="text-sm font-medium text-gray-900 truncate max-w-48">
-                                                            {file.name}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500">
-                                                            {(file.size / 1024 / 1024).toFixed(1)} MB
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => setUploadedFiles(files => files.filter((_, i) => i !== index))}
-                                                    className="text-red-500 hover:text-red-700 p-1"
-                                                    title="Remove file"
-                                                >
-                                                    ✕
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )} */}
-
                             {uploadedFiles.length > 0 || mobileFiles.length > 0 ? (
                                 <div className="mt-8 text-left">
                                     <h4 className="font-medium text-gray-900 mb-4 text-center">
@@ -2165,6 +2131,9 @@ const ExpenseClassifier = () => {
                                 </button>
                             </div>
                         </div>
+
+                        <CompactItemListContainer />
+
 
                         {/* Summary Cards */}
                         <div className="bg-white rounded-xl shadow-sm p-6">
