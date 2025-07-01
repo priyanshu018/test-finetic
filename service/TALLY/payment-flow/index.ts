@@ -227,61 +227,6 @@ export async function generateAccountLedgerXML({
   }
 }
 
-// export async function extractLedgerCategories(transactions, options = {}) {
-//     const classificationMap = {
-//         "Trading Variable (Direct Business)": "Direct Expenses",
-//         "Trading Variable (Indirect Business)": "Indirect Expenses",
-//         "Non-Trading Variable (Indirect Business)": "Indirect Expenses",
-//     };
-
-//     const ledgerMap = new Map();
-
-//     for (const txn of transactions) {
-//         if (!txn.category || !txn.classification) continue;
-
-//         const originalCategory = txn.category.trim();
-//         const classification = txn.classification.trim();
-//         const parent = classificationMap[classification];
-
-//         if (!parent) continue;
-
-//         // Check if the category already ends with (Direct) or (Indirect)
-//         const alreadyTagged = /\((Direct|Indirect)\)$/.test(originalCategory);
-//         const tag = parent.includes("Direct") ? "Direct" : "Indirect";
-
-//         const ledgerName = alreadyTagged
-//             ? originalCategory
-//             : `${originalCategory} (${tag})`;
-
-//         const key = `${ledgerName}|||${parent}`;
-//         if (!ledgerMap.has(key)) {
-//             ledgerMap.set(key, {
-//                 ledgerName,
-//                 type: parent,
-//             });
-//         }
-//     }
-
-//     const existingLedgers = await fetchLedgerList(options.companyName || "PrimeDepth Labs");
-
-//     const existingLedgerKeys = new Set(
-//         existingLedgers.map(l => `${l.name.trim()}|||${l.parent?.trim() || ""}`)
-//     );
-
-//     const newLedgers = [];
-
-//     for (const [key, ledger] of ledgerMap) {
-//         if (!existingLedgerKeys.has(key)) {
-//             newLedgers.push(ledger);
-//         }
-//     }
-
-//     return {
-//         newLedgers,
-//         xml: newLedgers.length > 0 ? generateTallyLedgerXML(newLedgers) : null,
-//     };
-// }
-
 
 export async function extractLedgerCategories(transactions, options = {}) {
   const classificationMap = {
@@ -369,9 +314,6 @@ export async function extractLedgerCategories(transactions, options = {}) {
     xml: [businessXML, ...cashXMLs].filter(Boolean).join("\n")
   };
 }
-
-
-
 
 export function generateContraVoucherXMLFromTransactions(transactions, accountDetails = [{}], options = {}) {
   const {
@@ -598,65 +540,6 @@ ${voucherBlocks}
 </ENVELOPE>`.trim();
 }
 
-// export async function processTransactions(transactions, tallyInfo = [{}], accountDetails = [{}]) {
-//     // 🧠 Step 1: Extract metadata
-//     const {
-//         companyName = "PrimeDepth Labs",
-//         date = "20250401",
-//         voucherType = "Payment",
-//         narrationPrefix = ""
-//     } = tallyInfo[0] || {};
-
-//     const { holder_name = "" } = accountDetails[0] || {};
-
-//     // 🧠 Step 2: Enrich each transaction with (Direct)/(Indirect) category
-//     const formattedTransactions = transactions.map(txn => {
-//         const classification = txn.classification?.toLowerCase() || "";
-
-//         let categoryType = "Indirect";
-//         if (classification.includes("direct") && !classification.includes("indirect")) {
-//             categoryType = "Direct";
-//         }
-
-//         return {
-//             account: accountDetails[0]?.holder_name || "Unknown",
-//             category: `${txn.category?.trim()} (${categoryType})`,
-//             amount: txn.amount,
-//             narration: `${tallyInfo[0]?.narrationPrefix || ""} Payment for ${txn.category?.trim()}`
-//         };
-//     });
-
-
-//     // 📋 Step 3: Extract and create missing ledgers
-//     const { newLedgers } = await extractLedgerCategories(formattedTransactions, { companyName });
-
-//     if (newLedgers.length > 0) {
-//         console.log("📥 Creating missing ledgers...");
-//         await generateTallyLedgerXML(newLedgers);
-//     }
-
-//     // ⏳ Step 4: Wait for ledger sync
-//     await new Promise(res => setTimeout(res, 1000));
-
-//     // 🧾 Step 5: Generate voucher XML
-//     const voucherXML = generatePaymentVoucherXMLFromPayload(
-//         formattedTransactions,
-//         { companyName, date, voucherType, narrationPrefix },
-//         accountDetails
-//     );
-
-//     // 🚀 Step 6: Send to Tally
-//     const res = await fetch("http://localhost:8080/http://localhost:9000", {
-//         method: "POST",
-//         headers: { "Content-Type": "text/xml" },
-//         body: voucherXML
-//     });
-
-//     const result = await res.text();
-//     console.log("✅ Voucher Result:", result);
-// }
-
-
 export async function processTransactions(transactions, tallyInfo = [{}], accountDetails = [{}]) {
   // 🧠 Step 1: Extract metadata
   const {
@@ -783,3 +666,60 @@ export async function startTransactionProcessing(transactions, tallyInfo = [{}],
     throw error;
   }
 }
+
+export async function fetchProfitAndLossReport(companyName = "PrimeDepth Labs") {
+  const xmlPayload = `
+<ENVELOPE>
+  <HEADER>
+    <TALLYREQUEST>Export Data</TALLYREQUEST>
+  </HEADER>
+  <BODY>
+    <EXPORTDATA>
+      <REQUESTDESC>
+        <REPORTNAME>Profit and Loss</REPORTNAME>
+        <STATICVARIABLES>
+          <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+          <SVCURRENTCOMPANY>${companyName}</SVCURRENTCOMPANY>
+        </STATICVARIABLES>
+      </REQUESTDESC>
+      <REQUESTDATA>
+        <TALLYMESSAGE>
+          <GROUP>
+            <NAME>Profit &amp; Loss A/c</NAME>
+            <ISOPENING>Yes</ISOPENING>
+            <ISCLOSING>Yes</ISCLOSING>
+          </GROUP>
+        </TALLYMESSAGE>
+      </REQUESTDATA>
+    </EXPORTDATA>
+  </BODY>
+</ENVELOPE>`;
+
+  try {
+    const response = await fetch("http://localhost:8080/http://localhost:9000", {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/xml",
+      },
+      body: xmlPayload,
+    });
+
+    const xmlText = await response.text();
+
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: "",
+    });
+
+    const parsed = parser.parse(xmlText);
+
+    // Access your report data here
+    const profitAndLossData = parsed?.ENVELOPE?.BODY?.DATA;
+
+    return profitAndLossData || {};
+  } catch (error) {
+    console.error("Failed to fetch Profit and Loss report:", error);
+    return {};
+  }
+}
+

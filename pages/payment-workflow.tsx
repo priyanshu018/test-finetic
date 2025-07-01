@@ -39,6 +39,7 @@ import { extractBankHolderDetails, extractLedgerCategories, generateContraVouche
 import QRCode from 'react-qr-code';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import ClosingBalanceOverlay from './closingBalance';
 
 const ExpenseClassifier = () => {
     // State management
@@ -1779,7 +1780,7 @@ const ExpenseClassifier = () => {
                                 Upload PDF or Excel bank statements for {businessSubcategory} analysis
                             </p>
                         </div>
-
+                        <ClosingBalanceOverlay />
                         {/* Business Context Summary */}
                         <div className={`bg-gradient-to-r ${businessCategories.find(c => c.value === businessCategory)?.bgGradient} ${businessCategories.find(c => c.value === businessCategory)?.borderColor} border rounded-lg p-6 mb-8`}>
                             <div className="flex items-center justify-center mb-4">
