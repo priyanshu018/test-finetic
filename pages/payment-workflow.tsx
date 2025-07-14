@@ -1192,7 +1192,7 @@ const ExpenseClassifier = () => {
 
             const progressInterval = setInterval(() => {
                 setProcessingProgress(prev => Math.min(prev + 10, 90));
-            }, 500);
+            }, 3000);
 
             console.log('🚀 Sending request to backend...');
             const response = await fetch(`${BackendLink}/paymentflow/process`, {
@@ -2094,9 +2094,6 @@ const ExpenseClassifier = () => {
                                                         <p className="text-sm font-medium text-gray-900 truncate max-w-48">
                                                             {file.name}
                                                         </p>
-                                                        <p className="text-xs text-gray-500">
-                                                            {(file.size / 1024 / 1024).toFixed(1)} MB
-                                                        </p>
                                                     </div>
                                                 </div>
                                                 <button
@@ -2177,6 +2174,36 @@ const ExpenseClassifier = () => {
                                 </button>
                             </div>
                         )}
+
+{processing && (
+                    <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+                        <div className="relative w-24 h-24 mx-auto mb-6">
+                            <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
+                            <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                {businessCategories.find(c => c.value === businessCategory)?.icon}
+                            </div>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                            Processing {businessSubcategory} Statements
+                        </h2>
+                        <p className="text-gray-600 mb-6">
+                            DeepSeek AI is analyzing your bank statements (PDF/Excel) with {businessSubcategory} business context...
+                        </p>
+                        <div className="max-w-md mx-auto">
+                            <div className="flex justify-between text-sm text-gray-600 mb-2">
+                                <span>Progress</span>
+                                <span>{processingProgress}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-3">
+                                <div
+                                    className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                                    style={{ width: `${processingProgress}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                         {/* Mobile Upload Section */}
                         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
@@ -2279,35 +2306,7 @@ const ExpenseClassifier = () => {
                 )}
 
                 {/* Processing State */}
-                {processing && (
-                    <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-                        <div className="relative w-24 h-24 mx-auto mb-6">
-                            <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
-                            <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                {businessCategories.find(c => c.value === businessCategory)?.icon}
-                            </div>
-                        </div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                            Processing {businessSubcategory} Statements
-                        </h2>
-                        <p className="text-gray-600 mb-6">
-                            DeepSeek AI is analyzing your bank statements (PDF/Excel) with {businessSubcategory} business context...
-                        </p>
-                        <div className="max-w-md mx-auto">
-                            <div className="flex justify-between text-sm text-gray-600 mb-2">
-                                <span>Progress</span>
-                                <span>{processingProgress}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-3">
-                                <div
-                                    className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
-                                    style={{ width: `${processingProgress}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+              
 
                 {/* Step 4: Enhanced Results with Date/Month Filter */}
                 {currentStep === 4 && results && summary && (
