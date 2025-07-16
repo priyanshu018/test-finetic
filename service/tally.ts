@@ -108,6 +108,52 @@ export async function getCompanyData(xmlData: string) {
   return { success: true, data: names };
 }
 
+export async function getCurrentCompanyData() {
+  const xmlData = `<ENVELOPE>
+    <HEADER>
+      <VERSION>1</VERSION>
+      <TALLYREQUEST>Export</TALLYREQUEST>
+      <TYPE>Collection</TYPE>
+      <ID>CompanyInfo</ID>
+    </HEADER>
+    <BODY>
+      <DESC>
+        <TDL>
+          <TDLMESSAGE>
+            <!-- Define an object that holds the current company name -->
+            <OBJECT NAME="CurrentCompany">
+              <LOCALFORMULA>CurrentCompany: ##SVCURRENTCOMPANY</LOCALFORMULA>
+            </OBJECT>
+            <!-- Collection that uses the above object -->
+            <COLLECTION NAME="CompanyInfo">
+              <OBJECTS>CurrentCompany</OBJECTS>
+            </COLLECTION>
+          </TDLMESSAGE>
+        </TDL>
+      </DESC>
+    </BODY>
+  </ENVELOPE>
+  `
+
+  try {
+    const data = await postXml(xmlData);
+    const res: any = await parseStringPromise(data, { explicitArray: false });
+
+    const raw = res?.ENVELOPE?.BODY?.DATA?.COLLECTION?.CURRENTCOMPANY?.CURRENTCOMPANY;
+    const name = typeof raw === "object" ? raw._ : raw;
+
+    if (name) {
+      return { success: true, data: name };
+    } else {
+      return { success: false, error: "Active company name not found." };
+    }
+  } catch (error) {
+    return { success: false, error };
+  }
+}
+
+
+
 /**
  * Fetch GST-ledger entries via Tally HTTP.
  */
@@ -228,7 +274,7 @@ export async function createItem(items: StockItem[]) {
   console.log(missing)
   if (missing.length) {
     const xml = xmlCreateStockItems(missing);
- console.log(xml,"xml")
+    console.log(xml, "xml")
     const resp = await postXml(xml);
     const parsed = parseResponse(resp);
     return { success: parsed.created === missing.length, data: items };

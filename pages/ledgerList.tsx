@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, List, X, Package, Receipt, RefreshCw, Loader } from 'lucide-react';
-import { getGSTData, postXml } from '../service/tally';
+import { getCurrentCompanyData, getGSTData, postXml } from '../service/tally';
 import { getLedgerNames, getStockItemNames } from '../service/commonFunction';
 
 const ItemList = ({ ledgerData, stockData, showType, isLoading }) => {
@@ -84,6 +84,7 @@ const CompactItemListContainer = () => {
     const [stockData, setStockData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [hasInitialLoad, setHasInitialLoad] = useState(false);
+    const [currentCompany, setCurrentCompany] = useState(null)
 
     const toggleItemList = () => {
         setShowItemList(!showItemList);
@@ -92,6 +93,23 @@ const CompactItemListContainer = () => {
     const toggleItemType = () => {
         setItemType(itemType === 'ledger' ? 'stock' : 'ledger');
     };
+
+
+    const fetchCurrentComapny = async () => {
+        const response = await getCurrentCompanyData()
+        setCurrentCompany(response.data)
+    }
+
+    useEffect(() => {
+
+        fetchCurrentComapny()
+        // Check connection every 30 seconds
+        const interval = setInterval(() => {
+
+            fetchCurrentComapny();
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     const fetchGstDetails = async () => {
         const xmlData = `<ENVELOPE>
@@ -105,7 +123,7 @@ const CompactItemListContainer = () => {
 		<DESC>
 			<STATICVARIABLES>
 				<SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
-				<SVCURRENTCOMPANY>PrimeDepth Labs</SVCURRENTCOMPANY>
+				<SVCURRENTCOMPANY>${currentCompany}</SVCURRENTCOMPANY>
 			</STATICVARIABLES>
 			<TDL>
 				<TDLMESSAGE>
@@ -299,7 +317,7 @@ const CompactItemListContainer = () => {
                 )}
             </div>
 
-          
+
         </div>
     );
 };
