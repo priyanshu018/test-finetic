@@ -556,6 +556,8 @@ export async function getStockItemNames() {
 }
 
 
+
+
 export async function getStockItemFullData() {
   const Data = `<ENVELOPE>
   <HEADER>
@@ -583,8 +585,8 @@ export async function getStockItemFullData() {
   // Parse the XML response
   const result: any = await parseStringPromise(xmlData, { explicitArray: false });
 
-  // Log the result for debugging
-  console.log("Full Parsed Response: ", JSON.stringify(result, null, 2));
+  // Log the result for debugging (optional)
+  console.log(JSON.stringify(result, null, 2));
 
   // Extract the elements correctly
   const gstNames = result?.ENVELOPE?.GSTRATENAMEWITHCOUNT || [];
@@ -599,6 +601,8 @@ export async function getStockItemFullData() {
   // Loop through the arrays to ensure we're capturing all data properly
   for (let i = 0; i < itemNames.length; i++) {
     const itemName = itemNames[i] || 'Unnamed Item';
+
+    // Use let so we can reassign gstRate
     let gstRate = gstRates[i] || '0 %';
     const hsnCode = hsnCodes[i] || '0';
     const gstApplyDate = gstApplyDates[i] || 'Not Available';
@@ -613,9 +617,6 @@ export async function getStockItemFullData() {
       gstRate = '0 %';
     }
 
-    // Log each item data to verify
-    console.log(`Item ${i}:`, { itemName, gstRate, hsnCode, gstName, gstApplyDate });
-
     items.push({
       itemName,
       gstName,
@@ -627,3 +628,4 @@ export async function getStockItemFullData() {
 
   return items;
 }
+
