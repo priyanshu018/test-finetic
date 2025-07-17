@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { v4 as uuidv4 } from 'uuid';
 import { parseStringPromise } from 'xml2js';
+import { postXml } from './tally';
 
 /** Unit interface */
 export interface Unit {
@@ -510,7 +511,32 @@ export async function getLedgerNames(xmlData: string): Promise<string[]> {
   return ledgers?.map((lg: any) => lg?.$?.NAME);
 }
 
-export async function getStockItemNames(xmlData: string): Promise<string[]> {
+export async function getStockItemNames() {
+  const Data = `<ENVELOPE>
+    <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>Custom List of StockItems</ID>
+    </HEADER>
+    <BODY>
+        <DESC>
+            <STATICVARIABLES />
+            <TDL>
+                <TDLMESSAGE>
+                    <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="Custom List of StockItems">
+                        <TYPE>StockItem</TYPE>
+                        <NATIVEMETHOD>MasterID</NATIVEMETHOD>
+                        <NATIVEMETHOD>GUID</NATIVEMETHOD>
+                    </COLLECTION>
+                </TDLMESSAGE>
+            </TDL>
+        </DESC>
+    </BODY>
+</ENVELOPE>`;
+
+  const xmlData = await postXml(Data);
+
   const result: any = await parseStringPromise(xmlData, { explicitArray: false });
 
   const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
@@ -527,4 +553,77 @@ export async function getStockItemNames(xmlData: string): Promise<string[]> {
     .map((item) => item.$.NAME);
 
   return names;
+}
+
+
+export async function getStockItemFullData() {
+  const Data = `<ENVELOPE>
+  <HEADER>
+    <VERSION>1</VERSION>
+    <TALLYREQUEST>Export</TALLYREQUEST>
+    <TYPE>Data</TYPE>
+    <ID>GST Rate Setup</ID>
+  </HEADER>
+  <BODY>
+    <DESC>
+      <STATICVARIABLES>
+        <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+      </STATICVARIABLES>
+      <FETCHLIST>
+        <FETCH>*</FETCH>
+      </FETCHLIST>
+    </DESC>
+  </BODY>
+</ENVELOPE>
+`;
+
+  // Send the XML data to Tally and get the response
+  const xmlData = await postXml(Data);
+
+  // Parse the XML response
+  const result: any = await parseStringPromise(xmlData, { explicitArray: false });
+
+  // Log the result for debugging
+  console.log("Full Parsed Response: ", JSON.stringify(result, null, 2));
+
+  // Extract the elements correctly
+  const gstNames = result?.ENVELOPE?.GSTRATENAMEWITHCOUNT || [];
+  const itemNames = result?.ENVELOPE?.GSTMASTERDISPNAME || [];
+  const gstRates = result?.ENVELOPE?.GSTRATEIGSTRATE || [];
+  const hsnCodes = result?.ENVELOPE?.HSNSACCODE || [];
+  const gstApplyDates = result?.ENVELOPE?.GSTRATEAPPLFROM || [];
+
+  // Ensure proper item matching by mapping through the items
+  const items = [];
+
+  // Loop through the arrays to ensure we're capturing all data properly
+  for (let i = 0; i < itemNames.length; i++) {
+    const itemName = itemNames[i] || 'Unnamed Item';
+    let gstRate = gstRates[i] || '0 %';
+    const hsnCode = hsnCodes[i] || '0';
+    const gstApplyDate = gstApplyDates[i] || 'Not Available';
+
+    // Handling GST Names
+    const gstName = gstNames[i]?.GSTRATENAME || 'No GST Name';
+
+    // Fixing GST Rate based on GSTRATENAME
+    if (gstName === 'GST Rate-15%') {
+      gstRate = '15 %';
+    } else if (gstName === 'GST Rate-0%') {
+      gstRate = '0 %';
+    }
+
+    // Log each item data to verify
+    console.log(`Item ${i}:`, { itemName, gstRate, hsnCode, gstName, gstApplyDate });
+
+    items.push({
+      itemName,
+      gstName,
+      gstRate,
+      hsnCode,
+      gstApplyDate
+    });
+  }
+
+  return items;
 }

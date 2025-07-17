@@ -152,32 +152,9 @@ const CompactItemListContainer = () => {
 
 
     const fetchStockItem = async () => {
-        const xmlData = `<ENVELOPE>
-    <HEADER>
-        <VERSION>1</VERSION>
-        <TALLYREQUEST>Export</TALLYREQUEST>
-        <TYPE>Collection</TYPE>
-        <ID>Custom List of StockItems</ID>
-    </HEADER>
-    <BODY>
-        <DESC>
-            <STATICVARIABLES />
-            <TDL>
-                <TDLMESSAGE>
-                    <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="Custom List of StockItems">
-                        <TYPE>StockItem</TYPE>
-                        <NATIVEMETHOD>MasterID</NATIVEMETHOD>
-                        <NATIVEMETHOD>GUID</NATIVEMETHOD>
-                    </COLLECTION>
-                </TDLMESSAGE>
-            </TDL>
-        </DESC>
-    </BODY>
-</ENVELOPE>`;
 
         try {
-            const data = await postXml(xmlData);
-            const response = await getStockItemNames(data);
+            const response = await getStockItemNames();
             setStockData(response)
         } catch (error) {
             console.error("Error fetching companies:", error);
