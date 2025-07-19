@@ -1,7 +1,5 @@
 // GET THE LIST OF LEDGER
 
-// http://localhost:8080/http://localhost:9000
-
 import { v4 as uuidv4 } from "uuid";
 import { XMLParser } from 'fast-xml-parser';
 import { postXml } from "../../tally";
@@ -86,15 +84,11 @@ export async function fetchLedgerList(companyName = "PrimeDepth Labs") {
 </ENVELOPE>`;
 
   try {
-    const response = await fetch("http://localhost:8080/http://localhost:9000", {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/xml"
-      },
-      body: xmlPayload
-    });
+    const response = await postXml(xmlPayload)
 
-    const xmlText = await response.text();
+    console.log({ response },"for ledger")
+
+    const xmlText = await response;
 
     const parser = new XMLParser({
       ignoreAttributes: false,
@@ -157,13 +151,9 @@ export async function generateCashLedgerXML({ name, parent, companyName = "Prime
 
 
   try {
-    const res = await fetch("http://localhost:8080/http://localhost:9000", {
-      method: "POST",
-      headers: { "Content-Type": "text/xml" },
-      body: xmlPayload,
-    });
+    const res = await postXml(xmlPayload)
 
-    const result = await res.text();
+    const result = await res
     console.log("✅ Ledger Created:", result);
     return result;
   } catch (error) {
@@ -213,13 +203,9 @@ export async function generateAccountLedgerXML({
 
 
   try {
-    const res = await fetch("http://localhost:8080/http://localhost:9000", {
-      method: "POST",
-      headers: { "Content-Type": "text/xml" },
-      body: xmlPayload,
-    });
+    const res = await postXml(xmlPayload)
 
-    const result = await res.text();
+    const result = await res
     console.log("✅ Ledger Created:", result);
     return result;
   } catch (error) {
@@ -440,13 +426,9 @@ export async function generateTallyLedgerXML(entries = []) {
   </BODY>
 </ENVELOPE>`;
 
-  const response = await fetch("http://localhost:8080/http://localhost:9000", {
-    method: "POST",
-    headers: { "Content-Type": "text/xml" },
-    body: xml
-  });
+  const response = await postXml(xml)
 
-  const text = await response.text();
+  const text = await response
   console.log("🧾 Ledger Creation Response:", text);
   return text;
 }
@@ -598,13 +580,9 @@ export async function processTransactions(transactions, tallyInfo = [{}], accoun
   );
 
   // 🚀 Step 6: Send to Tally
-  const res = await fetch("http://localhost:8080/http://localhost:9000", {
-    method: "POST",
-    headers: { "Content-Type": "text/xml" },
-    body: voucherXML
-  });
+  const res = await postXml(voucherXML)
 
-  const result = await res.text();
+  const result = await res
   console.log("✅ Voucher Result:", result);
 }
 

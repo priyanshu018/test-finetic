@@ -44,6 +44,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import ClosingBalanceOverlay from './closingBalance';
 import CompactItemListContainer from './ledgerList';
+import { getCurrentCompanyData } from '../service/tally';
 
 const ExpenseClassifier = () => {
     // State management
@@ -78,671 +79,6 @@ const ExpenseClassifier = () => {
 
     console.log({ summary })
 
-    const newTransation = [
-        {
-            vendor: "SELF",
-            amount: 15000,
-            date: "2024-08-20",
-            description: "CASH DEPOSIT SELF",
-            transaction_type: "CREDIT",
-            classification: "Cash Deposit",
-            confidence: 95,
-            category: "Cash Deposit",
-            id: "481c64c7-9d7b-48ed-af74-935870350b56",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115650",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: 15000,
-            running_balance: 15000,
-            transaction_impact: "positive"
-        },
-        {
-            vendor: "ICI NEXT 57 CO",
-            amount: 5074,
-            date: "2024-09-09",
-            description: "Chq No. 786048 ICI NEXT 57 CO 786048",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "5fa4d994-cec6-4ff0-8aa8-3064c44b798b",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115669",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -5074,
-            running_balance: 9926,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "SELF",
-            amount: 15000,
-            date: "2024-10-04",
-            description: "CASH DEPOSIT SELF",
-            transaction_type: "CREDIT",
-            classification: "Cash Deposit",
-            confidence: 95,
-            category: "Cash Deposit",
-            id: "ef6e373c-fc5f-418d-a54a-85498da756a0",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115677",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: 15000,
-            running_balance: 24926,
-            transaction_impact: "positive"
-        },
-        {
-            vendor: "ICI NEXT 57",
-            amount: 5074,
-            date: "2024-10-10",
-            description: "Chq No. 786049 ICI NEXT 57 786049",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "13469922-7534-4943-a659-52726687c28c",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115683",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -5074,
-            running_balance: 19852,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "Mrs. GURDEV KAUR",
-            amount: 11900,
-            date: "2024-10-16",
-            description: "CHEQUE TRANSFER TO 786050 0030904374591 OF Mrs. GURDEV KAUR",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 80,
-            category: "Salary Payment",
-            id: "961c8bfd-7d2c-40cf-aad2-0ae56803a328",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115689",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -11900,
-            running_balance: 7952,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "SELF",
-            amount: 25000,
-            date: "2024-10-19",
-            description: "CASH DEPOSIT SELF",
-            transaction_type: "CREDIT",
-            classification: "Cash Deposit",
-            confidence: 95,
-            category: "Cash Deposit",
-            id: "3f80e520-2884-432b-830e-cd7b2ead3d2c",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115695",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: 25000,
-            running_balance: 32952,
-            transaction_impact: "positive"
-        },
-        {
-            vendor: "Mrs. Vibha Pundir",
-            amount: 9000,
-            date: "2024-10-30",
-            description: "CHEQUE TRANSFER TO 786051 0039550763614 OF Mrs. Vibha Pundir",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 80,
-            category: "Salary Payment",
-            id: "f1c9e736-5798-45c1-a570-a53c297fb9e9",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115701",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -9000,
-            running_balance: 23952,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "SELF",
-            amount: 10000,
-            date: "2024-11-06",
-            description: "CASH DEPOSIT SELF",
-            transaction_type: "CREDIT",
-            classification: "Cash Deposit",
-            confidence: 95,
-            category: "Cash Deposit",
-            id: "e0b556fa-b258-4a0d-b3e0-e72b09911c84",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115718",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: 10000,
-            running_balance: 33952,
-            transaction_impact: "positive"
-        },
-        {
-            vendor: "ICI NEXT 57",
-            amount: 5074,
-            date: "2024-11-22",
-            description: "Chq No. 786052 ICI NEXT 57 786052",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "5f066906-82ee-4d4a-a597-ee48b22f480c",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115726",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -5074,
-            running_balance: 28878,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "Amritsar Lounge",
-            amount: 2,
-            date: "2024-11-22",
-            description: "OTHPOS432715338196Amritsar Lounge AMRITSAR",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 75,
-            category: "Miscellaneous Expense",
-            id: "8809366e-969c-49bc-b7e8-5786db91720f",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115732",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -2,
-            running_balance: 28876,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "Amritsar Lounge",
-            amount: 2,
-            date: "2024-11-23",
-            description: "OTHPOS432717501469Amritsar Lounge AMRITSAR",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 75,
-            category: "Miscellaneous Expense",
-            id: "ccdcf125-51ea-421d-ac67-a4eda6a9397d",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115738",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -2,
-            running_balance: 28874,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "UNKNOWN VENDOR",
-            amount: 9000,
-            date: "2024-12-11",
-            description: "CSH DEP (CDM) 9800000000",
-            transaction_type: "CREDIT",
-            classification: "Cash Deposit",
-            confidence: 90,
-            category: "Cash Deposit",
-            id: "10e7c415-e7d6-409a-9dd6-82eb1c3ed8be",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115744",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: 9000,
-            running_balance: 37874,
-            transaction_impact: "positive"
-        },
-        {
-            vendor: "ICI NEXT 57",
-            amount: 5074,
-            date: "2024-12-16",
-            description: "Chq No. 786053 ICI NEXT 57 786053",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "aba9ab13-a59f-472b-b9d8-f08ac400e5fb",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115750",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -5074,
-            running_balance: 32800,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "CHINMAY GUPTA",
-            amount: 6000,
-            date: "2025-01-01",
-            description: "Chq No. 786054 CHINMAY GUPTA 786054",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 80,
-            category: "Consultant Payment",
-            id: "0cee19ba-0bfd-449e-91b7-5d842151d838",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115756",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -6000,
-            running_balance: 26800,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "SELF",
-            amount: 35000,
-            date: "2025-01-02",
-            description: "CASH DEPOSIT SELF",
-            transaction_type: "CREDIT",
-            classification: "Cash Deposit",
-            confidence: 95,
-            category: "Cash Deposit",
-            id: "e95109e7-4a8d-4ae1-aebf-976aff5952ef",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115762",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: 35000,
-            running_balance: 61800,
-            transaction_impact: "positive"
-        },
-        {
-            vendor: "AMAZON PAY INDIA",
-            amount: 928,
-            date: "2025-01-02",
-            description: "OTHPG 500215296318AMAZON PAY INDIA PRIVA124662480",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 85,
-            category: "Office Supplies",
-            id: "36159041-929a-44bd-b542-875938dd2339",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115768",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -928,
-            running_balance: 60872,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "ATM CASH 1712 AERO ARCADE",
-            amount: 10000,
-            date: "2025-01-07",
-            description: "ATM WDL ATM CASH 1712 AERO ARCADE",
-            transaction_type: "DEBIT",
-            classification: "Cash Withdrawal",
-            confidence: 95,
-            category: "Cash Withdrawal",
-            id: "4b0c0022-8462-4004-b5ce-783890df61c2",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115775",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -10000,
-            running_balance: 50872,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "ICI ENLIGHT INFOTECH",
-            amount: 3540,
-            date: "2025-01-28",
-            description: "Chq No. 786056 ICI ENLIGHT INFOTECH 786056",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "eecdce41-25b7-47c1-830d-e6e4624eb8d2",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115781",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -3540,
-            running_balance: 47332,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "RAZ*apnaco",
-            amount: 707,
-            date: "2025-01-29",
-            description: "OTHPG 502908670535RAZ*apnaco Mumbai",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 80,
-            category: "Miscellaneous Expense",
-            id: "54d13064-a061-42dd-bd0f-df90ad49e778",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115787",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -707,
-            running_balance: 46625,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "ICI ENLIGHT INFOTECH",
-            amount: 3540,
-            date: "2025-02-11",
-            description: "Chq No. 786057 ICI ENLIGHT INFOTECH 786057",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "d7eccdf8-18a2-4c86-a1f4-aad788444290",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115793",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -3540,
-            running_balance: 43085,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "ICI NEXT 57",
-            amount: 5074,
-            date: "2025-02-15",
-            description: "Chq No. 786058 ICI NEXT 57 COWORKING 786058",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "c04396a3-8903-4c29-a6ba-718111d4a899",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115799",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -5074,
-            running_balance: 38011,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "STATE BANK OF INDIA",
-            amount: 394.51,
-            date: "2025-03-12",
-            description: "AC KEEPING FEES",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 90,
-            category: "Bank Charges",
-            id: "135ae2b2-b363-4586-8435-ad529ecd0dde",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115805",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -394.51,
-            running_balance: 37616.49,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "Mrs. Vibha Pundir",
-            amount: 14000,
-            date: "2025-03-15",
-            description: "CHEQUE TRANSFER TO 786062 0039550763614 OF Mrs. Vibha Pundir",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 80,
-            category: "Salary Payment",
-            id: "1bafffb4-5864-40b5-ae4a-ec13b069206e",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115811",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -14000,
-            running_balance: 23616.489999999998,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "ICI ENLIGHT INFOTECH",
-            amount: 3540,
-            date: "2025-03-17",
-            description: "Chq No. 786060 ICI ENLIGHT INFOTECH 786060",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "da8b373b-e24f-4c76-b453-ffcdf90848e5",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115817",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -3540,
-            running_balance: 20076.489999999998,
-            transaction_impact: "negative"
-        }
-    ]
-
-    const transactions = [
-        {
-
-            vendor: "ICI NEXT 57",
-            amount: 5074,
-            date: "2025-02-15",
-            description: "Chq No. 786058 ICI NEXT 57 786058",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Direct Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "12d10924-f596-4295-959b-107da59e0566",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056843",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -5074,
-            running_balance: 38011,
-            transaction_impact: "negative"
-        },
-        {
-
-            vendor: "STATE BANK OF INDIA",
-            amount: 394.51,
-            date: "2025-03-12",
-            description: "AC KEEPING FEES",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 90,
-            category: "Bank Charges",
-            id: "5a07c6c0-925b-4d86-943f-bad06fed2277",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056859",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -394.51,
-            running_balance: 37616.49,
-            transaction_impact: "negative"
-        },
-        {
-
-            vendor: "Mrs. Vibha Pundir",
-            amount: 14000,
-            date: "2025-03-15",
-            description: "CHEQUE TRANSFER TO 786062 0039550763614 OF Mrs. Vibha Pundir",
-            transaction_type: "DEBIT",
-            classification: "Non-Trading Variable (Indirect Business)",
-            confidence: 80,
-            category: "Consultant Payment",
-            id: "ea899ef3-e15c-4285-ab15-08c9d10211af",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056876",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -14000,
-            running_balance: 23616.489999999998,
-            transaction_impact: "negative"
-        },
-        {
-
-            vendor: "ICI ENLIGHT INFOTECH",
-            amount: 3540,
-            date: "2025-03-17",
-            description: "Chq No. 786060 ICI ENLIGHT INFOTECH 786060",
-            transaction_type: "DEBIT",
-            classification: "Trading Variable (Indirect Business)",
-            confidence: 85,
-            category: "Software Subscription",
-            id: "6af93d1d-1eb8-498e-97d6-5c443786348b",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-12T14:01:44.056894",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            balance_change: -3540,
-            running_balance: 20076.489999999998,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "ATM CASH 1712 AERO ARCADE",
-            amount: 10000,
-            date: "2025-01-07",
-            description: "ATM WDL ATM CASH 1712 AERO ARCADE",
-            transaction_type: "DEBIT",
-            classification: "Cash Withdrawal",
-            confidence: 95,
-            category: "Cash Withdrawal",
-            id: "4b0c0022-8462-4004-b5ce-783890df61c2",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115775",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -10000,
-            running_balance: 50872,
-            transaction_impact: "negative"
-        },
-        {
-            vendor: "ATM CASH 1712 AERO ARCADE",
-            amount: 10000,
-            date: "2025-01-07",
-            description: "ATM WDL ATM CASH 1712 AERO ARCADE",
-            transaction_type: "DEBIT",
-            classification: "Cash Withdrawal",
-            confidence: 95,
-            category: "Cash Withdrawal",
-            id: "4b0c0022-8462-4004-b5ce-783890df61c2",
-            source_file: "DOLLARDUCKS.pdf",
-            timestamp: "2025-06-14T14:29:20.115775",
-            extraction_confidence: 87.96445880452342,
-            ai_model: "deepseek-chat",
-            business_category: "service",
-            business_subcategory: "IT Services",
-            file_type: ".pdf",
-            bank_type: "sbi",
-            balance_change: -10000,
-            running_balance: 50872,
-            transaction_impact: "negative"
-        },
-    ];
 
     const tallyInfo = [
         {
@@ -1626,7 +962,7 @@ const ExpenseClassifier = () => {
     const exportToTally = async () => {
         try {
             const filteredData = getFilteredResults();
-            const companyName = tallyInfo[0]?.companyName || 'Your Company';
+            const companyName = await getCurrentCompanyData()
 
             if (filteredData.length === 0) {
                 toast.error('No data to export for the selected filter criteria', {
@@ -1637,7 +973,7 @@ const ExpenseClassifier = () => {
 
             // Show export options dialog
             const exportType = window.confirm(
-                `Export ${filteredData.length} filtered transactions to Tally for ${companyName}?\n\n` +
+                `Export ${filteredData.length} filtered transactions to Tally for ${companyName?.data}?\n\n` +
                 `Click OK to export filtered data.\n` +
                 `Click Cancel to export full data instead.`
             );
@@ -1648,7 +984,7 @@ const ExpenseClassifier = () => {
 
             // Show final confirmation with details
             const confirmed = window.confirm(
-                `Confirm Tally Export for ${companyName}:\n\n` +
+                `Confirm Tally Export for ${companyName?.data}:\n\n` +
                 `• Transactions: ${count}\n` +
                 `• Type: ${isFiltered ? 'Filtered Data' : 'Full Data'}\n` +
                 `${isFiltered ? `• Filter Applied: ${getFilterDescription()}\n` : ''}` +
@@ -2175,35 +1511,35 @@ const ExpenseClassifier = () => {
                             </div>
                         )}
 
-{processing && (
-                    <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-                        <div className="relative w-24 h-24 mx-auto mb-6">
-                            <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
-                            <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                {businessCategories.find(c => c.value === businessCategory)?.icon}
+                        {processing && (
+                            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+                                <div className="relative w-24 h-24 mx-auto mb-6">
+                                    <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
+                                    <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        {businessCategories.find(c => c.value === businessCategory)?.icon}
+                                    </div>
+                                </div>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                                    Processing {businessSubcategory} Statements
+                                </h2>
+                                <p className="text-gray-600 mb-6">
+                                    DeepSeek AI is analyzing your bank statements (PDF/Excel) with {businessSubcategory} business context...
+                                </p>
+                                <div className="max-w-md mx-auto">
+                                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                                        <span>Progress</span>
+                                        <span>{processingProgress}%</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-3">
+                                        <div
+                                            className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                                            style={{ width: `${processingProgress}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                            Processing {businessSubcategory} Statements
-                        </h2>
-                        <p className="text-gray-600 mb-6">
-                            DeepSeek AI is analyzing your bank statements (PDF/Excel) with {businessSubcategory} business context...
-                        </p>
-                        <div className="max-w-md mx-auto">
-                            <div className="flex justify-between text-sm text-gray-600 mb-2">
-                                <span>Progress</span>
-                                <span>{processingProgress}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-3">
-                                <div
-                                    className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
-                                    style={{ width: `${processingProgress}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                        )}
 
                         {/* Mobile Upload Section */}
                         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
@@ -2306,7 +1642,7 @@ const ExpenseClassifier = () => {
                 )}
 
                 {/* Processing State */}
-              
+
 
                 {/* Step 4: Enhanced Results with Date/Month Filter */}
                 {currentStep === 4 && results && summary && (
@@ -2549,7 +1885,7 @@ const ExpenseClassifier = () => {
                             {/* Show filtered summary or original summary */}
                             {(() => {
                                 const displaySummary = dateFilterType !== 'all' ? getFilteredSummary() : summary;
-                                console.log({displaySummary})
+                                console.log({ displaySummary })
                                 const filteredResults = getFilteredResults();
 
                                 if (!displaySummary || filteredResults.length === 0) {
