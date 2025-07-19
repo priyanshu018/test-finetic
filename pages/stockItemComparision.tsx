@@ -2,7 +2,7 @@ import React from "react";
 import { FileText, Database } from "lucide-react";
 
 // Stock Item Comparison Component
-const StockItemComparison = ({ billData, tallyData }) => {
+const StockItemComparison = ({ billData, tallyData }: any) => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -47,7 +47,7 @@ const StockItemComparison = ({ billData, tallyData }) => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {/* Displaying Bill Data */}
-                  {billData.map((billItem, index) => {
+                  {(billData ?? []).map((billItem, index) => {
                     return (
                       <tr key={index} className="hover:bg-opacity-80 transition-colors">
                         {/* Bill Data Columns */}
@@ -61,7 +61,7 @@ const StockItemComparison = ({ billData, tallyData }) => {
                           <div className="text-sm text-gray-900">{billItem.GST}%</div>
                         </td>
 
-                         {/* Tally Data Columns */}
+                        {/* Tally Data Columns */}
                         <td className="px-6 py-4 whitespace-nowrap bg-orange-50 border-r border-gray-200">
                           <div className="text-sm text-gray-900">
                             {tallyData[index] ? tallyData[index].itemName : 'No Match'}
