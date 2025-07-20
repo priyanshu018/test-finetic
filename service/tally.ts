@@ -417,6 +417,16 @@ export async function createUnit(units: Unit[]) {
   return { success: true, isExist: [], data: units };
 }
 
+function downloadXML(xml: string, filename = 'stockitems.xml') {
+  const blob = new Blob([xml], { type: 'application/xml' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 /**
  * Create stock items if missing.
  */
@@ -445,14 +455,12 @@ export async function createItem(items: StockItem[]) {
 </ENVELOPE>`
 
   const data = await postXml(xmlData);
-  console.log({ data })
   const existNames = await getLedgerNames(data);
-  console.log({ existNames })
   const missing = items.filter((it) => !existNames.includes(it.Product));
-  console.log({ missing })
 
   if (missing.length) {
-    const xml = xmlCreateStockItems(missing);
+    const xml = xmlCreateStockItems(missing)
+    // downloadXML(xml);
     const resp = await postXml(xml);
     const parsed = parseResponse(resp);
     return { success: parsed.created === missing.length, data: items };

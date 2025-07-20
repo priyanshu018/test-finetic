@@ -3311,7 +3311,7 @@ export default function BillWorkflow() {
       seenProducts.add(item.Product);
 
       const gstValue = (parseFloat(item.SGST) || 0) + (parseFloat(item.CGST) || 0);
-      const productName = item.Product.replace(/['"]/g, "");
+      const productName = item.Product.replace(/[^a-zA-Z0-9 ]/g, "").trim();
       const unit = item.UNIT?.replace(/\d+/g, "").trim() || "PCS";
 
       result.push({
@@ -3330,7 +3330,7 @@ export default function BillWorkflow() {
 
   const extractPurchaserEntries = (data: any[]): PurchaserEntry[] => {
     return data.map((product) => {
-      const productName = product.Product.replace(/['"]/g, "");
+      const productName = product.Product.replace(/[^a-zA-Z0-9 ]/g, "").trim();
       const unit = product.UNIT?.replace(/\d+/g, "").trim() || "PCS";
 
       return {
