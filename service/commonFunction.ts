@@ -500,15 +500,52 @@ export function createVoucher(payload) {
 
 
 /** Extracts LEDGER names from a Tally XML string. */
+// export async function getLedgerNames(xmlData: string): Promise<string[]> {
+//   const result: any = await parseStringPromise(xmlData, { explicitArray: false });
+//   const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
+//   // if (!collection) throw new Error('Cannot find COLLECTION element');
+//   const ledgers = Array.isArray(collection?.LEDGER)
+//     ? collection?.LEDGER
+//     : [collection?.LEDGER];
+//   return ledgers?.map((lg: any) => lg?.$?.NAME);
+// }
+
 export async function getLedgerNames(xmlData: string): Promise<string[]> {
-  const result: any = await parseStringPromise(xmlData, { explicitArray: false });
-  const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
-  // if (!collection) throw new Error('Cannot find COLLECTION element');
-  const ledgers = Array.isArray(collection?.LEDGER)
-    ? collection?.LEDGER
-    : [collection?.LEDGER];
-  return ledgers?.map((lg: any) => lg?.$?.NAME);
+  try {
+    const result: any = await parseStringPromise(xmlData, { explicitArray: false });
+    const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
+    if (!collection) return [];
+
+    // Try LEDGER first
+    if (collection.LEDGER) {
+      const ledgers = Array.isArray(collection.LEDGER)
+        ? collection.LEDGER
+        : [collection.LEDGER];
+      return ledgers.map((lg: any) => lg?.$?.NAME).filter(Boolean);
+    }
+
+    // Then fallback to UNIT
+    if (collection.UNIT) {
+      const units = Array.isArray(collection.UNIT)
+        ? collection.UNIT
+        : [collection.UNIT];
+      return units.map((unit: any) => unit?.$?.NAME).filter(Boolean);
+    }
+
+    if (collection.STOCKITEM) {
+      const items = Array.isArray(collection.STOCKITEM)
+        ? collection.STOCKITEM
+        : [collection.STOCKITEM];
+      return items.map((item: any) => item?.$?.NAME).filter(Boolean);
+    }
+
+    return [];
+  } catch (error) {
+    console.error("Error parsing master names:", error);
+    return [];
+  }
 }
+
 
 export async function getStockItemNames() {
   const Data = `<ENVELOPE>
