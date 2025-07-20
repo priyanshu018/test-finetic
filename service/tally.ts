@@ -98,7 +98,33 @@ async function extractLedgerNameAndGST(xmlString: string): Promise<Array<{ name:
 /**
  * Fetch company names via Tally HTTP.
  */
-export async function getCompanyData(xmlData: string) {
+export async function getCompanyData() {
+
+  const xmlData = `<ENVELOPE>
+      <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>List of Companies</ID>
+      </HEADER>
+      <BODY>
+        <DESC>
+          <STATICVARIABLES>
+            <SVIsSimpleCompany>No</SVIsSimpleCompany>
+          </STATICVARIABLES>
+          <TDL>
+            <TDLMESSAGE>
+              <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="List of Companies">
+                <TYPE>Company</TYPE>
+                <NATIVEMETHOD>Name</NATIVEMETHOD>
+              </COLLECTION>
+              <ExportHeader>EmpId:5989</ExportHeader>
+            </TDLMESSAGE>
+          </TDL>
+        </DESC>
+      </BODY>
+    </ENVELOPE>`;
+
   const data = await postXml(xmlData);
   const res: any = await parseStringPromise(data, { explicitArray: false });
   const comps = res?.ENVELOPE?.BODY?.DATA?.COLLECTION?.COMPANY || [];
@@ -157,7 +183,34 @@ export async function getCurrentCompanyData() {
 /**
  * Fetch GST-ledger entries via Tally HTTP.
  */
-export async function getGSTData(xmlData: string) {
+export async function getGSTData(selectedCompanyName: string) {
+  const xmlData = `<ENVELOPE>
+      <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>Ledgers</ID>
+      </HEADER>
+      <BODY>
+        <DESC>
+          <STATICVARIABLES>
+            <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+            <SVCURRENTCOMPANY>${selectedCompanyName}</SVCURRENTCOMPANY>
+          </STATICVARIABLES>
+          <TDL>
+            <TDLMESSAGE>
+              <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
+                <TYPE>Ledger</TYPE>
+                <NATIVEMETHOD>Address</NATIVEMETHOD>
+                <NATIVEMETHOD>Masterid</NATIVEMETHOD>
+                <NATIVEMETHOD>*</NATIVEMETHOD>
+              </COLLECTION>
+            </TDLMESSAGE>
+          </TDL>
+        </DESC>
+      </BODY>
+    </ENVELOPE>`;
+
   const data = await postXml(xmlData);
   return await extractLedgerNameAndGST(data);
 }
@@ -181,10 +234,39 @@ export async function getTaxLedgerData(xmlData: string) {
  * Create a party ledger if not exists.
  */
 export async function createPartyName(
-  xmlData: string,
+  companyName: string,
   partyName: string,
   detail: any
 ) {
+
+  const xmlData = `
+    <ENVELOPE>
+      <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>Ledgers</ID>
+      </HEADER>
+      <BODY>
+        <DESC>
+          <STATICVARIABLES>
+            <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+            <SVCURRENTCOMPANY>${companyName}</SVCURRENTCOMPANY>
+          </STATICVARIABLES>
+          <TDL>
+            <TDLMESSAGE>
+              <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
+                <TYPE>Ledger</TYPE>
+                <NATIVEMETHOD>Address</NATIVEMETHOD>
+                <NATIVEMETHOD>Masterid</NATIVEMETHOD>
+                <NATIVEMETHOD>*</NATIVEMETHOD>
+              </COLLECTION>
+            </TDLMESSAGE>
+          </TDL>
+        </DESC>
+      </BODY>
+    </ENVELOPE>`;
+
   const data = await postXml(xmlData);
   const existing = await getLedgerNames(data);
   const exist = existing.includes(partyName);

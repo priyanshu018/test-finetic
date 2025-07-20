@@ -23,13 +23,13 @@ const StockItemComparison = ({ billData, tallyData }: any) => {
               <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" colSpan="3">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       <div className="flex items-center justify-center gap-2">
                         <FileText className="h-4 w-4 text-blue-600" />
                         Extracted Bill Data
                       </div>
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" colSpan="3">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       <div className="flex items-center justify-center gap-2">
                         <Database className="h-4 w-4 text-orange-600" />
                         Tally Data

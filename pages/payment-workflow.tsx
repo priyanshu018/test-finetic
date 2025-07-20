@@ -42,7 +42,7 @@ import { extractBankHolderDetails, extractLedgerCategories, generateContraVouche
 import QRCode from 'react-qr-code';
 import { toast } from 'react-toastify';
 import axios from 'axios';
-import ClosingBalanceOverlay from './closingBalance';
+import ClosingBalanceOverlay from '../components/bank-flow/closingBalance';
 import CompactItemListContainer from './ledgerList';
 import { getCurrentCompanyData } from '../service/tally';
 

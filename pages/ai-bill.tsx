@@ -53,7 +53,7 @@ import { parseStringPromise } from "xml2js";
 import QRCode from "react-qr-code";
 import * as XLSX from "xlsx";
 import { getStockItemFullData, getStockItemNames } from "../service/commonFunction";
-import StockItemComparison from "./stockItemComparision";
+import StockItemComparison from "../components/purchase-flow/stockItemComparision";
 
 
 const toFixed2 = (num: number) => Number(num || 0).toFixed(2);
@@ -660,16 +660,16 @@ export default function BillWorkflow() {
   }
 
 
-   useEffect(() => {
-      fetchCurrentComapny()
-      // Check connection every 30 seconds
-      const interval = setInterval(() => {
+  useEffect(() => {
+    fetchCurrentComapny()
+    // Check connection every 30 seconds
+    const interval = setInterval(() => {
 
-        fetchCurrentComapny();
-      }, 5000);
-      return () => clearInterval(interval);
-    }, []);
-    
+      fetchCurrentComapny();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleExportItemsToExcel = () => {
     const bill = billData[currentBillIndex];
     if (!bill || !bill.items?.length) {
@@ -1274,51 +1274,6 @@ export default function BillWorkflow() {
 
   console.log({ billData });
   const handleExport = async () => {
-    const ledgerNames = [
-      "Cgst0",
-      "Cgst2.5",
-      "Cgst6",
-      "Cgst9",
-      "Cgst14",
-      "Igst0",
-      "Igst5",
-      "Igst12",
-      "Igst18",
-      "Igst28",
-      "Ut/Sgst0",
-      "Ut/Sgst2.5",
-      "Ut/Sgst6",
-      "Ut/Sgst9",
-      "Ut/Sgst14",
-    ];
-
-    const ledgerXmlData = `
-    <ENVELOPE>
-      <HEADER>
-        <VERSION>1</VERSION>
-        <TALLYREQUEST>Export</TALLYREQUEST>
-        <TYPE>Collection</TYPE>
-        <ID>Ledgers</ID>
-      </HEADER>
-      <BODY>
-        <DESC>
-          <STATICVARIABLES>
-            <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
-            <SVCURRENTCOMPANY>${selectedCompanyName}</SVCURRENTCOMPANY>
-          </STATICVARIABLES>
-          <TDL>
-            <TDLMESSAGE>
-              <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
-                <TYPE>Ledger</TYPE>
-                <NATIVEMETHOD>Address</NATIVEMETHOD>
-                <NATIVEMETHOD>Masterid</NATIVEMETHOD>
-                <NATIVEMETHOD>*</NATIVEMETHOD>
-              </COLLECTION>
-            </TDLMESSAGE>
-          </TDL>
-        </DESC>
-      </BODY>
-    </ENVELOPE>`;
 
     if (billData && billData.length > 1) {
       for (let bill of billData) {
@@ -1353,7 +1308,7 @@ export default function BillWorkflow() {
         };
 
         const responsePartyName = await createPartyName(
-          ledgerXmlData,
+          selectedCompanyName,
           purchaserName,
           {
             name: purchaserName,
@@ -1467,7 +1422,7 @@ export default function BillWorkflow() {
       );
 
       const responsePartyName = await createPartyName(
-        ledgerXmlData,
+        selectedCompanyName,
         purchaserName,
         {
           name: purchaserName,
@@ -1630,35 +1585,8 @@ export default function BillWorkflow() {
   }, [billData, currentBillIndex]);
 
   const fetchGstDetails = async () => {
-    const xmlData = `<ENVELOPE>
-    <HEADER>
-      <VERSION>1</VERSION>
-      <TALLYREQUEST>Export</TALLYREQUEST>
-      <TYPE>Collection</TYPE>
-      <ID>Ledgers</ID>
-    </HEADER>
-    <BODY>
-      <DESC>
-        <STATICVARIABLES>
-          <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
-          <SVCURRENTCOMPANY>${selectedCompanyName}</SVCURRENTCOMPANY>
-        </STATICVARIABLES>
-        <TDL>
-          <TDLMESSAGE>
-            <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
-              <TYPE>Ledger</TYPE>
-              <NATIVEMETHOD>Address</NATIVEMETHOD>
-              <NATIVEMETHOD>Masterid</NATIVEMETHOD>
-              <NATIVEMETHOD>*</NATIVEMETHOD>
-            </COLLECTION>
-          </TDLMESSAGE>
-        </TDL>
-      </DESC>
-    </BODY>
-  </ENVELOPE>`;
-
     try {
-      const response = await getGSTData(xmlData);
+      const response = await getGSTData(selectedCompanyName);
       console.log(response, "from gst api");
       // setGstNumber(response?.[0]?.gst);
     } catch (error) {

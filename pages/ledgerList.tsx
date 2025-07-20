@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, List, X, Package, Receipt, RefreshCw, Loader } from 'lucide-react';
-import { getCurrentCompanyData, getGSTData, postXml } from '../service/tally';
+import { getCurrentCompanyData, postXml } from '../service/tally';
 import { getLedgerNames, getStockItemNames } from '../service/commonFunction';
 
 const ItemList = ({ ledgerData, stockData, showType, isLoading }) => {

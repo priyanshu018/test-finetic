@@ -86,7 +86,7 @@ export async function fetchLedgerList(companyName = "PrimeDepth Labs") {
   try {
     const response = await postXml(xmlPayload)
 
-    console.log({ response },"for ledger")
+    console.log({ response }, "for ledger")
 
     const xmlText = await response;
 
@@ -291,7 +291,7 @@ export async function extractLedgerCategories(transactions, options = {}) {
     const xml = await generateCashLedgerXML({
       name: ledger.ledgerName,
       parent: ledger.parent,
-      companyName: options.companyName || "PrimeDepth Labs"
+      companyName: options.companyName
     });
     if (xml) cashXMLs.push(xml);
   }

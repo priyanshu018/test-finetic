@@ -499,7 +499,6 @@ export function createVoucher(payload) {
 }
 
 
-
 /** Extracts LEDGER names from a Tally XML string. */
 export async function getLedgerNames(xmlData: string): Promise<string[]> {
   const result: any = await parseStringPromise(xmlData, { explicitArray: false });
