@@ -56,7 +56,7 @@ export function extractBankHolderDetails(bankDataArray: any): {
   }
 }
 
-export async function fetchLedgerList(companyName = "PrimeDepth Labs") {
+export async function fetchLedgerList(companyName) {
   const xmlPayload = `
 <ENVELOPE>
   <HEADER>
@@ -120,12 +120,10 @@ export async function fetchLedgerList(companyName = "PrimeDepth Labs") {
   }
 }
 
-export async function generateCashLedgerXML({ name, parent, companyName = "PrimeDepth Labs" }) {
+export async function generateCashLedgerXML({ name, parent, companyName }) {
   if (!name || !parent) {
     throw new Error("Ledger name and parent are required.");
   }
-
-
 
   const xmlPayload = `
 <ENVELOPE>
@@ -215,15 +213,15 @@ export async function generateAccountLedgerXML({
 }
 
 
-export async function extractLedgerCategories(transactions, options = {}) {
+export async function extractLedgerCategories(transactions, options: any) {
   const classificationMap = {
     "Trading Variable (Direct Business)": "Direct Expenses",
     "Trading Variable (Indirect Business)": "Indirect Expenses",
     "Non-Trading Variable (Indirect Business)": "Indirect Expenses"
   };
 
-  const ledgerMap = new Map();
-  const cashLedgers = new Map();
+  const ledgerMap: any = new Map();
+  const cashLedgers: any = new Map();
 
   for (const txn of transactions) {
     if (!txn.category || !txn.classification) continue;
@@ -260,13 +258,13 @@ export async function extractLedgerCategories(transactions, options = {}) {
     }
   }
 
-  const existingLedgers = await fetchLedgerList(options.companyName || "PrimeDepth Labs");
+  const existingLedgers: any = await fetchLedgerList(options.companyName);
 
   const existingLedgerKeys = new Set(
     existingLedgers.map(l => `${l.name.trim()}|||${l.parent?.trim() || ""}`)
   );
 
-  const newBusinessLedgers = [];
+  const newBusinessLedgers: any = [];
   for (const [key, ledger] of ledgerMap) {
     if (!existingLedgerKeys.has(key)) {
       newBusinessLedgers.push(ledger);
@@ -302,10 +300,10 @@ export async function extractLedgerCategories(transactions, options = {}) {
   };
 }
 
-export function generateContraVoucherXMLFromTransactions(transactions, accountDetails = [{}], options = {}) {
+export function generateContraVoucherXMLFromTransactions(transactions: any, accountDetails: any, options: any) {
   const {
-    companyName = "PrimeDepth Labs",
-    date: defaultDate = "20250401",
+    companyName,
+    date,
   } = options;
 
   const fromLedger = "Cash Withdrawal";
@@ -433,12 +431,12 @@ export async function generateTallyLedgerXML(entries = []) {
   return text;
 }
 
-export function generatePaymentVoucherXMLFromPayload(payments, options: any = {}, accountDetails = [{}]) {
+export function generatePaymentVoucherXMLFromPayload(payments: any, options: any, accountDetails: any) {
   const {
-    companyName = "PrimeDepth Labs",
-    date = "20250401",
-    voucherType = "Payment",
-    narrationPrefix = "",
+    companyName,
+    date,
+    voucherType,
+    narrationPrefix,
   } = options;
 
   const defaultAccount = accountDetails[0]?.holder_name?.trim() || "UNKNOWN_ACCOUNT";
@@ -523,21 +521,21 @@ ${voucherBlocks}
 </ENVELOPE>`.trim();
 }
 
-export async function processTransactions(transactions, tallyInfo = [{}], accountDetails = [{}]) {
+export async function processTransactions(transactions: any, tallyInfo: any, accountDetails: any) {
   // 🧠 Step 1: Extract metadata
   const {
-    companyName = "PrimeDepth Labs",
-    date = "20250401",
-    voucherType = "Payment",
-    narrationPrefix = ""
-  } = tallyInfo[0] || {};
+    companyName,
+    date,
+    voucherType,
+    narrationPrefix
+  } = tallyInfo;
 
-  const { holder_name = "" } = accountDetails[0] || {};
+  const { holder_name = "" } = accountDetails[0];
 
   // 🧠 Step 2: Enrich each transaction with appropriate category labeling
   const formattedTransactions = transactions.map(txn => {
-    const classification = txn.classification?.toLowerCase() || "";
-    const originalCategory = txn.category?.trim() || "";
+    const classification = txn.classification?.toLowerCase();
+    const originalCategory = txn.category?.trim();
 
     // ✅ Skip tagging for cash-related
     const isCash = ["cash withdrawal", "cash deposit"].some(type =>
@@ -587,21 +585,23 @@ export async function processTransactions(transactions, tallyInfo = [{}], accoun
 }
 
 
-export async function startTransactionProcessing(transactions, tallyInfo = [{}], accountDetails = [{}]) {
+export async function startTransactionProcessing(transactions: any, tallyInfo: any, accountDetails: any) {
   console.log("🚀 Starting transaction processing (Bank Ledger + Expense Categories)...");
+
+  console.log({ tallyInfo, transactions, accountDetails })
 
   try {
     // Extract tally metadata
     const {
-      companyName = "PrimeDepth Labs"
-    } = tallyInfo[0] || {};
+      companyName
+    } = tallyInfo;
 
     // Extract bank account details
     const {
-      holder_name = "",
-      ifsc_code = "",
-      account_number = ""
-    } = accountDetails[0] || {};
+      holder_name,
+      ifsc_code,
+      account_number
+    } = accountDetails[0];
 
     const bankLedgerName = holder_name?.trim();
 
@@ -645,7 +645,7 @@ export async function startTransactionProcessing(transactions, tallyInfo = [{}],
     throw error;
   }
 }
-export async function fetchProfitAndLossReport(companyName = "PrimeDepth Labs") {
+export async function fetchProfitAndLossReport(companyName) {
   const xmlPayload = `
 <ENVELOPE>
   <HEADER>
