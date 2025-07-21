@@ -108,8 +108,6 @@ export function createStockItems(items: unknown): string {
   (items as StockItem[]).forEach((item, index) => {
     const { Product, HSN, SGST, CGST, gst, symbol } = item;
 
-    console.log(Product, HSN, SGST, CGST, gst, symbol)
-
     // Basic validation for required fields.
     if (
       !Product ||
@@ -292,8 +290,6 @@ export function createStockItems(items: unknown): string {
             `
   });
 
-  console.log(xmlOutput)
-
   return xmlOutput;
 }
 
@@ -311,7 +307,6 @@ export function createVoucher(payload) {
 
   });
 
-  console.log(totalAmount, payload.sgst.amount, payload.cgst.amount);
   if (payload.isWithinState) {
     // Add SGST and CGST for in-state transactions
     totalAmount += payload.sgst.amount + payload.cgst.amount;
@@ -620,9 +615,6 @@ export async function getStockItemFullData() {
 
   // Parse the XML response
   const result: any = await parseStringPromise(xmlData, { explicitArray: false });
-
-  // Log the result for debugging (optional)
-  console.log(JSON.stringify(result, null, 2));
 
   // Extract the elements correctly
   const gstNames = result?.ENVELOPE?.GSTRATENAMEWITHCOUNT || [];

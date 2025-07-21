@@ -42,7 +42,6 @@ export const TallyConnectionOverlay = () => {
   const fetchCurrentComapny = async () => {
 
     const response = await getCurrentCompanyData()
-    console.log({ response })
     setCurrentCompany(response?.data)
   }
 
