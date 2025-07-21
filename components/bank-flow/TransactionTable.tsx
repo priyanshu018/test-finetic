@@ -327,7 +327,7 @@ const TransactionTable = ({
                                     </div>
                                 </td>
                                 <td className="flex justify-center px-6 py-4">
-                                    <span className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(item.transaction_type)
+                                    <span className={`mt-3 flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(item.transaction_type)
                                         }`}>
                                         {item.transaction_type === "DEBIT" ? (
                                             <>
