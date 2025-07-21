@@ -3113,10 +3113,11 @@ const ExpenseClassifier = () => {
         voucherType: "Payment",
         narrationPrefix: "Auto-entry:"
       }
+      const BankName = header?.ifsc_code.match(/^[A-Za-z]+/)?.[0] || "";
 
       const accountDetails = [
         {
-          holder_name: header?.holder_name,
+          holder_name: `${BankName}-${header?.account_number}`,
           ifsc_code: header?.ifsc_code,
           account_number: header?.account_number
         }
@@ -3152,12 +3153,16 @@ const ExpenseClassifier = () => {
         tallyInfo,
         accountDetails
       );
-      toast.success(
-        `Successfully exported ${count} transactions to Tally for ${companyName}!`,
-        {
-          position: "top-right",
-        }
-      );
+
+      if(response?.status){
+
+        toast.success(
+          `Successfully exported ${count} transactions to Tally for ${companyName?.data}!`,
+          {
+            position: "top-right",
+          }
+        );
+      }
     } catch (error) {
       toast.error(`Export failed: ${error.message}`, {
         position: "top-right",

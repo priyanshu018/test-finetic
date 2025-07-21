@@ -21,11 +21,12 @@
 //     );
 // }
 
-import { 
+import {
   Download, BookMarked, ArrowDownCircle,
   ArrowUpCircle, DollarSign, FileSpreadsheet,
   TrendingUp, Banknote, AlertCircle,
-  Calendar
+  Calendar,
+  Wallet
 } from "lucide-react";
 
 const SummaryCards = ({
@@ -39,7 +40,7 @@ const SummaryCards = ({
   businessCategory
 }) => {
   const displaySummary = dateFilterType !== "all" ? getFilteredSummary() : summary;
-  
+
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -91,7 +92,17 @@ const SummaryCards = ({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-col-4 xl:grid-cols-6 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-6">
+            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+              <div className="flex items-center justify-between mb-2">
+                <Wallet className="w-5 h-5 text-purple-600" />
+                <span className="text-2xl font-bold text-gray-900">
+                  ₹{displaySummary.opening_balance?.toLocaleString("en-IN") || 0}
+                </span>
+              </div>
+              <p className="text-purple-600 font-medium text-sm">Opening Balance</p>
+            </div>
+
             <div className="bg-slate-50 p-4 rounded-lg border">
               <div className="flex items-center justify-between mb-2">
                 <FileSpreadsheet className="w-5 h-5 text-slate-600" />
@@ -166,7 +177,9 @@ const SummaryCards = ({
               </div>
             </div>
 
+
             <div className={`p-4 rounded-lg border ${(displaySummary.net_balance || 0) >= 0 ? "bg-blue-50 border-blue-200" : "bg-orange-50 border-orange-200"}`}>
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <DollarSign className={`w-5 h-5 mr-2 ${(displaySummary.net_balance || 0) >= 0 ? "text-blue-600" : "text-orange-600"}`} />
@@ -174,9 +187,9 @@ const SummaryCards = ({
                     Net Balance:
                   </span>
                 </div>
-                <span className={`text-xl font-bold ${(displaySummary.net_balance || 0) >= 0 ? "text-blue-900" : "text-orange-900"}`}>
-                  {(displaySummary.net_balance || 0) >= 0 ? "+" : ""}
-                  ₹{Math.abs(displaySummary.net_balance || 0).toLocaleString("en-IN")}
+                <span className={`text-xl font-bold ${(displaySummary.net_balance_change || 0) >= 0 ? "text-blue-900" : "text-orange-900"}`}>
+                  {(displaySummary.net_balance_change || 0) >= 0 ? "+" : "-"}
+                  ₹{Math.abs(displaySummary.net_balance_change || 0).toLocaleString("en-IN")}
                 </span>
               </div>
             </div>

@@ -656,7 +656,7 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
   console.log({ voucherXML })
   const res = await postXml(voucherXML)
   const result = await res
-  console.log("✅ Voucher Result:", result);
+  return { status: true, result }
 }
 
 
@@ -709,10 +709,12 @@ export async function startTransactionProcessing(transactions: any, tallyInfo: a
 
     if (newLedgers.length > 0 && xml) {
       console.log(`🧾 Found ${newLedgers.length} new expense ledgers to create.`);
-      processTransactions(transactions, tallyInfo, accountDetails)
       console.log("✅ New expense ledgers created.");
+      const response = await processTransactions(transactions, tallyInfo, accountDetails)
+      return response
     } else {
       console.log("✅ No new expense ledgers needed.");
+      return { status: false }
     }
 
   } catch (error) {

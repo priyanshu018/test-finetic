@@ -326,8 +326,8 @@ const TransactionTable = ({
                                         ₹{(item.running_balance || 0).toLocaleString("en-IN")}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(item.transaction_type)
+                                <td className="flex justify-center px-6 py-4">
+                                    <span className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(item.transaction_type)
                                         }`}>
                                         {item.transaction_type === "DEBIT" ? (
                                             <>
