@@ -598,6 +598,86 @@ ${voucherBlocks}
 </ENVELOPE>`.trim();
 }
 
+export function generateReceiptVoucherXMLFromPayload(receipts: any, options: any, accountDetails: any) {
+  const {
+    companyName,
+    date,
+    voucherType,
+    narrationPrefix,
+  } = options;
+
+  const defaultAccount = accountDetails[0]?.holder_name?.trim() || "UNKNOWN_ACCOUNT";
+  const entries = Array.isArray(receipts) ? receipts : [receipts];
+
+  const voucherBlocks = entries.map((entry, index) => {
+    const {
+      account,
+      category,
+      amount,
+      narration = `${narrationPrefix} Receipt for ${category}`,
+    } = entry;
+
+    const resolvedAccount = (account || defaultAccount).trim();
+    const resolvedCategory = category?.trim();
+
+    if (!resolvedAccount || !resolvedCategory || amount == null) {
+      console.warn(`⚠️ Skipping voucher entry due to missing fields:`, entry);
+      return '';
+    }
+
+    const voucherNumber = index + 1;
+    const uniqueRef = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+    return `
+<TALLYMESSAGE xmlns:UDF="TallyUDF">
+  <VOUCHER VCHTYPE="${voucherType}" ACTION="Create" OBJVIEW="Accounting Voucher View">
+    <DATE>${date}</DATE>
+    <VOUCHERNUMBER>${voucherNumber}</VOUCHERNUMBER>
+    <VOUCHERTYPENAME>${voucherType}</VOUCHERTYPENAME>
+    <NARRATION>${narration}</NARRATION>
+    <PARTYLEDGERNAME>${resolvedAccount}</PARTYLEDGERNAME>
+
+    <!-- Party Account (Credit) - Appears in "Account" field -->
+    <ALLLEDGERENTRIES.LIST>
+      <LEDGERNAME>${resolvedAccount}</LEDGERNAME>
+      <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
+      <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+      <AMOUNT>-${amount.toFixed(2)}</AMOUNT>
+    </ALLLEDGERENTRIES.LIST>
+
+    <!-- Category Account (Debit) - Appears in "Particulars" -->
+    <ALLLEDGERENTRIES.LIST>
+      <LEDGERNAME>${resolvedCategory}</LEDGERNAME>
+      <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+      <AMOUNT>${amount.toFixed(2)}</AMOUNT>
+    </ALLLEDGERENTRIES.LIST>
+  </VOUCHER>
+</TALLYMESSAGE>`.trim();
+  }).filter(Boolean).join("\n");
+
+  const xmlOutput = `
+<ENVELOPE>
+  <HEADER>
+    <TALLYREQUEST>Import Data</TALLYREQUEST>
+  </HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC>
+        <REPORTNAME>Vouchers</REPORTNAME>
+        <STATICVARIABLES>
+          <SVCURRENTCOMPANY>${companyName}</SVCURRENTCOMPANY>
+        </STATICVARIABLES>
+      </REQUESTDESC>
+      <REQUESTDATA>
+${voucherBlocks}
+      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>`.trim();
+
+  return xmlOutput;
+}
+
 export async function processTransactions(transactions: any, tallyInfo: any, accountDetails: any) {
   // 🧠 Step 1: Extract metadata
   const {
@@ -632,6 +712,7 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
       account: holder_name || "Unknown",
       category,
       amount: txn.amount,
+      type: txn.transaction_type,
       narration: `${narrationPrefix} Payment for ${originalCategory}`
     };
   });
@@ -646,15 +727,6 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
 
   // ⏳ Step 4: Wait for ledger sync
   await new Promise(res => setTimeout(res, 1000));
-
-  console.log({
-    formattedTransactions,
-    companyName,
-    date,
-    voucherType,
-    narrationPrefix,
-    accountDetails,
-  });
 
   // 🔍 Step 5: Split Cash & Non-Cash transactions
   const cashTransactions = formattedTransactions.filter(
@@ -677,49 +749,38 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
     voucherXML += cashXML;
   }
 
-  // 🧾 Step 5B: If there are non-cash entries, generate Payment voucher
-  if (nonCashTransactions.length > 0) {
-    const nonCashXML = generatePaymentVoucherXMLFromPayload(
-      nonCashTransactions,
-      { companyName, date, voucherType, narrationPrefix },
+  // 🧾 Step 5B: Process non-cash transactions by type
+  const paymentTransactions = nonCashTransactions.filter(t => t.type === "DEBIT");
+  const receiptTransactions = nonCashTransactions.filter(t => t.type === "CREDIT");
+
+  if (paymentTransactions.length > 0) {
+    const paymentXML = generatePaymentVoucherXMLFromPayload(
+      paymentTransactions,
+      { companyName, date, voucherType: "Payment", narrationPrefix },
       accountDetails
     );
-    voucherXML += `\n${nonCashXML}`;
+    voucherXML += `\n${paymentXML}`;
+  }
+
+  if (receiptTransactions.length > 0) {
+    const receiptXML = generateReceiptVoucherXMLFromPayload(
+      receiptTransactions,
+      { companyName, date, voucherType: "Receipt", narrationPrefix },
+      accountDetails
+    );
+    voucherXML += `\n${receiptXML}`;
   }
 
   // 🚀 Step 6: Send to Tally
-  console.log({ voucherXML });
   const res = await postXml(voucherXML);
   const result = await res;
   return { status: true, result };
-
-
-  // console.log({
-  //   formattedTransactions,
-  //   companyName, date, voucherType, narrationPrefix,
-  //   accountDetails
-  // })
-
-  // // 🧾 Step 5: Generate voucher XML
-  // const voucherXML = generatePaymentVoucherXMLFromPayload(
-  //   formattedTransactions,
-  //   { companyName, date, voucherType, narrationPrefix },
-  //   accountDetails
-  // );
-
-  // // 🚀 Step 6: Send to Tally
-  // console.log({ voucherXML })
-  // const res = await postXml(voucherXML)
-  // const result = await res
-  // return { status: true, result }
-
 }
+
 
 
 export async function startTransactionProcessing(transactions: any, tallyInfo: any, accountDetails: any) {
   console.log("🚀 Starting transaction processing (Bank Ledger + Expense Categories)...");
-
-  console.log({ tallyInfo, transactions, accountDetails })
 
   try {
     // Extract tally metadata
