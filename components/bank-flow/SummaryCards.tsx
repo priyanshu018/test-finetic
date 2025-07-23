@@ -79,36 +79,6 @@ const SummaryCards = ({
             Export To Tally
           </button>
 
-          <button
-            onClick={() => generateReceiptVoucherXMLFromPayload([{
-              account: "IDFB-76995000015",
-              category: "Service Revenue (Direct)",
-              amount: 1374.1,
-              type: "CREDIT",
-              narration: "Auto-entry: Payment for Service Revenue"
-            }, {
-              account: "IDFB-76995000015",
-              category: "Service Revenue (Direct)",
-              amount: 15000,
-              type: "CREDIT",
-              narration: "Auto-entry: Payment for Service Revenue"
-            }], {
-              companyName: "Testing",
-              date: "20250401",
-              voucherType: "Receipt",
-              narrationPrefix: "Auto-entry:"
-            }, [
-              {
-                holder_name: "IDFB-76995000015",
-                ifsc_code: "IDFB0021374",
-                account_number: "76995000015"
-              }
-            ])}
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center font-medium"
-          >
-            <BookMarked className="w-4 h-4 mr-2" />
-            Export To Single
-          </button>
         </div>
       </div>
 
@@ -220,9 +190,9 @@ const SummaryCards = ({
                       Net Balance:
                     </span>
                   </div>
-                  <span className={`text-xl font-bold ${(displaySummary.net_balance_change || 0) >= 0 ? "text-blue-900" : "text-orange-900"}`}>
-                    {(displaySummary.net_balance_change || 0) >= 0 ? "+" : "-"}
-                    ₹{Math.abs(displaySummary.net_balance_change || 0).toLocaleString("en-IN")}
+                  <span className={`text-xl font-bold ${(displaySummary.net_balance_change + displaySummary.opening_balance || 0) >= 0 ? "text-blue-900" : "text-orange-900"}`}>
+                    {(displaySummary.net_balance_change + displaySummary.opening_balance || 0) >= 0 ? "+" : "-"}
+                    ₹{Math.abs(displaySummary.net_balance_change + displaySummary.opening_balance || 0).toLocaleString("en-IN")}
                   </span>
                 </div>
               </div>
