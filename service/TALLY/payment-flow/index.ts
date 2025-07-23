@@ -4,6 +4,17 @@ import { v4 as uuidv4 } from "uuid";
 import { XMLParser } from 'fast-xml-parser';
 import { postXml } from "../../tally";
 
+function downloadXML(xml: string, filename = 'stockitems.xml') {
+  const blob = new Blob([xml], { type: 'application/xml' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+
 export function extractBankHolderDetails(bankDataArray: any): {
   holder_name: string;
   ifsc_code: string;
@@ -359,71 +370,71 @@ export async function extractLedgerCategories(transactions: any[], options: any)
   };
 }
 
-
 export function generateContraVoucherXMLFromTransactions(transactions: any, accountDetails: any, options: any) {
   const {
     companyName,
-    date,
+    date: dataValue,
   } = options;
 
-  const fromLedger = "Cash Withdrawal";
-  const toLedger = accountDetails[0]?.holder_name?.trim() || "Bank Account";
 
+  const toLedger = accountDetails[0]?.holder_name?.trim() || "Bank Account";
   if (!toLedger) throw new Error("❌ Missing holder_name in accountDetails");
 
-  const voucherMessages = transactions.map((txn, index) => {
+  const date = dataValue.replace(/-/g, "");
+
+  const tallyMessages = transactions.map((txn: any, index: number) => {
     const amount = txn.amount;
-    const date = txn.date.replace(/-/g, "");
     const baseUUID = uuidv4();
+    const fromLedger = txn.category;
     const voucherUUID = `${baseUUID}-0000000${index + 1}`;
     const vchKey = `${voucherUUID}:0000000${index + 3}`;
     const guid = `${baseUUID}-00000005`;
     const uniqueRef = Math.random().toString(36).substring(2, 10).toUpperCase();
 
     return `
-<TALLYMESSAGE xmlns:UDF="TallyUDF">
-  <VOUCHER REMOTEID="${voucherUUID}" VCHKEY="${vchKey}" VCHTYPE="Contra" ACTION="Create" OBJVIEW="Accounting Voucher View">
-    <OLDAUDITENTRYIDS.LIST TYPE="Number">
-      <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
-    </OLDAUDITENTRYIDS.LIST>
-    <DATE>${date}</DATE>
-    <REFERENCEDATE>${date}</REFERENCEDATE>
-    <VCHSTATUSDATE>${date}</VCHSTATUSDATE>
-    <GUID>${guid}</GUID>
-    <VOUCHERTYPENAME>Contra</VOUCHERTYPENAME>
-    <PARTYLEDGERNAME>${fromLedger}</PARTYLEDGERNAME>
-    <VOUCHERNUMBER>${index + 1}</VOUCHERNUMBER>
+      <TALLYMESSAGE xmlns:UDF="TallyUDF">
+        <VOUCHER REMOTEID="${voucherUUID}" VCHKEY="${vchKey}" VCHTYPE="Contra" ACTION="Create" OBJVIEW="Accounting Voucher View">
+          <OLDAUDITENTRYIDS.LIST TYPE="Number">
+            <OLDAUDITENTRYIDS>-1</OLDAUDITENTRYIDS>
+          </OLDAUDITENTRYIDS.LIST>
+          <DATE>${date}</DATE>
+          <REFERENCEDATE>${date}</REFERENCEDATE>
+          <VCHSTATUSDATE>${date}</VCHSTATUSDATE>
+          <GUID>${guid}</GUID>
+          <VOUCHERTYPENAME>Contra</VOUCHERTYPENAME>
+          <PARTYLEDGERNAME>${fromLedger}</PARTYLEDGERNAME>
+          <VOUCHERNUMBER>${index + 1}</VOUCHERNUMBER>
+          
+          <ALLLEDGERENTRIES.LIST>
+            <LEDGERNAME>${fromLedger}</LEDGERNAME>
+            <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
+            <AMOUNT>${amount.toFixed(2)}</AMOUNT>
+          </ALLLEDGERENTRIES.LIST>
 
-    <ALLLEDGERENTRIES.LIST>
-      <LEDGERNAME>${fromLedger}</LEDGERNAME>
-      <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
-      <AMOUNT>${amount.toFixed(2)}</AMOUNT>
-    </ALLLEDGERENTRIES.LIST>
-
-    <ALLLEDGERENTRIES.LIST>
-      <LEDGERNAME>${toLedger}</LEDGERNAME>
-      <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-      <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
-      <AMOUNT>-${amount.toFixed(2)}</AMOUNT>
-      <BANKALLOCATIONS.LIST>
-        <DATE>${date}</DATE>
-        <INSTRUMENTDATE>${date}</INSTRUMENTDATE>
-        <NAME>${uniqueRef}</NAME>
-        <TRANSACTIONTYPE>Cash</TRANSACTIONTYPE>
-        <TRANSACTIONNAME>Cash</TRANSACTIONNAME>
-        <UNIQUEREFERENCENUMBER>${uniqueRef}</UNIQUEREFERENCENUMBER>
-        <PAYMENTMODE>Transacted</PAYMENTMODE>
-        <ISCONNECTEDPAYMENT>No</ISCONNECTEDPAYMENT>
-        <CHEQUEPRINTED>1</CHEQUEPRINTED>
-        <AMOUNT>-${amount.toFixed(2)}</AMOUNT>
-      </BANKALLOCATIONS.LIST>
-    </ALLLEDGERENTRIES.LIST>
-  </VOUCHER>
-</TALLYMESSAGE>
-`.trim();
+          <ALLLEDGERENTRIES.LIST>
+            <LEDGERNAME>${toLedger}</LEDGERNAME>
+            <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+            <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
+            <AMOUNT>-${amount.toFixed(2)}</AMOUNT>
+            <BANKALLOCATIONS.LIST>
+              <DATE>${date}</DATE>
+              <INSTRUMENTDATE>${date}</INSTRUMENTDATE>
+              <NAME>${uniqueRef}</NAME>
+              <TRANSACTIONTYPE>Cash</TRANSACTIONTYPE>
+              <TRANSACTIONNAME>Cash</TRANSACTIONNAME>
+              <UNIQUEREFERENCENUMBER>${uniqueRef}</UNIQUEREFERENCENUMBER>
+              <PAYMENTMODE>Transacted</PAYMENTMODE>
+              <ISCONNECTEDPAYMENT>No</ISCONNECTEDPAYMENT>
+              <CHEQUEPRINTED>1</CHEQUEPRINTED>
+              <AMOUNT>-${amount.toFixed(2)}</AMOUNT>
+            </BANKALLOCATIONS.LIST>
+          </ALLLEDGERENTRIES.LIST>
+        </VOUCHER>
+      </TALLYMESSAGE>
+    `.trim();
   }).join("\n");
 
-  return `
+  const xmlOutput = `
 <ENVELOPE>
   <HEADER>
     <TALLYREQUEST>Import Data</TALLYREQUEST>
@@ -437,12 +448,18 @@ export function generateContraVoucherXMLFromTransactions(transactions: any, acco
         </STATICVARIABLES>
       </REQUESTDESC>
       <REQUESTDATA>
-${voucherMessages}
+${tallyMessages}
       </REQUESTDATA>
     </IMPORTDATA>
   </BODY>
-</ENVELOPE>`.trim();
+</ENVELOPE>
+`.trim();
+
+  // downloadXML(xmlOutput);
+
+  return xmlOutput;
 }
+
 
 
 // STEP 2: XML Generator (already provided)
@@ -622,8 +639,6 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
   // 📋 Step 3: Extract and create missing ledgers
   const { newLedgers } = await extractLedgerCategories(formattedTransactions, { companyName });
 
-  console.log({ newLedgers })
-
   if (newLedgers.length > 0) {
     console.log("📥 Creating missing ledgers...");
     await generateTallyLedgerXML(newLedgers);
@@ -632,18 +647,72 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
   // ⏳ Step 4: Wait for ledger sync
   await new Promise(res => setTimeout(res, 1000));
 
-  // 🧾 Step 5: Generate voucher XML
-  const voucherXML = generatePaymentVoucherXMLFromPayload(
+  console.log({
     formattedTransactions,
-    { companyName, date, voucherType, narrationPrefix },
-    accountDetails
+    companyName,
+    date,
+    voucherType,
+    narrationPrefix,
+    accountDetails,
+  });
+
+  // 🔍 Step 5: Split Cash & Non-Cash transactions
+  const cashTransactions = formattedTransactions.filter(
+    (txn) => txn.category === "Cash"
   );
 
+  const nonCashTransactions = formattedTransactions.filter(
+    (txn) => txn.category !== "Cash"
+  );
+
+  let voucherXML = "";
+
+  // 💵 Step 5A: If there are cash entries, generate Contra voucher
+  if (cashTransactions.length > 0) {
+    const cashXML = generateContraVoucherXMLFromTransactions(
+      cashTransactions,
+      accountDetails,
+      { companyName, date, voucherType, narrationPrefix }
+    );
+    voucherXML += cashXML;
+  }
+
+  // 🧾 Step 5B: If there are non-cash entries, generate Payment voucher
+  if (nonCashTransactions.length > 0) {
+    const nonCashXML = generatePaymentVoucherXMLFromPayload(
+      nonCashTransactions,
+      { companyName, date, voucherType, narrationPrefix },
+      accountDetails
+    );
+    voucherXML += `\n${nonCashXML}`;
+  }
+
   // 🚀 Step 6: Send to Tally
-  console.log({ voucherXML })
-  const res = await postXml(voucherXML)
-  const result = await res
-  return { status: true, result }
+  console.log({ voucherXML });
+  const res = await postXml(voucherXML);
+  const result = await res;
+  return { status: true, result };
+
+
+  // console.log({
+  //   formattedTransactions,
+  //   companyName, date, voucherType, narrationPrefix,
+  //   accountDetails
+  // })
+
+  // // 🧾 Step 5: Generate voucher XML
+  // const voucherXML = generatePaymentVoucherXMLFromPayload(
+  //   formattedTransactions,
+  //   { companyName, date, voucherType, narrationPrefix },
+  //   accountDetails
+  // );
+
+  // // 🚀 Step 6: Send to Tally
+  // console.log({ voucherXML })
+  // const res = await postXml(voucherXML)
+  // const result = await res
+  // return { status: true, result }
+
 }
 
 
