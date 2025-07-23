@@ -1,141 +1,4 @@
-// // steps/FileUploadStep.jsx
-// import {
-//     Upload, CreditCard, ChevronRight, Loader2,
-//     RefreshCw, Smartphone, Play, CheckCircle,
-//     AlertCircle, X
-// } from 'lucide-react';
-// import QRCode from 'react-qr-code';
-// import axios from 'axios';
-// import { toast } from 'react-toastify';
-
-// export default function FileUploadStep({
-//     businessCategory,
-//     businessSubcategory,
-//     uploadedFiles,
-//     setUploadedFiles,
-//     mobileFiles,
-//     setMobileFiles,
-//     processing,
-//     setProcessing,
-//     qrSession,
-//     setQRSession,
-//     qrSessionLoading,
-//     setQRSessionLoading,
-//     processDocuments,
-//     resetForm,
-//     createQRSession,
-//     processingProgress
-// }) {
-//     const handleFileUpload = (event) => {
-//         const files = Array.from(event.target.files);
-//         const validFiles = [];
-//         const errors = [];
-
-//         files.forEach(file => {
-//             if (file.size > 20 * 1024 * 1024) {
-//                 errors.push(`${file.name}: File too large (max 20MB)`);
-//                 return;
-//             }
-
-//             const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-//             if (!['.pdf', '.xls', '.xlsx'].includes(fileExtension)) {
-//                 errors.push(`${file.name}: Only PDF and Excel files (.xls, .xlsx) are supported`);
-//                 return;
-//             }
-
-//             validFiles.push(file);
-//         });
-
-//         if (errors.length > 0) {
-//             alert('File validation errors:\n' + errors.join('\n'));
-//         }
-
-//         setUploadedFiles(validFiles);
-//     };
-
-//     const getCategoryColor = (category) => {
-//         const colors = {
-//             service: 'blue',
-//             manufacturing: 'green',
-//             trading: 'purple'
-//         };
-//         return colors[category] || 'gray';
-//     };
-
-//     return (
-//         <div className="bg-white rounded-xl shadow-sm p-8">
-//             <div className="text-center mb-8">
-//                 <CreditCard className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-//                 <h2 className="text-3xl font-bold text-gray-900">Upload Bank Statements</h2>
-//                 <p className="text-gray-600 mt-2 text-lg">
-//                     Upload PDF or Excel bank statements for {businessSubcategory} analysis
-//                 </p>
-//             </div>
-
-//             <div className={`bg-gradient-to-r ${businessCategories.find(c => c.value === businessCategory)?.bgGradient} ${businessCategories.find(c => c.value === businessCategory)?.borderColor} border rounded-lg p-6 mb-8`}>
-//                 <div className="flex items-center justify-center mb-4">
-//                     <div className={`text-${getCategoryColor(businessCategory)}-600 mr-4`}>
-//                         {businessCategories.find(c => c.value === businessCategory)?.icon}
-//                     </div>
-//                     <div className="text-center">
-//                         <h3 className={`text-${getCategoryColor(businessCategory)}-800 font-bold text-xl`}>
-//                             {businessSubcategory}
-//                         </h3>
-//                         <p className={`text-${getCategoryColor(businessCategory)}-700 text-sm`}>
-//                             {businessCategories.find(c => c.value === businessCategory)?.label} • AI will classify with {businessSubcategory} context
-//                         </p>
-//                     </div>
-//                 </div>
-//             </div>
-
-//             {/* ... feature highlights grid ... */}
-
-//             <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
-//                 {/* ... file upload area ... */}
-//             </div>
-
-//             {(uploadedFiles.length > 0 || mobileFiles.length > 0) && (
-//                 <div className="mt-8 flex justify-between items-center">
-//                     <button
-//                         onClick={resetForm}
-//                         className="text-gray-600 hover:text-gray-800 flex items-center"
-//                     >
-//                         <RefreshCw className="w-4 h-4 mr-2" />
-//                         Start Over
-//                     </button>
-//                     <button
-//                         onClick={processDocuments}
-//                         disabled={processing || (uploadedFiles.length === 0 && mobileFiles.length === 0)}
-//                         className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center font-medium disabled:opacity-50"
-//                     >
-//                         {processing ? (
-//                             <>
-//                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-//                                 Processing...
-//                             </>
-//                         ) : (
-//                             <>
-//                                 Analyze Bank Statements
-//                                 <ChevronRight className="w-4 h-4 ml-2" />
-//                             </>
-//                         )}
-//                     </button>
-//                 </div>
-//             )}
-
-//             {processing && (
-//                 <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-//                     {/* ... processing indicator ... */}
-//                 </div>
-//             )}
-
-//             <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 mt-8">
-//                 {/* ... mobile upload section ... */}
-//             </div>
-//         </div>
-//     );
-// }
-
+"use client"
 import {
   Upload,
   CreditCard,
@@ -153,6 +16,7 @@ import {
 import QRCode from "react-qr-code";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { useEffect, useState } from "react";
 
 const FileUploadStep = ({
   businessCategory,
@@ -174,6 +38,35 @@ const FileUploadStep = ({
   handleFileUpload,
   businessCategories,
 }) => {
+
+  const [timer, setTimer] = useState(0);  // Timer state
+  const [processingMessage, setProcessingMessage] = useState(
+    "This may take up to 2-5 minutes. Please wait..."
+  );
+
+  const formatTime = (timeInSeconds: number) => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = timeInSeconds % 60;
+    return `${minutes < 10 ? '0' + minutes : minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+  };
+
+  useEffect(() => {
+    let timerInterval;
+
+    if (processing) {
+      // Start the timer when processing starts
+      timerInterval = setInterval(() => {
+        setTimer((prev) => prev + 1); // Increment the timer every second
+      }, 1000);
+    } else {
+      // Reset timer when processing stops
+      setTimer(0);
+      clearInterval(timerInterval);
+    }
+
+    return () => clearInterval(timerInterval);  // Clean up interval on component unmount or when processing stops
+  }, [processing]);
+
   const getCategoryColor = (category) => {
     const colors = {
       service: "blue",
@@ -375,36 +268,42 @@ const FileUploadStep = ({
           </button>
         </div>
       )}
-      {processing && (
-        <div className="bg-white rounded-xl shadow-sm p-8 text-center mt-8">
-          <div className="relative w-24 h-24 mx-auto mb-6">
-            <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              {currentCategory?.icon}
+      <>
+        {processing && (
+          <div className="bg-white rounded-xl shadow-sm p-8 text-center mt-8">
+            <div className="relative w-24 h-24 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                {currentCategory?.icon}
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Processing {businessSubcategory} Statements
+            </h2>
+            <p className="text-gray-600 mb-6">
+              DeepSeek AI is analyzing your bank statements (PDF/Excel) with{" "}
+              {businessSubcategory} business context...
+            </p>
+            <p className="text-sm text-gray-500 mb-4">{processingMessage}</p> {/* Message */}
+            <div className="max-w-md mx-auto">
+              <div className="flex justify-between text-sm text-gray-600 mb-2">
+                <span>Progress</span>
+                <span>{processingProgress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${processingProgress}%` }}
+                ></div>
+              </div>
+            </div>
+            <div className="mt-4 text-sm text-gray-600">
+              <span className="font-bold">Elapsed Time:  {formatTime(timer)}</span> {/* Display the timer */}
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Processing {businessSubcategory} Statements
-          </h2>
-          <p className="text-gray-600 mb-6">
-            DeepSeek AI is analyzing your bank statements (PDF/Excel) with{" "}
-            {businessSubcategory} business context...
-          </p>
-          <div className="max-w-md mx-auto">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Progress</span>
-              <span>{processingProgress}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div
-                className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${processingProgress}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </>
       <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 mt-8">
         <div className="flex flex-col md:flex-row items-center gap-6">
           <div className="flex-1">

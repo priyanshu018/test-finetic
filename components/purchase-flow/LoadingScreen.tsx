@@ -42,6 +42,10 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading }) => {
         return `${hours}:${minutes}:${seconds}`;
     };
 
+    const estimatedTimeMessage = elapsed < 120000
+        ? "This may take up to 2 minutes. Please wait..."
+        : "This may take up to 5 minutes. Please wait...";
+
     return (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/75 backdrop-blur-sm">
             <div className="flex flex-col items-center space-y-6 p-8 bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
@@ -75,6 +79,8 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading }) => {
                         </svg>
                         {formatTime(elapsed)}
                     </div>
+                    {/* Show estimated time message */}
+                    <p className="text-sm text-gray-500">{estimatedTimeMessage}</p>
                 </div>
 
                 <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
