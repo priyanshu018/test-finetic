@@ -5,12 +5,14 @@ import {
     Filter,
     Download,
     BookMarked,
+    PlusCircle,
     Eye,
     EyeOff,
 } from "lucide-react";
 import DateFilter from "./DateFilter";
 import SummaryCards from "./SummaryCards";
 import TransactionTable from "./TransactionTable";
+import { useState } from "react";
 
 const ResultsStep = ({
     businessCategory,
@@ -62,7 +64,60 @@ const ResultsStep = ({
     creditClassificationOptions,
     showDetails,
     setShowDetails,
+    onAddTransaction,
 }) => {
+
+    const [isAdding, setIsAdding] = useState(false);
+    const [newEntry, setNewEntry] = useState({
+        date: new Date().toISOString().split('T')[0],
+        description: '',
+        debit: '',
+        credit: '',
+        classification: '',
+        vendor: '',
+    });
+
+    // Handle input changes for new entry
+    const handleNewEntryChange = (field, value) => {
+        setNewEntry(prev => ({ ...prev, [field]: value }));
+    };
+
+    // Save new entry
+    const saveNewEntry = () => {
+        const entry = {
+            ...newEntry,
+            id: `user-added-${Date.now()}`,
+            type: newEntry.debit ? 'Debit' : 'Credit',
+            confidence: 100,
+            category: businessSubcategory,
+            balance: 0,
+        };
+        onAddTransaction(entry);
+        setIsAdding(false);
+        setNewEntry({
+            date: new Date().toISOString().split('T')[0],
+            description: '',
+            debit: '',
+            credit: '',
+            classification: '',
+            vendor: '',
+        });
+    };
+
+    // Cancel adding new entry
+    const cancelAddEntry = () => {
+        setIsAdding(false);
+        setNewEntry({
+            date: new Date().toISOString().split('T')[0],
+            description: '',
+            debit: '',
+            credit: '',
+            classification: '',
+            vendor: '',
+        });
+    };
+
+
     const getCategoryColor = (category) => {
         const colors = {
             service: "blue",
@@ -206,6 +261,12 @@ const ResultsStep = ({
                     dateRangeStart={dateRangeStart}
                     dateRangeEnd={dateRangeEnd}
                     formatMonthDisplay={formatMonthDisplay}
+                    isAdding={isAdding}
+                    onAddNewEntry={() => setIsAdding(true)}
+                    newEntry={newEntry}
+                    handleNewEntryChange={handleNewEntryChange}
+                    saveNewEntry={saveNewEntry}
+                    cancelAddEntry={cancelAddEntry}
                 />
             </div>
         </>

@@ -597,6 +597,30 @@ const ExpenseClassifier = () => {
     }
   };
 
+  const handleAddTransaction = (newTransaction) => {
+    // Add the new transaction to results
+    const updatedResults = [...results, newTransaction];
+    setResults(updatedResults);
+
+    // Update the summary to reflect the new transaction
+    updateSummary(updatedResults);
+
+    // You might also need to update other states like filteredResults
+    // depending on your implementation
+  };
+
+  // Function to update summary based on new results
+  const updateSummary = (transactions) => {
+    // Calculate new summary based on transactions
+    // This should match your existing summary calculation logic
+    const newSummary = {
+      totalDebits: transactions.reduce((sum, t) => t.transaction_type === 'DEBIT' ? sum + t.amount : sum, 0),
+      totalCredits: transactions.reduce((sum, t) => t.transaction_type === 'CREDIT' ? sum + t.amount : sum, 0),
+      // ... other summary properties
+    };
+    setSummary(newSummary);
+  };
+
   const cancelRowEdit = () => {
     setEditingRow(null);
     setEditingCategory(null);
@@ -1204,6 +1228,7 @@ const ExpenseClassifier = () => {
             creditClassificationOptions={creditClassificationOptions}
             showDetails={showDetails}
             setShowDetails={setShowDetails}
+            onAddTransaction={handleAddTransaction}
           />
         )}
       </div>

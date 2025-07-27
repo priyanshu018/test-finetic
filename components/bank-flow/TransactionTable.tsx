@@ -44,7 +44,8 @@
 import {
     Edit3, Save, X, CheckCircle,
     ArrowDownCircle, ArrowUpCircle, Banknote,
-    AlertCircle, FileSpreadsheet, RefreshCw
+    AlertCircle, FileSpreadsheet, RefreshCw,
+    PlusCircle
 } from "lucide-react";
 
 const TransactionTable = ({
@@ -83,7 +84,14 @@ const TransactionTable = ({
     dateRangeStart,
     dateRangeEnd,
     formatMonthDisplay,
-    clearDateFilters
+    clearDateFilters,
+    isAdding,
+    onAddNewEntry,
+    newEntry,
+    handleNewEntryChange,
+    saveNewEntry,
+    cancelAddEntry,
+
 }) => {
     const filteredResults = getFilteredResults();
 
@@ -106,6 +114,14 @@ const TransactionTable = ({
                             {dateFilterType !== "all" && " (Filtered by date)"}
                         </p>
                     </div>
+
+                    <button
+                        onClick={onAddNewEntry}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+                    >
+                        <PlusCircle size={18} />
+                        Add New Entry
+                    </button>
                 </div>
 
                 <div className="mb-4">
@@ -284,6 +300,117 @@ const TransactionTable = ({
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
+
+                        {isAdding && (
+                            <tr className="bg-blue-50 border-l-4 border-blue-400">
+                                <td className="px-6 py-4">
+                                    <input
+                                        type="date"
+                                        value={newEntry.date}
+                                        onChange={(e) => handleNewEntryChange('date', e.target.value)}
+                                        className="border rounded px-2 py-1 w-full text-sm text-black"
+                                    />
+                                </td>
+                                <td className="px-6 py-4">
+                                    <input
+                                        type="text"
+                                        value={newEntry.vendor}
+                                        onChange={(e) => handleNewEntryChange('vendor', e.target.value)}
+                                        placeholder="Vendor"
+                                        className="border rounded px-2 py-1 w-full mb-1 text-sm text-black"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={newEntry.description}
+                                        onChange={(e) => handleNewEntryChange('description', e.target.value)}
+                                        placeholder="Description"
+                                        className="border rounded px-2 py-1 w-full text-sm text-black"
+                                    />
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex flex-col gap-2">
+                                        <input
+                                            type="number"
+                                            value={newEntry.debit}
+                                            onChange={(e) => {
+                                                handleNewEntryChange('debit', e.target.value);
+                                                if (e.target.value !== '') {
+                                                    handleNewEntryChange('credit', '');
+                                                }
+                                            }}
+                                            placeholder="Debit"
+                                            className="border rounded px-2 py-1 w-full text-sm text-black"
+                                        />
+                                        <input
+                                            type="number"
+                                            value={newEntry.credit}
+                                            onChange={(e) => {
+                                                handleNewEntryChange('credit', e.target.value);
+                                                if (e.target.value !== '') {
+                                                    handleNewEntryChange('debit', '');
+                                                }
+                                            }}
+                                            placeholder="Credit"
+                                            className="border rounded px-2 py-1 w-full text-sm text-black"
+                                        />
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 text-sm font-medium">
+                                    {newEntry.debit ? (
+                                        <span className="text-red-900">-₹{(newEntry.debit || 0).toLocaleString("en-IN")}</span>
+                                    ) : newEntry.credit ? (
+                                        <span className="text-green-900">+₹{(newEntry.credit || 0).toLocaleString("en-IN")}</span>
+                                    ) : ''}
+                                </td>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-400">
+                                    N/A
+                                </td>
+                                <td className="px-6 py-4">
+                                    <span className="mt-3 flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+                                        {newEntry.debit ? 'DEBIT' : newEntry.credit ? 'CREDIT' : 'SELECT'}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <select
+                                        value={newEntry.classification}
+                                        onChange={(e) => handleNewEntryChange('classification', e.target.value)}
+                                        className="border rounded px-2 py-1 w-full text-sm text-black"
+                                    >
+                                        <option value="">Select classification</option>
+                                        {debitClassificationOptions.map(option => (
+                                            <option key={option} value={option}>{option}</option>
+                                        ))}
+                                        {creditClassificationOptions.map(option => (
+                                            <option key={option} value={option}>{option}</option>
+                                        ))}
+                                    </select>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-600">
+                                    {businessSubcategory}
+                                </td>
+                                <td className="px-6 py-4">
+                                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        100%
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 flex flex-col gap-2">
+                                    <button
+                                        onClick={saveNewEntry}
+                                        className="text-green-600 hover:text-green-800 font-medium"
+                                    >
+                                        Save
+                                    </button>
+                                    <button
+                                        onClick={cancelAddEntry}
+                                        className="text-red-600 hover:text-red-800 font-medium"
+                                    >
+                                        Cancel
+                                    </button>
+                                </td>
+                            </tr>
+                        )}
+
+
                         {filteredResults.map((item) => (
                             <tr
                                 key={item.id}
