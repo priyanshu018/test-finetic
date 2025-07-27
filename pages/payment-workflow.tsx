@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-
 import * as XLSX from "xlsx";
 import { BackendLink } from "../service/api";
 import {
@@ -9,13 +8,11 @@ import {
   startTransactionProcessing,
 } from "../service/TALLY/payment-flow";
 import { toast } from "react-toastify";
-import axios from "axios";
 import { getCurrentCompanyData } from "../service/tally";
 import Header from "../components/bank-flow/header";
 import { AlertCircle, Briefcase, Factory, ShoppingCart } from "lucide-react";
 import BusinessCategoryStep from "../components/bank-flow/BusinessCategoryStep";
 import BusinessSubcategoryStep from "../components/bank-flow/BusinessSubcategoryStep";
-
 import ResultsStep from "../components/bank-flow/ResultsStep";
 import FileUploadStep from "../components/bank-flow/FileUploadStep";
 
@@ -403,6 +400,13 @@ const ExpenseClassifier = () => {
           high_confidence: 0,
         }
       );
+
+      const latestMonth = data?.results?.[0]?.date?.substring(0, 7); // YYYY-MM
+      console.log({ latestMonth })
+      if (latestMonth) {
+        storeBankStatement(latestMonth, bankDetails, data.summary, data.results);
+      }
+
       setCurrentStep(4);
 
       if (data.processing_errors?.length > 0) {
@@ -917,6 +921,24 @@ const ExpenseClassifier = () => {
   };
 
   const { push } = useRouter();
+
+  const storeBankStatement = (month: string, header: any, summary: any, results: any) => {
+    console.log({ month, header, summary, results })
+
+    const key = "BankStatement_" + month;
+    console.log({ key })
+    const encoded = btoa(JSON.stringify({ header, summary, results }));
+    console.log({ encoded })
+    localStorage.setItem(key, encoded);
+
+    const summaryList = JSON.parse(localStorage.getItem("summaryBankStatement") || "[]");
+    const headerExists = summaryList.some((s: any) => s.month === month);
+    if (!headerExists) {
+      summaryList.push({ month, holder_name: header.holder_name, account_number: header.account_number });
+      localStorage.setItem("summaryBankStatement", JSON.stringify(summaryList));
+    }
+  };
+
 
   useEffect(() => {
     createQRSession();

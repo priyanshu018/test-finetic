@@ -6,6 +6,7 @@ import {
   FiTrendingUp,
   FiBarChart2,
   FiChevronRight,
+  FiDatabase,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 
@@ -125,7 +126,7 @@ export default function IndexPage() {
           <p className="text-gray-600 mt-1">Select an option to get started</p>
         </div>
 
-        {/* Action Cards Grid - Professional Version */}
+        {/* Action Cards Grid - Updated to 2x2 grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {/* AI Workflow Card */}
           <Link
@@ -188,16 +189,18 @@ export default function IndexPage() {
               </div>
             </div>
           </Link>
+
+          {/* Bank Workflow Card */}
           <Link
             href="/payment-workflow"
             className="group flex bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
           >
-            <div className="w-3 bg-indigo-600 hidden sm:block"></div>
+            <div className="w-3 bg-green-600 hidden sm:block"></div>
             <div className="flex-1 p-6 sm:p-8">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 rounded-lg bg-indigo-50 flex items-center justify-center">
-                    <FiBarChart2 className="w-6 h-6 text-indigo-600" />
+                  <div className="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center">
+                    <FiDollarSign className="w-6 h-6 text-green-600" />
                   </div>
                 </div>
                 <div className="ml-4 flex-1">
@@ -205,12 +208,43 @@ export default function IndexPage() {
                     <h2 className="text-lg font-medium text-gray-900">
                       Bank Workflow
                     </h2>
-                    <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all duration-200" />
+                    <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-green-600 group-hover:translate-x-0.5 transition-all duration-200" />
                   </div>
                   <p className="text-gray-600">
-                    Export Bank Data intelligently into accounting software using AI
+                    Export bank data intelligently into accounting software using AI
                   </p>
-                  <div className="mt-4 flex items-center text-xs text-indigo-600">
+                  <div className="mt-4 flex items-center text-xs text-green-600">
+                    <span className="font-medium">Get started</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Bank Flow Data Card - NEW */}
+          <Link
+            href="/bank-flow-data"
+            className="group flex bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+          >
+            <div className="w-3 bg-purple-600 hidden sm:block"></div>
+            <div className="flex-1 p-6 sm:p-8">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-lg bg-purple-50 flex items-center justify-center">
+                    <FiDatabase className="w-6 h-6 text-purple-600" />
+                  </div>
+                </div>
+                <div className="ml-4 flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <h2 className="text-lg font-medium text-gray-900">
+                      Bank Flow Data
+                    </h2>
+                    <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all duration-200" />
+                  </div>
+                  <p className="text-gray-600">
+                    View and manage your stored bank transaction data
+                  </p>
+                  <div className="mt-4 flex items-center text-xs text-purple-600">
                     <span className="font-medium">Get started</span>
                   </div>
                 </div>
