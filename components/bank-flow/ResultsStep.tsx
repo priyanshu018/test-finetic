@@ -19,6 +19,7 @@ const ResultsStep = ({
     results,
     summary,
     filterType,
+    startSaveProcess,
     setFilterType,
     searchTerm,
     setSearchTerm,
@@ -191,6 +192,7 @@ const ResultsStep = ({
                     cancelRowEdit={cancelRowEdit}
                     handleSort={handleSort}
                     getSortIcon={getSortIcon}
+                    startSaveProcess={startSaveProcess}
                     getConfidenceColor={getConfidenceColor}
                     getClassificationColor={getClassificationColor}
                     getTransactionTypeColor={getTransactionTypeColor}

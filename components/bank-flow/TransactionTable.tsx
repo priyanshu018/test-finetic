@@ -58,6 +58,8 @@ const TransactionTable = ({
     editingRow,
     setEditingRow,
     editingCategory,
+    startSaveProcess,
+    summary,
     setEditingCategory,
     tempCategoryValue,
     setTempCategoryValue,
@@ -144,8 +146,8 @@ const TransactionTable = ({
                     <button
                         onClick={() => setFilterType("all")}
                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === "all"
-                                ? "bg-blue-100 text-blue-700 border border-blue-300"
-                                : "bg-gray-100 text-gray-600 border border-gray-300"
+                            ? "bg-blue-100 text-blue-700 border border-blue-300"
+                            : "bg-gray-100 text-gray-600 border border-gray-300"
                             }`}
                     >
                         <FileSpreadsheet className="w-4 h-4 mr-2" />
@@ -155,8 +157,8 @@ const TransactionTable = ({
                     <button
                         onClick={() => setFilterType("debit")}
                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === "debit"
-                                ? "bg-red-100 text-red-700 border border-red-300"
-                                : "bg-gray-100 text-gray-600 border border-gray-300"
+                            ? "bg-red-100 text-red-700 border border-red-300"
+                            : "bg-gray-100 text-gray-600 border border-gray-300"
                             }`}
                     >
                         <ArrowDownCircle className="w-4 h-4 mr-2" />
@@ -166,8 +168,8 @@ const TransactionTable = ({
                     <button
                         onClick={() => setFilterType("credit")}
                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === "credit"
-                                ? "bg-green-100 text-green-700 border border-green-300"
-                                : "bg-gray-100 text-gray-600 border border-gray-300"
+                            ? "bg-green-100 text-green-700 border border-green-300"
+                            : "bg-gray-100 text-gray-600 border border-gray-300"
                             }`}
                     >
                         <ArrowUpCircle className="w-4 h-4 mr-2" />
@@ -177,8 +179,8 @@ const TransactionTable = ({
                     <button
                         onClick={() => setFilterType("cash")}
                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === "cash"
-                                ? "bg-amber-100 text-amber-700 border border-amber-300"
-                                : "bg-gray-100 text-gray-600 border border-gray-300"
+                            ? "bg-amber-100 text-amber-700 border border-amber-300"
+                            : "bg-gray-100 text-gray-600 border border-gray-300"
                             }`}
                     >
                         <Banknote className="w-4 h-4 mr-2" />
@@ -192,8 +194,8 @@ const TransactionTable = ({
                     <button
                         onClick={() => setFilterType("suspense")}
                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center ${filterType === "suspense"
-                                ? "bg-orange-100 text-orange-700 border border-orange-300"
-                                : "bg-gray-100 text-gray-600 border border-gray-300"
+                            ? "bg-orange-100 text-orange-700 border border-orange-300"
+                            : "bg-gray-100 text-gray-600 border border-gray-300"
                             }`}
                     >
                         <AlertCircle className="w-4 h-4 mr-2" />
@@ -286,8 +288,8 @@ const TransactionTable = ({
                             <tr
                                 key={item.id}
                                 className={`hover:bg-gray-50 transition-colors ${item.classification === "SUSPENSE"
-                                        ? "bg-orange-25 border-l-4 border-orange-300"
-                                        : ""
+                                    ? "bg-orange-25 border-l-4 border-orange-300"
+                                    : ""
                                     }`}
                             >
                                 <td className="px-6 py-4 text-sm text-gray-600">
@@ -320,8 +322,8 @@ const TransactionTable = ({
                                 </td>
                                 <td className="px-6 py-4 text-sm font-medium">
                                     <div className={`px-3 py-1 rounded-full text-xs font-medium ${(item.running_balance || 0) >= 0
-                                            ? "text-blue-700 bg-blue-100"
-                                            : "text-orange-700 bg-orange-100"
+                                        ? "text-blue-700 bg-blue-100"
+                                        : "text-orange-700 bg-orange-100"
                                         }`}>
                                         ₹{(item.running_balance || 0).toLocaleString("en-IN")}
                                     </div>
@@ -384,7 +386,7 @@ const TransactionTable = ({
                                         {item.classification === "SUSPENSE" ? "REVIEW" : `${item.confidence}%`}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4">
+                                {/* <td className="px-6 py-4">
                                     {editingRow === item.id ? (
                                         <div className="flex flex-col space-y-2">
                                             <div className="flex space-x-2">
@@ -419,6 +421,58 @@ const TransactionTable = ({
                                             onClick={() => startRowEdit(item.id, item.classification, item.category)}
                                             className={`bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center ${item.classification === "SUSPENSE" ? "bg-orange-600 hover:bg-orange-700" : ""
                                                 }`}
+                                            title="Edit classification and category"
+                                        >
+                                            <Edit3 className="w-3 h-3 mr-1" />
+                                            Edit
+                                        </button>
+                                    )}
+                                </td> */}
+
+                                <td className="px-6 py-4">
+                                    {editingRow === item.id ? (
+                                        <div className="flex flex-col space-y-2">
+                                            <div className="flex space-x-2">
+                                                <button
+                                                    onClick={() => startSaveProcess(item.id)} // Changed to startSaveProcess
+                                                    className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors flex items-center"
+                                                    title="Save changes"
+                                                >
+                                                    <Save className="w-3 h-3 mr-1" />
+                                                    Save
+                                                </button>
+                                                <button
+                                                    onClick={cancelRowEdit}
+                                                    className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors flex items-center"
+                                                    title="Cancel editing"
+                                                >
+                                                    <X className="w-3 h-3 mr-1" />
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                            {(() => {
+                                                const matchingCount = getMatchingVendorCount(item.id, item.vendor);
+                                                const filteredResults = getFilteredResults();
+                                                const filteredMatchingCount = filteredResults.filter(i =>
+                                                    i.id !== item.id &&
+                                                    (i.vendor || "").trim().toUpperCase().substring(0, 6) ===
+                                                    (item.vendor || "").trim().toUpperCase().substring(0, 6)
+                                                ).length;
+
+                                                return matchingCount > 0 ? (
+                                                    <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded border">
+                                                        💡 Found {matchingCount} similar transactions in all data
+                                                        {filteredMatchingCount > 0 && (
+                                                            <span>, {filteredMatchingCount} in current filter</span>
+                                                        )}
+                                                    </div>
+                                                ) : null;
+                                            })()}
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => startRowEdit(item.id, item.classification, item.category)}
+                                            className={`bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center ${item.classification === "SUSPENSE" ? "bg-orange-600 hover:bg-orange-700" : ""}`}
                                             title="Edit classification and category"
                                         >
                                             <Edit3 className="w-3 h-3 mr-1" />

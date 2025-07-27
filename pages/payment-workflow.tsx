@@ -44,6 +44,14 @@ const ExpenseClassifier = () => {
   const [dateRangeStart, setDateRangeStart] = useState("");
   const [dateRangeEnd, setDateRangeEnd] = useState("");
 
+  const [editModal, setEditModal] = useState({
+    show: false,
+    id: null,
+    newClassification: null,
+    matchingCount: 0,
+    filteredMatchingCount: 0
+  });
+
   const businessCategories = [
     {
       value: "service",
@@ -473,26 +481,67 @@ const ExpenseClassifier = () => {
     }).length;
   };
 
-  const saveRowChanges = (id) => {
+  // const saveRowChanges = (id) => {
+  //   const selectElement: any = document.querySelector(
+  //     `select[data-item-id="${id}"]`
+  //   );
+  //   const newClassification = selectElement ? selectElement.value : null;
+  //   const currentItem = results.find((item) => item.id === id);
+  //   if (!currentItem) return;
+  //   const vendorPrefix = (currentItem.vendor || "")
+  //     .trim()
+  //     .toUpperCase()
+  //     .substring(0, 6);
+  //   setResults(
+  //     results.map((item) => {
+  //       const itemVendorPrefix = (item.vendor || "")
+  //         .trim()
+  //         .toUpperCase()
+  //         .substring(0, 6);
+  //       const shouldUpdate =
+  //         item.id === id ||
+  //         (vendorPrefix.length >= 6 && itemVendorPrefix === vendorPrefix);
+  //       if (shouldUpdate) {
+  //         const updates: any = {};
+  //         if (newClassification) updates.classification = newClassification;
+  //         if (tempCategoryValue !== undefined)
+  //           updates.category = tempCategoryValue;
+  //         return { ...item, ...updates };
+  //       }
+  //       return item;
+  //     })
+  //   );
+  //   setEditingRow(null);
+  //   setEditingCategory(null);
+  //   setTempCategoryValue("");
+  // };
+
+  const saveRowChanges = (id, updateAll = false) => {
     const selectElement: any = document.querySelector(
       `select[data-item-id="${id}"]`
     );
     const newClassification = selectElement ? selectElement.value : null;
     const currentItem = results.find((item) => item.id === id);
     if (!currentItem) return;
+
     const vendorPrefix = (currentItem.vendor || "")
       .trim()
       .toUpperCase()
       .substring(0, 6);
+
     setResults(
       results.map((item) => {
         const itemVendorPrefix = (item.vendor || "")
           .trim()
           .toUpperCase()
           .substring(0, 6);
+
         const shouldUpdate =
           item.id === id ||
-          (vendorPrefix.length >= 6 && itemVendorPrefix === vendorPrefix);
+          (updateAll &&
+            vendorPrefix.length >= 6 &&
+            itemVendorPrefix === vendorPrefix);
+
         if (shouldUpdate) {
           const updates: any = {};
           if (newClassification) updates.classification = newClassification;
@@ -503,9 +552,49 @@ const ExpenseClassifier = () => {
         return item;
       })
     );
+
     setEditingRow(null);
     setEditingCategory(null);
     setTempCategoryValue("");
+  };
+
+
+  const startSaveProcess = (id) => {
+    const selectElement: any = document.querySelector(
+      `select[data-item-id="${id}"]`
+    );
+    const newClassification = selectElement ? selectElement.value : null;
+    const currentItem = results.find((item) => item.id === id);
+
+    if (!currentItem) return;
+
+    // Get counts of similar transactions
+    const matchingCount = getMatchingVendorCount(id, currentItem.vendor);
+    const filteredResults = getFilteredResults();
+    const filteredMatchingCount = filteredResults.filter(item =>
+      item.id !== id &&
+      (item.vendor || "").trim().toUpperCase().substring(0, 6) ===
+      (currentItem.vendor || "").trim().toUpperCase().substring(0, 6)
+    ).length;
+
+    const isFilteredView =
+      dateFilterType !== "all" ||
+      filterType !== "all" ||
+      searchTerm !== "";
+
+    if (isFilteredView && matchingCount > 0) {
+      // Show modal
+      setEditModal({
+        show: true,
+        id,
+        newClassification,
+        matchingCount,
+        filteredMatchingCount
+      });
+    } else {
+      // Save directly (update all similar)
+      saveRowChanges(id, true);
+    }
   };
 
   const cancelRowEdit = () => {
@@ -927,7 +1016,7 @@ const ExpenseClassifier = () => {
 
     const key = "BankStatement_" + month;
     console.log({ key })
-    const encoded = btoa(JSON.stringify({ header, summary, results }));
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify({ header, summary, results }))));
     console.log({ encoded })
     localStorage.setItem(key, encoded);
 
@@ -947,6 +1036,70 @@ const ExpenseClassifier = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Header currentStep={currentStep} push={push} />
+
+      {editModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="font-bold text-lg text-gray-900 mb-4">
+              Update Transaction
+            </h3>
+            <p className="text-gray-700 mb-4">
+              You're editing in a filtered view with {editModal.filteredMatchingCount} similar
+              transactions in this filter and {editModal.matchingCount} total similar transactions.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  // Update only similar transactions in current filter
+                  saveRowChanges(editModal.id, true);
+                  setEditModal({
+                    show: false,
+                    id: null,
+                    newClassification: null,
+                    matchingCount: 0,
+                    filteredMatchingCount: 0
+                  });
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Update {editModal.filteredMatchingCount + 1} Transactions in This Filter
+              </button>
+
+              <button
+                onClick={() => {
+                  // Update all similar transactions
+                  saveRowChanges(editModal.id, true);
+                  setEditModal({
+                    show: false,
+                    id: null,
+                    newClassification: null,
+                    matchingCount: 0,
+                    filteredMatchingCount: 0
+                  });
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Update All {editModal.matchingCount + 1} Similar Transactions
+              </button>
+
+              <button
+                onClick={() => setEditModal({
+                  show: false,
+                  id: null,
+                  newClassification: null,
+                  matchingCount: 0,
+                  filteredMatchingCount: 0
+                })}
+                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors mt-2"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto px-6 py-8">
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -959,6 +1112,7 @@ const ExpenseClassifier = () => {
             </div>
           </div>
         )}
+
         {currentStep === 1 && (
           <BusinessCategoryStep
             businessCategories={businessCategories}
@@ -1021,6 +1175,7 @@ const ExpenseClassifier = () => {
             dateFilterType={dateFilterType}
             setDateFilterType={setDateFilterType}
             selectedDate={selectedDate}
+            startSaveProcess={startSaveProcess}
             setSelectedDate={setSelectedDate}
             selectedMonth={selectedMonth}
             setSelectedMonth={setSelectedMonth}
