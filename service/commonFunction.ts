@@ -362,7 +362,7 @@ export function createVoucher(payload) {
                 <VCHSTATUSTAXUNIT>${payload.companyName}</VCHSTATUSTAXUNIT>
                 <VCHGSTCLASS>&#4; Not Applicable</VCHGSTCLASS>
                 <VCHENTRYMODE>Item Invoice</VCHENTRYMODE>
-                <EFFECTIVEDATE>20250401</EFFECTIVEDATE>
+                <EFFECTIVEDATE>${payload?.invoiceDate}</EFFECTIVEDATE>
                 <ISELIGIBLEFORITC>Yes</ISELIGIBLEFORITC>
                 <ISINVOICE>Yes</ISINVOICE>
                 <ISVATDUTYPAID>Yes</ISVATDUTYPAID>

@@ -297,7 +297,7 @@ export async function generateAccountLedgerXML({
 export async function extractLedgerCategories(transactions: any[], options: any) {
   const ledgerMap: Map<string, { ledgerName: string; type: string }> = new Map();
   const cashLedgers: Map<string, { ledgerName: string; parent: string }> = new Map();
-
+  console.log({ transactions }, "generateTallyLedgerXML")
   for (const txn of transactions) {
     if (!txn.category) continue;
 
@@ -511,7 +511,6 @@ export async function generateTallyLedgerXML(entries = []) {
 export function generatePaymentVoucherXMLFromPayload(payments: any, options: any, accountDetails: any) {
   const {
     companyName,
-    date,
     voucherType,
     narrationPrefix,
   } = options;
@@ -525,7 +524,10 @@ export function generatePaymentVoucherXMLFromPayload(payments: any, options: any
       category,
       amount,
       narration = `${narrationPrefix} Payment for ${category}`,
+      date,
     } = entry;
+
+
 
     const resolvedAccount = (account || defaultAccount).trim();
     const resolvedCategory = category?.trim();
@@ -601,19 +603,19 @@ ${voucherBlocks}
 export function generateReceiptVoucherXMLFromPayload(receipts: any, options: any, accountDetails: any) {
   const {
     companyName,
-    date,
     voucherType,
     narrationPrefix,
   } = options;
 
   const defaultAccount = accountDetails[0]?.holder_name?.trim() || "UNKNOWN_ACCOUNT";
   const entries = Array.isArray(receipts) ? receipts : [receipts];
-
+  console.log({ entries }, "generateReceiptVoucherXMLFromPayload")
   const voucherBlocks = entries.map((entry, index) => {
     const {
       account,
       category,
       amount,
+      date,
       narration = `${narrationPrefix} Receipt for ${category}`,
     } = entry;
 
@@ -845,7 +847,7 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
     } = tallyInfo;
 
     const { holder_name = "" } = accountDetails[0];
-
+    console.log({ transactions }, "generateTallyLedgerXML1")
     console.log("🚀 Starting transaction processing...");
 
     // 🧠 Step 2: Enrich each transaction with appropriate category labeling
@@ -872,6 +874,7 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
         category,
         amount: txn.amount,
         type: txn.transaction_type,
+        date: txn.date,
         narration: `${narrationPrefix} Payment for ${originalCategory}`
       };
     });
@@ -996,7 +999,7 @@ export async function startTransactionProcessing(transactions: any, tallyInfo: a
     return response;
   } catch (error) {
     console.error("❌ Error during transaction processing:", error);
-    
+
     // Detailed logs for debugging purposes
     console.log("💬 Detailed Error:", error);
 
