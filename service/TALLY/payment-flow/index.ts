@@ -846,6 +846,8 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
 
     const { holder_name = "" } = accountDetails[0];
 
+    console.log("🚀 Starting transaction processing...");
+
     // 🧠 Step 2: Enrich each transaction with appropriate category labeling
     const formattedTransactions = transactions.map(txn => {
       const classification = txn.classification?.toLowerCase();
@@ -873,6 +875,8 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
         narration: `${narrationPrefix} Payment for ${originalCategory}`
       };
     });
+
+    console.log("🔍 Transactions Enriched", formattedTransactions);
 
     // 📋 Step 3: Extract and create missing ledgers
     const { newLedgers } = await extractLedgerCategories(formattedTransactions, { companyName });
@@ -928,26 +932,21 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
       voucherXML += `\n${receiptXML}`;
     }
 
+    console.log("📜 Final Voucher XML", voucherXML);
+
     // 🚀 Step 6: Send to Tally
     const res = await postXml(voucherXML);
-    console.log({res},"postxml")
     const result = await res;
     console.log({ result }, "voucher result");
 
     return { status: true, result };
   } catch (error) {
     console.error("❌ Error in processTransactions:", error.message || error);
-    // Log to a local file in production (use `fs` in Node.js or external service like Sentry for production)
-    if (process.env.NODE_ENV === "production") {
-      // Assuming you have a logger like winston or other logging services
-      const fs = require("fs");
-      const logStream = fs.createWriteStream("/path/to/log/file.log", { flags: "a" });
-      logStream.write(`[${new Date().toISOString()}] processTransactions error: ${error.message || error}\n`);
-      logStream.end();
-    }
-    throw error; // Rethrow error for further handling
+    console.log("Full error stack:", error); // Log the full error for debugging
+    throw error;
   }
 }
+
 
 export async function startTransactionProcessing(transactions: any, tallyInfo: any, accountDetails: any) {
   console.log("🚀 Starting transaction processing (Bank Ledger + Expense Categories)...");
@@ -955,17 +954,21 @@ export async function startTransactionProcessing(transactions: any, tallyInfo: a
   try {
     // Extract tally metadata
     const { companyName } = tallyInfo;
+    console.log(`📋 Tally Info: ${JSON.stringify(tallyInfo)}`);
 
     // Extract bank account details
     const { holder_name, ifsc_code, account_number } = accountDetails[0];
+    console.log(`🏦 Bank Account Details: ${JSON.stringify(accountDetails[0])}`);
 
     const bankLedgerName = holder_name?.trim();
 
     if (!bankLedgerName) {
+      console.error("❌ Missing holder_name in accountDetails");
       throw new Error("❌ Missing holder_name in accountDetails");
     }
 
     // Step 0: Fetch all ledgers and check if bank exists
+    console.log("🔍 Fetching existing ledgers...");
     const existingLedgers = await fetchLedgerList(companyName);
     const existingLedgerNames = existingLedgers.map(l => l.name?.trim());
 
@@ -986,22 +989,26 @@ export async function startTransactionProcessing(transactions: any, tallyInfo: a
     }
 
     // ✅ Step 1: Extract ledger categories from transactions
+    console.log("📊 Extracting ledger categories from transactions...");
     const response = await processTransactions(transactions, tallyInfo, accountDetails);
-    console.log({ response }, "processTransactions");
+    console.log("✅ processTransactions response:", response);
 
     return response;
   } catch (error) {
     console.error("❌ Error during transaction processing:", error);
-    // Log to a local file in production (use `fs` in Node.js or external service like Sentry for production)
+    
+    // Detailed logs for debugging purposes
+    console.log("💬 Detailed Error:", error);
+
+    // If running in production, log to the console for visibility
     if (process.env.NODE_ENV === "production") {
-      const fs = require("fs");
-      const logStream = fs.createWriteStream("/path/to/log/file.log", { flags: "a" });
-      logStream.write(`[${new Date().toISOString()}] startTransactionProcessing error: ${error.message || error}\n`);
-      logStream.end();
+      console.error(`[${new Date().toISOString()}] startTransactionProcessing error: ${error.message || error}`);
     }
+
     throw error;
   }
 }
+
 
 
 export async function fetchProfitAndLossReport(companyName) {
