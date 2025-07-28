@@ -8,6 +8,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import TallyConnectionOverlay from '../components/tallyConnected';
 import { supabase } from '../lib/supabase';
+import FloatingSupportWidget from './support';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const [user, setUser] = useState(null)
@@ -30,6 +31,10 @@ function MyApp({ Component, pageProps }: AppProps) {
       </Head>
       {Boolean(user) && (
         <TallyConnectionOverlay />
+      )}
+
+      {Boolean(user) && (
+        <FloatingSupportWidget user={user} />
       )}
 
       <Component {...pageProps} />

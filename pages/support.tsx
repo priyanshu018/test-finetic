@@ -1,347 +1,405 @@
 import React, { useState } from 'react'
-import { Send, Clock, CheckCircle, AlertCircle, User, Calendar, Hash } from 'lucide-react'
+import { MessageCircle, X, Send, Minimize2, Maximize2, User, Bot, AlertCircle } from 'lucide-react'
+import { toast } from 'react-toastify'
 
-export default function Support() {
-    const [tickets, setTickets] = useState([])
-    const [currentTicket, setCurrentTicket] = useState(null)
-    const [formData, setFormData] = useState({
+export default function FloatingSupportWidget({ user }) {
+    const [isOpen, setIsOpen] = useState(false)
+    const [isMinimized, setIsMinimized] = useState(false)
+    const [currentStep, setCurrentStep] = useState('chat') // 'chat', 'form'
+    const [messages, setMessages] = useState([
+        {
+            id: 1,
+            text: `Hi ${user?.user_metadata?.full_name || user?.email || 'there'}! I'm here to help you. What can I assist you with today?`,
+            sender: 'support',
+            timestamp: new Date().toISOString()
+        }
+    ])
+    const [inputMessage, setInputMessage] = useState('')
+    const [ticketForm, setTicketForm] = useState({
         title: '',
-        description: '',
+        category: 'general',
         priority: 'medium',
-        category: 'general'
+        description: ''
     })
-    const [showForm, setShowForm] = useState(true)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [hasUnreadMessages, setHasUnreadMessages] = useState(false)
 
-    const generateTicketId = () => {
-        return 'TKT-' + Date.now().toString().slice(-6)
-    }
+    const handleSendMessage = () => {
+        if (!inputMessage.trim()) return
 
-    const handleSubmit = (e) => {
-        e.preventDefault()
-
-        const newTicket = {
-            id: generateTicketId(),
-            ...formData,
-            status: 'open',
-            createdAt: new Date().toISOString(),
-            responses: [
-                {
-                    id: 1,
-                    message: `Thank you for contacting support regarding "${formData.title}". We have received your ticket and our team will review it shortly. We aim to respond within 24 hours for ${formData.priority} priority issues.`,
-                    sender: 'Support Team',
-                    timestamp: new Date().toISOString(),
-                    isSupport: true
-                }
-            ]
-        }
-
-        setTickets([newTicket, ...tickets])
-        setCurrentTicket(newTicket)
-        setFormData({ title: '', description: '', priority: 'medium', category: 'general' })
-        setShowForm(false)
-
-        // Simulate support response after 3 seconds
-        setTimeout(() => {
-            const response = generateSupportResponse(newTicket)
-            setTickets(prev => prev.map(ticket =>
-                ticket.id === newTicket.id
-                    ? { ...ticket, responses: [...ticket.responses, response], status: 'in-progress' }
-                    : ticket
-            ))
-            setCurrentTicket(prev => ({
-                ...prev,
-                responses: [...prev.responses, response],
-                status: 'in-progress'
-            }))
-        }, 3000)
-    }
-
-    const generateSupportResponse = (ticket) => {
-        const responses = {
-            technical: `I've reviewed your technical issue regarding "${ticket.title}". This appears to be related to ${ticket.category} functionality. I'm escalating this to our development team for further investigation. In the meantime, please try clearing your browser cache and cookies. I'll update you within 2-4 hours with more information.`,
-            billing: `Thank you for reaching out about your billing inquiry. I've located your account and am reviewing the details of "${ticket.title}". Our billing specialist will investigate this matter and provide a resolution within 1-2 business days. If this is urgent, please reply with your account number for faster processing.`,
-            general: `I've received your inquiry about "${ticket.title}". Based on your description, I understand you're experiencing issues with ${ticket.category}. I'm working on finding a solution for you. Please allow 12-24 hours for a detailed response with next steps.`,
-            account: `I've reviewed your account-related request regarding "${ticket.title}". For security purposes, I'll need to verify some information before proceeding. Our account specialist will contact you within 4-6 hours to assist with this matter.`
-        }
-
-        return {
+        const newMessage = {
             id: Date.now(),
-            message: responses[ticket.category] || responses.general,
-            sender: 'Alex Johnson - Support Specialist',
-            timestamp: new Date(Date.now() + 3000).toISOString(),
-            isSupport: true
+            text: inputMessage,
+            sender: 'user',
+            timestamp: new Date().toISOString()
+        }
+
+        setMessages(prev => [...prev, newMessage])
+        setInputMessage('')
+
+        // Simulate support response
+        setTimeout(() => {
+            const responses = [
+                "I understand your concern. Let me help you create a support ticket for this issue.",
+                "Thank you for reaching out. I'd be happy to assist you with that.",
+                "I see what you're experiencing. Let's get this resolved for you quickly.",
+                "That's a great question! Let me connect you with the right support specialist.",
+                "I can help you with that. Let me gather some more information to assist you better."
+            ]
+            
+            const supportResponse = {
+                id: Date.now() + 1,
+                text: responses[Math.floor(Math.random() * responses.length)],
+                sender: 'support',
+                timestamp: new Date().toISOString()
+            }
+
+            setMessages(prev => [...prev, supportResponse])
+
+            // Show notification if chat is minimized or closed
+            if (isMinimized || !isOpen) {
+                setHasUnreadMessages(true)
+                toast.info('New support message received!', {
+                    onClick: () => {
+                        setIsOpen(true)
+                        setIsMinimized(false)
+                        setHasUnreadMessages(false)
+                    }
+                })
+            }
+
+            // After support response, offer to create ticket
+            setTimeout(() => {
+                const ticketOffer = {
+                    id: Date.now() + 2,
+                    text: "Would you like me to create a support ticket for you? This will ensure your issue gets proper attention from our specialized team.",
+                    sender: 'support',
+                    timestamp: new Date().toISOString(),
+                    hasAction: true
+                }
+                setMessages(prev => [...prev, ticketOffer])
+            }, 1500)
+        }, 1000)
+    }
+
+    const handleCreateTicket = () => {
+        setCurrentStep('form')
+        // Pre-populate form with conversation context
+        const conversationContext = messages
+            .filter(m => m.sender === 'user')
+            .map(m => m.text)
+            .join('. ')
+        
+        setTicketForm(prev => ({
+            ...prev,
+            description: conversationContext || prev.description
+        }))
+    }
+
+    const handleFormSubmit = async () => {
+        if (!ticketForm.title.trim() || !ticketForm.description.trim()) {
+            toast.error('Please fill in all required fields')
+            return
+        }
+        
+        setIsSubmitting(true)
+
+        try {
+            // Here you would integrate with your Supabase database
+            // Example of what the ticket data would look like:
+            const ticketData = {
+                user_id: user.id,
+                user_email: user.email,
+                user_name: user.user_metadata?.full_name || user.email,
+                title: ticketForm.title,
+                description: ticketForm.description,
+                category: ticketForm.category,
+                priority: ticketForm.priority,
+                status: 'open',
+                created_at: new Date().toISOString(),
+                conversation_history: messages
+            }
+
+            // Simulate API call - replace with actual Supabase call
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            
+            const ticketId = 'TKT-' + Date.now().toString().slice(-6)
+            
+            const confirmationMessage = {
+                id: Date.now(),
+                text: `Perfect! I've created ticket ${ticketId} for you. Our team will review your "${ticketForm.title}" issue and get back to you within 24 hours. You'll receive email updates at ${user.email} regarding your ticket progress.`,
+                sender: 'support',
+                timestamp: new Date().toISOString()
+            }
+
+            setMessages(prev => [...prev, confirmationMessage])
+            setCurrentStep('chat')
+            setTicketForm({ title: '', category: 'general', priority: 'medium', description: '' })
+            
+            toast.success(`Support ticket ${ticketId} created successfully!`)
+            
+        } catch (error) {
+            console.error('Error creating ticket:', error)
+            toast.error('Failed to create ticket. Please try again.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
-    const handleInputChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        })
+    const handleOpenChat = () => {
+        setIsOpen(true)
+        setHasUnreadMessages(false)
+    }
+
+    const formatTime = (timestamp) => {
+        return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
 
     const getPriorityColor = (priority) => {
         switch (priority) {
-            case 'high': return 'text-red-600 bg-red-50'
-            case 'medium': return 'text-yellow-600 bg-yellow-50'
-            case 'low': return 'text-green-600 bg-green-50'
-            default: return 'text-gray-600 bg-gray-50'
+            case 'high': return 'text-red-600 bg-red-50 border-red-200'
+            case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200'
+            case 'low': return 'text-green-600 bg-green-50 border-green-200'
+            default: return 'text-gray-600 bg-gray-50 border-gray-200'
         }
     }
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'open': return 'text-blue-600 bg-blue-50'
-            case 'in-progress': return 'text-yellow-600 bg-yellow-50'
-            case 'resolved': return 'text-green-600 bg-green-50'
-            case 'closed': return 'text-gray-600 bg-gray-50'
-            default: return 'text-gray-600 bg-gray-50'
-        }
-    }
-
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleString()
-    }
-
-    if (currentTicket && !showForm) {
+    // Floating icon
+    if (!isOpen) {
         return (
-            <div className="min-h-screen bg-gray-50 py-8">
-                <div className="max-w-4xl mx-auto px-4">
-                    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                        {/* Header */}
-                        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h1 className="text-2xl font-bold">Support Ticket</h1>
-                                    <p className="text-blue-100 mt-1">Your issue is being tracked</p>
-                                </div>
-                                <button
-                                    onClick={() => { setShowForm(true); setCurrentTicket(null) }}
-                                    className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors"
-                                >
-                                    New Ticket
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Ticket Info */}
-                        <div className="p-6 border-b border-gray-200">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div className="flex items-center gap-2">
-                                    <Hash className="w-4 h-4 text-gray-500" />
-                                    <span className="font-semibold text-gray-700">ID:</span>
-                                    <span className="text-gray-900">{currentTicket.id}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(currentTicket.status)}`}>
-                                        {currentTicket.status.toUpperCase()}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(currentTicket.priority)}`}>
-                                        {currentTicket.priority.toUpperCase()} PRIORITY
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-gray-500" />
-                                    <span className="text-sm text-gray-600">{formatDate(currentTicket.createdAt)}</span>
-                                </div>
-                            </div>
-
-                            <div className="mt-4">
-                                <h2 className="text-xl font-semibold text-gray-900 mb-2">{currentTicket.title}</h2>
-                                <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{currentTicket.description}</p>
-                            </div>
-                        </div>
-
-                        {/* Responses */}
-                        <div className="p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Conversation</h3>
-                            <div className="space-y-4">
-                                {currentTicket.responses.map((response) => (
-                                    <div key={response.id} className={`flex gap-3 ${response.isSupport ? 'justify-start' : 'justify-end'}`}>
-                                        <div className={`max-w-3xl ${response.isSupport ? 'order-2' : 'order-1'}`}>
-                                            <div className={`p-4 rounded-lg ${response.isSupport
-                                                    ? 'bg-blue-50 border border-blue-200'
-                                                    : 'bg-gray-100 border border-gray-200'
-                                                }`}>
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className={`font-medium text-sm ${response.isSupport ? 'text-blue-800' : 'text-gray-800'
-                                                        }`}>
-                                                        {response.sender}
-                                                    </span>
-                                                    <span className="text-xs text-gray-500">
-                                                        {formatDate(response.timestamp)}
-                                                    </span>
-                                                </div>
-                                                <p className="text-gray-700">{response.message}</p>
-                                            </div>
-                                        </div>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${response.isSupport
-                                                ? 'bg-blue-100 order-1'
-                                                : 'bg-gray-200 order-2'
-                                            }`}>
-                                            {response.isSupport ? (
-                                                <CheckCircle className="w-4 h-4 text-blue-600" />
-                                            ) : (
-                                                <User className="w-4 h-4 text-gray-600" />
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Status indicator */}
-                            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                <div className="flex items-center gap-2">
-                                    <Clock className="w-5 h-5 text-blue-600" />
-                                    <span className="text-blue-800 font-medium">
-                                        Our support team is working on your request
-                                    </span>
-                                </div>
-                                <p className="text-blue-700 mt-1 text-sm">
-                                    You'll receive email notifications when there are updates to your ticket.
-                                </p>
-                            </div>
-                        </div>
+            <div className="fixed bottom-6 right-6 z-50">
+                <button
+                    onClick={handleOpenChat}
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 relative"
+                >
+                    <MessageCircle className="w-6 h-6" />
+                </button>
+                {/* Notification dot */}
+                {hasUnreadMessages && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">!</span>
                     </div>
-                </div>
+                )}
             </div>
         )
     }
 
+    // Chat interface
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
-            <div className="max-w-2xl mx-auto px-4">
-                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                    {/* Header */}
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
-                        <h1 className="text-2xl font-bold">Support Center</h1>
-                        <p className="text-blue-100 mt-1">Submit a ticket and get help from our support team</p>
+        <div className="fixed bottom-6 right-6 z-50">
+            <div className={`bg-white rounded-lg shadow-2xl border border-gray-200 transition-all duration-300 ${
+                isMinimized ? 'w-80 h-16' : 'w-80 h-96'
+            }`}>
+                {/* Header */}
+                <div className="bg-blue-600 text-white p-3 rounded-t-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span className="font-medium text-sm">Support Chat</span>
+                        <span className="text-xs opacity-75">• Online</span>
                     </div>
-
-                    {/* Form */}
-                    <div className="p-6 space-y-6">
-                        <div>
-                            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                                Issue Title *
-                            </label>
-                            <input
-                                type="text"
-                                id="title"
-                                name="title"
-                                value={formData.title}
-                                onChange={handleInputChange}
-                                required
-                                placeholder="Brief description of your issue"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Category
-                                </label>
-                                <select
-                                    id="category"
-                                    name="category"
-                                    value={formData.category}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                >
-                                    <option value="general">General Support</option>
-                                    <option value="technical">Technical Issue</option>
-                                    <option value="billing">Billing & Payment</option>
-                                    <option value="account">Account Management</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Priority
-                                </label>
-                                <select
-                                    id="priority"
-                                    name="priority"
-                                    value={formData.priority}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                >
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                                Description *
-                            </label>
-                            <textarea
-                                id="description"
-                                name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                                required
-                                rows={5}
-                                placeholder="Please provide detailed information about your issue, including any error messages or steps to reproduce the problem."
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                            />
-                        </div>
-
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                            <div className="flex items-start gap-2">
-                                <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                                <div className="text-sm text-gray-600">
-                                    <p className="font-medium text-gray-700 mb-1">Before submitting:</p>
-                                    <ul className="space-y-1 text-gray-600">
-                                        <li>• Check our FAQ section for common solutions</li>
-                                        <li>• Include relevant error messages or screenshots</li>
-                                        <li>• Provide steps to reproduce the issue</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
+                    <div className="flex items-center gap-1">
                         <button
-                            type="submit"
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                            onClick={() => setIsMinimized(!isMinimized)}
+                            className="p-1 hover:bg-white/20 rounded transition-colors"
+                            title={isMinimized ? 'Expand' : 'Minimize'}
                         >
-                            <Send className="w-4 h-4" />
-                            Submit Support Ticket
+                            {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+                        </button>
+                        <button
+                            onClick={() => setIsOpen(false)}
+                            className="p-1 hover:bg-white/20 rounded transition-colors"
+                            title="Close"
+                        >
+                            <X className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
 
-                {/* Recent Tickets */}
-                {tickets.length > 0 && (
-                    <div className="border-t border-gray-200 p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Recent Tickets</h3>
-                        <div className="space-y-3">
-                            {tickets.slice(0, 3).map((ticket) => (
-                                <div
-                                    key={ticket.id}
-                                    onClick={() => { setCurrentTicket(ticket); setShowForm(false) }}
-                                    className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium text-gray-900">{ticket.id}</span>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
-                                                {ticket.status}
-                                            </span>
+                {!isMinimized && (
+                    <>
+                        {currentStep === 'chat' ? (
+                            <>
+                                {/* Messages */}
+                                <div className="flex-1 p-3 space-y-3 h-64 overflow-y-auto">
+                                    {messages.map((message) => (
+                                        <div key={message.id} className="flex flex-col">
+                                            <div className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                <div className={`max-w-xs px-3 py-2 rounded-lg text-sm ${
+                                                    message.sender === 'user'
+                                                        ? 'bg-blue-600 text-white rounded-br-none'
+                                                        : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                                                }`}>
+                                                    <div className="flex items-center gap-1 mb-1">
+                                                        {message.sender === 'support' ? (
+                                                            <Bot className="w-3 h-3" />
+                                                        ) : (
+                                                            <User className="w-3 h-3" />
+                                                        )}
+                                                        <span className="text-xs opacity-75">
+                                                            {message.sender === 'support' ? 'Support' : 'You'}
+                                                        </span>
+                                                    </div>
+                                                    <p>{message.text}</p>
+                                                </div>
+                                            </div>
+                                            <div className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                <span className="text-xs text-gray-500 mt-1 mx-3">
+                                                    {formatTime(message.timestamp)}
+                                                </span>
+                                            </div>
+                                            {message.hasAction && (
+                                                <div className="flex justify-start mt-2">
+                                                    <button
+                                                        onClick={handleCreateTicket}
+                                                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-full transition-colors"
+                                                    >
+                                                        Create Ticket
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                        <span className="text-sm text-gray-500">{formatDate(ticket.createdAt)}</span>
-                                    </div>
-                                    <p className="text-gray-700 mt-1 truncate">{ticket.title}</p>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+
+                                {/* Input */}
+                                <div className="p-3 border-t border-gray-200">
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={inputMessage}
+                                            onChange={(e) => setInputMessage(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                            placeholder="Type your message..."
+                                            className="flex-1 px-3 py-2 border border-gray-300 text-black rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                        <button
+                                            onClick={handleSendMessage}
+                                            disabled={!inputMessage.trim()}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <Send className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            /* Ticket Form */
+                            <div className="p-3 space-y-3 h-80 overflow-y-auto">
+                                {/* User Info Display */}
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-sm">
+                                    <div className="flex items-center gap-2 text-blue-800">
+                                        <User className="w-3 h-3" />
+                                        <span className="font-medium">
+                                            {user.user_metadata?.full_name || user.email}
+                                        </span>
+                                    </div>
+                                    <div className="text-blue-600 text-xs mt-1">{user.email}</div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        Issue Title *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={ticketForm.title}
+                                        onChange={(e) => setTicketForm(prev => ({...prev, title: e.target.value}))}
+                                        placeholder="Brief description of your issue"
+                                        className="w-full px-2 py-1 border border-gray-300 text-black rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                            Category
+                                        </label>
+                                        <select
+                                            value={ticketForm.category}
+                                            onChange={(e) => setTicketForm(prev => ({...prev, category: e.target.value}))}
+                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                            <option value="general">General Support</option>
+                                            <option value="technical">Technical Issue</option>
+                                            <option value="billing">Billing & Payment</option>
+                                            <option value="account">Account Management</option>
+                                            <option value="tally">Tally Integration</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                            Priority
+                                        </label>
+                                        <select
+                                            value={ticketForm.priority}
+                                            onChange={(e) => setTicketForm(prev => ({...prev, priority: e.target.value}))}
+                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                            <option value="low">Low</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="high">High</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Priority helper */}
+                                <div className={`px-2 py-1 rounded text-xs border ${getPriorityColor(ticketForm.priority)}`}>
+                                    <div className="flex items-center gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        <span className="font-medium">
+                                            {ticketForm.priority === 'high' && 'High Priority - Response within 4 hours'}
+                                            {ticketForm.priority === 'medium' && 'Medium Priority - Response within 24 hours'}
+                                            {ticketForm.priority === 'low' && 'Low Priority - Response within 48 hours'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        Detailed Description *
+                                    </label>
+                                    <textarea
+                                        value={ticketForm.description}
+                                        onChange={(e) => setTicketForm(prev => ({...prev, description: e.target.value}))}
+                                        placeholder="Please provide detailed information about your issue..."
+                                        rows={4}
+                                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="flex gap-2 pt-2">
+                                    <button
+                                        onClick={() => setCurrentStep('chat')}
+                                        className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-3 rounded text-sm transition-colors"
+                                    >
+                                        Back to Chat
+                                    </button>
+                                    <button
+                                        onClick={handleFormSubmit}
+                                        disabled={isSubmitting || !ticketForm.title.trim() || !ticketForm.description.trim()}
+                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                                Creating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send className="w-3 h-3" />
+                                                Submit Ticket
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
-  )
+    )
 }
