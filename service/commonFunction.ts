@@ -108,8 +108,6 @@ export function createStockItems(items: unknown): string {
   (items as StockItem[]).forEach((item, index) => {
     const { Product, HSN, SGST, CGST, gst, symbol } = item;
 
-    console.log(Product, HSN, SGST, CGST, gst, symbol)
-
     // Basic validation for required fields.
     if (
       !Product ||
@@ -292,8 +290,6 @@ export function createStockItems(items: unknown): string {
             `
   });
 
-  console.log(xmlOutput)
-
   return xmlOutput;
 }
 
@@ -311,7 +307,6 @@ export function createVoucher(payload) {
 
   });
 
-  console.log(totalAmount, payload.sgst.amount, payload.cgst.amount);
   if (payload.isWithinState) {
     // Add SGST and CGST for in-state transactions
     totalAmount += payload.sgst.amount + payload.cgst.amount;
@@ -367,7 +362,7 @@ export function createVoucher(payload) {
                 <VCHSTATUSTAXUNIT>${payload.companyName}</VCHSTATUSTAXUNIT>
                 <VCHGSTCLASS>&#4; Not Applicable</VCHGSTCLASS>
                 <VCHENTRYMODE>Item Invoice</VCHENTRYMODE>
-                <EFFECTIVEDATE>20250401</EFFECTIVEDATE>
+                <EFFECTIVEDATE>${payload?.invoiceDate}</EFFECTIVEDATE>
                 <ISELIGIBLEFORITC>Yes</ISELIGIBLEFORITC>
                 <ISINVOICE>Yes</ISINVOICE>
                 <ISVATDUTYPAID>Yes</ISVATDUTYPAID>
@@ -499,17 +494,53 @@ export function createVoucher(payload) {
 }
 
 
-
 /** Extracts LEDGER names from a Tally XML string. */
+// export async function getLedgerNames(xmlData: string): Promise<string[]> {
+//   const result: any = await parseStringPromise(xmlData, { explicitArray: false });
+//   const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
+//   // if (!collection) throw new Error('Cannot find COLLECTION element');
+//   const ledgers = Array.isArray(collection?.LEDGER)
+//     ? collection?.LEDGER
+//     : [collection?.LEDGER];
+//   return ledgers?.map((lg: any) => lg?.$?.NAME);
+// }
+
 export async function getLedgerNames(xmlData: string): Promise<string[]> {
-  const result: any = await parseStringPromise(xmlData, { explicitArray: false });
-  const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
-  // if (!collection) throw new Error('Cannot find COLLECTION element');
-  const ledgers = Array.isArray(collection?.LEDGER)
-    ? collection?.LEDGER
-    : [collection?.LEDGER];
-  return ledgers?.map((lg: any) => lg?.$?.NAME);
+  try {
+    const result: any = await parseStringPromise(xmlData, { explicitArray: false });
+    const collection = result?.ENVELOPE?.BODY?.DATA?.COLLECTION;
+    if (!collection) return [];
+
+    // Try LEDGER first
+    if (collection.LEDGER) {
+      const ledgers = Array.isArray(collection.LEDGER)
+        ? collection.LEDGER
+        : [collection.LEDGER];
+      return ledgers.map((lg: any) => lg?.$?.NAME).filter(Boolean);
+    }
+
+    // Then fallback to UNIT
+    if (collection.UNIT) {
+      const units = Array.isArray(collection.UNIT)
+        ? collection.UNIT
+        : [collection.UNIT];
+      return units.map((unit: any) => unit?.$?.NAME).filter(Boolean);
+    }
+
+    if (collection.STOCKITEM) {
+      const items = Array.isArray(collection.STOCKITEM)
+        ? collection.STOCKITEM
+        : [collection.STOCKITEM];
+      return items.map((item: any) => item?.$?.NAME).filter(Boolean);
+    }
+
+    return [];
+  } catch (error) {
+    console.error("Error parsing master names:", error);
+    return [];
+  }
 }
+
 
 export async function getStockItemNames() {
   const Data = `<ENVELOPE>
@@ -584,9 +615,6 @@ export async function getStockItemFullData() {
 
   // Parse the XML response
   const result: any = await parseStringPromise(xmlData, { explicitArray: false });
-
-  // Log the result for debugging (optional)
-  console.log(JSON.stringify(result, null, 2));
 
   // Extract the elements correctly
   const gstNames = result?.ENVELOPE?.GSTRATENAMEWITHCOUNT || [];

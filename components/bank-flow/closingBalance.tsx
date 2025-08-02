@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
-import { fetchProfitAndLossReport } from '../service/TALLY/payment-flow';
+import { fetchProfitAndLossReport } from '../../service/TALLY/payment-flow';
 
 // Custom CSS for subtle blink
 const customStyles = `

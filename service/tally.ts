@@ -98,7 +98,33 @@ async function extractLedgerNameAndGST(xmlString: string): Promise<Array<{ name:
 /**
  * Fetch company names via Tally HTTP.
  */
-export async function getCompanyData(xmlData: string) {
+export async function getCompanyData() {
+
+  const xmlData = `<ENVELOPE>
+      <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>List of Companies</ID>
+      </HEADER>
+      <BODY>
+        <DESC>
+          <STATICVARIABLES>
+            <SVIsSimpleCompany>No</SVIsSimpleCompany>
+          </STATICVARIABLES>
+          <TDL>
+            <TDLMESSAGE>
+              <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="List of Companies">
+                <TYPE>Company</TYPE>
+                <NATIVEMETHOD>Name</NATIVEMETHOD>
+              </COLLECTION>
+              <ExportHeader>EmpId:5989</ExportHeader>
+            </TDLMESSAGE>
+          </TDL>
+        </DESC>
+      </BODY>
+    </ENVELOPE>`;
+
   const data = await postXml(xmlData);
   const res: any = await parseStringPromise(data, { explicitArray: false });
   const comps = res?.ENVELOPE?.BODY?.DATA?.COLLECTION?.COMPANY || [];
@@ -157,7 +183,34 @@ export async function getCurrentCompanyData() {
 /**
  * Fetch GST-ledger entries via Tally HTTP.
  */
-export async function getGSTData(xmlData: string) {
+export async function getGSTData(selectedCompanyName: string) {
+  const xmlData = `<ENVELOPE>
+      <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>Ledgers</ID>
+      </HEADER>
+      <BODY>
+        <DESC>
+          <STATICVARIABLES>
+            <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+            <SVCURRENTCOMPANY>${selectedCompanyName}</SVCURRENTCOMPANY>
+          </STATICVARIABLES>
+          <TDL>
+            <TDLMESSAGE>
+              <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
+                <TYPE>Ledger</TYPE>
+                <NATIVEMETHOD>Address</NATIVEMETHOD>
+                <NATIVEMETHOD>Masterid</NATIVEMETHOD>
+                <NATIVEMETHOD>*</NATIVEMETHOD>
+              </COLLECTION>
+            </TDLMESSAGE>
+          </TDL>
+        </DESC>
+      </BODY>
+    </ENVELOPE>`;
+
   const data = await postXml(xmlData);
   return await extractLedgerNameAndGST(data);
 }
@@ -165,8 +218,37 @@ export async function getGSTData(xmlData: string) {
 /**
  * Ensure tax-ledgers exist or create them.
  */
-export async function getTaxLedgerData(xmlData: string) {
-  const data = await postXml(xmlData);
+export async function getTaxLedgerData(selectedCompanyName: string) {
+
+  const ledgerXmlData = `
+    <ENVELOPE>
+      <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>Ledgers</ID>
+      </HEADER>
+      <BODY>
+        <DESC>
+          <STATICVARIABLES>
+            <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+            <SVCURRENTCOMPANY>${selectedCompanyName}</SVCURRENTCOMPANY>
+          </STATICVARIABLES>
+          <TDL>
+            <TDLMESSAGE>
+              <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
+                <TYPE>Ledger</TYPE>
+                <NATIVEMETHOD>Address</NATIVEMETHOD>
+                <NATIVEMETHOD>Masterid</NATIVEMETHOD>
+                <NATIVEMETHOD>*</NATIVEMETHOD>
+              </COLLECTION>
+            </TDLMESSAGE>
+          </TDL>
+        </DESC>
+      </BODY>
+    </ENVELOPE>`;
+
+  const data = await postXml(ledgerXmlData);
   const existing = await getLedgerNames(data);
   const missing = getMissingLedgers(existing);
   if (missing.length) {
@@ -181,10 +263,39 @@ export async function getTaxLedgerData(xmlData: string) {
  * Create a party ledger if not exists.
  */
 export async function createPartyName(
-  xmlData: string,
+  companyName: string,
   partyName: string,
   detail: any
 ) {
+
+  const xmlData = `
+    <ENVELOPE>
+      <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>Ledgers</ID>
+      </HEADER>
+      <BODY>
+        <DESC>
+          <STATICVARIABLES>
+            <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+            <SVCURRENTCOMPANY>${companyName}</SVCURRENTCOMPANY>
+          </STATICVARIABLES>
+          <TDL>
+            <TDLMESSAGE>
+              <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
+                <TYPE>Ledger</TYPE>
+                <NATIVEMETHOD>Address</NATIVEMETHOD>
+                <NATIVEMETHOD>Masterid</NATIVEMETHOD>
+                <NATIVEMETHOD>*</NATIVEMETHOD>
+              </COLLECTION>
+            </TDLMESSAGE>
+          </TDL>
+        </DESC>
+      </BODY>
+    </ENVELOPE>`;
+
   const data = await postXml(xmlData);
   const existing = await getLedgerNames(data);
   const exist = existing.includes(partyName);
@@ -223,10 +334,39 @@ export async function createPartyName(
  * Create a purchaser ledger if not exists.
  */
 export async function createPurchaserLedger(
-  xmlData: string,
+  selectedCompanyName: string,
   purchaserName: string
 ) {
-  const data = await postXml(xmlData);
+
+  const ledgerXmlData = `
+    <ENVELOPE>
+      <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>Ledgers</ID>
+      </HEADER>
+      <BODY>
+        <DESC>
+          <STATICVARIABLES>
+            <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+            <SVCURRENTCOMPANY>${selectedCompanyName}</SVCURRENTCOMPANY>
+          </STATICVARIABLES>
+          <TDL>
+            <TDLMESSAGE>
+              <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
+                <TYPE>Ledger</TYPE>
+                <NATIVEMETHOD>Address</NATIVEMETHOD>
+                <NATIVEMETHOD>Masterid</NATIVEMETHOD>
+                <NATIVEMETHOD>*</NATIVEMETHOD>
+              </COLLECTION>
+            </TDLMESSAGE>
+          </TDL>
+        </DESC>
+      </BODY>
+    </ENVELOPE>`;
+
+  const data = await postXml(ledgerXmlData);
   const existing = await getLedgerNames(data);
   const exist = existing.includes(purchaserName);
   if (!exist) {
@@ -242,12 +382,30 @@ export async function createPurchaserLedger(
  * Create units if missing.
  */
 export async function createUnit(units: Unit[]) {
-  const data = await postXml(`<ENVELOPE>
-    <HEADER><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>Custom List of Units</ID></HEADER>
-    <BODY><DESC><TDL><TDLMESSAGE>
-      <COLLECTION NAME="Custom List of Units"><TYPE>Units</TYPE><NATIVEMETHOD>MasterID</NATIVEMETHOD><NATIVEMETHOD>GUID</NATIVEMETHOD></COLLECTION>
-    </TDLMESSAGE></TDL></DESC></BODY>
-</ENVELOPE>`);
+  const xmlData = `<ENVELOPE>
+    <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>Custom List of Units</ID>
+    </HEADER>
+    <BODY>
+        <DESC>
+            <STATICVARIABLES />
+            <TDL>
+                <TDLMESSAGE>
+                    <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="Custom List of Units">
+                        <TYPE>Units</TYPE>
+                        <NATIVEMETHOD>MasterID</NATIVEMETHOD>
+                        <NATIVEMETHOD>GUID</NATIVEMETHOD>
+                    </COLLECTION>
+                </TDLMESSAGE>
+            </TDL>
+        </DESC>
+    </BODY>
+</ENVELOPE>`
+
+  const data = await postXml(xmlData);
   const existNames = await getLedgerNames(data);
   const missing = units.filter((u) => !existNames.includes(u.name));
   if (missing.length) {
@@ -259,22 +417,50 @@ export async function createUnit(units: Unit[]) {
   return { success: true, isExist: [], data: units };
 }
 
+function downloadXML(xml: string, filename = 'stockitems.xml') {
+  const blob = new Blob([xml], { type: 'application/xml' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 /**
  * Create stock items if missing.
  */
 export async function createItem(items: StockItem[]) {
-  const data = await postXml(`<ENVELOPE>
-    <HEADER><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>Custom List of StockItems</ID></HEADER>
-    <BODY><DESC><TDL><TDLMESSAGE>
-      <COLLECTION NAME="Custom List of StockItems"><TYPE>StockItem</TYPE><NATIVEMETHOD>MasterID</NATIVEMETHOD><NATIVEMETHOD>GUID</NATIVEMETHOD></COLLECTION>
-    </TDLMESSAGE></TDL></DESC></BODY>
-</ENVELOPE>`);
+  const xmlData = `<ENVELOPE>
+    <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Collection</TYPE>
+        <ID>Custom List of StockItems</ID>
+    </HEADER>
+    <BODY>
+        <DESC>
+            <STATICVARIABLES />
+            <TDL>
+                <TDLMESSAGE>
+                    <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="Custom List of StockItems">
+                        <TYPE>StockItem</TYPE>
+                        <NATIVEMETHOD>MasterID</NATIVEMETHOD>
+                        <NATIVEMETHOD>GUID</NATIVEMETHOD>
+                    </COLLECTION>
+                </TDLMESSAGE>
+            </TDL>
+        </DESC>
+    </BODY>
+</ENVELOPE>`
+
+  const data = await postXml(xmlData);
   const existNames = await getLedgerNames(data);
   const missing = items.filter((it) => !existNames.includes(it.Product));
-  console.log(missing)
+
   if (missing.length) {
-    const xml = xmlCreateStockItems(missing);
-    console.log(xml, "xml")
+    const xml = xmlCreateStockItems(missing)
+    // downloadXML(xml);
     const resp = await postXml(xml);
     const parsed = parseResponse(resp);
     return { success: parsed.created === missing.length, data: items };
@@ -287,7 +473,6 @@ export async function createItem(items: StockItem[]) {
  */
 export async function createPurchaseEntry(payload: VoucherPayload) {
   const xml = xmlCreateVoucher(payload);
-  console.log(xml)
   const resp = await postXml(xml);
   const parsed = parseResponse(resp);
   return { success: parsed.created > 0, data: resp };

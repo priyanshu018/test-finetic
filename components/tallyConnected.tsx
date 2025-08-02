@@ -22,33 +22,8 @@ export const TallyConnectionOverlay = () => {
   const fetchCompanies = async () => {
     setIsLoading(true);
 
-    const xmlData = `<ENVELOPE>
-      <HEADER>
-        <VERSION>1</VERSION>
-        <TALLYREQUEST>Export</TALLYREQUEST>
-        <TYPE>Collection</TYPE>
-        <ID>List of Companies</ID>
-      </HEADER>
-      <BODY>
-        <DESC>
-          <STATICVARIABLES>
-            <SVIsSimpleCompany>No</SVIsSimpleCompany>
-          </STATICVARIABLES>
-          <TDL>
-            <TDLMESSAGE>
-              <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="List of Companies">
-                <TYPE>Company</TYPE>
-                <NATIVEMETHOD>Name</NATIVEMETHOD>
-              </COLLECTION>
-              <ExportHeader>EmpId:5989</ExportHeader>
-            </TDLMESSAGE>
-          </TDL>
-        </DESC>
-      </BODY>
-    </ENVELOPE>`;
-
     try {
-      const response = await getCompanyData(xmlData);
+      const response: any = await getCompanyData();
       if (response.success) {
         setCompanyList(response.data);
         setIsConnected(true);
@@ -67,7 +42,6 @@ export const TallyConnectionOverlay = () => {
   const fetchCurrentComapny = async () => {
 
     const response = await getCurrentCompanyData()
-    console.log({ response })
     setCurrentCompany(response?.data)
   }
 
