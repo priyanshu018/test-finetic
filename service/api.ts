@@ -1,91 +1,72 @@
-//@ts-nocheck
-export const BackendLink = "https://finetic-ai.primedepthlabs.com"
-export const localUrl = "http://localhost:9000"
+// @ts-nocheck
 
+// Deployed public backend for fallback
+export const BackendLink = "https://finetic-ai.primedepthlabs.com";
+
+// Check if running inside Electron
+const isElectron = typeof window !== "undefined" && !!window.electronAPI;
 
 /**
- * Generic API request function for Electron
- * @param {string} url - The endpoint URL
- * @param {string} method - The HTTP method (e.g., 'GET', 'POST', etc.)
- * @param {string|Object} [body] - The request payload for POST/PUT requests
- * @param {Object} [headers] - Optional headers to customize the request
- * @param {string} [contentType] - Content type of the request (e.g., 'application/json', 'application/xml')
- * @param {string} [responseType] - Expected response type (e.g., 'json', 'text', 'xml')
- * @returns {Promise<Object|string>} - Returns a Promise with the API response
+ * Generic API request function for Electron or Web
+ * @param {string} url - Endpoint path (e.g., "/predict")
+ * @param {string} method - HTTP method (e.g., 'GET', 'POST')
+ * @param {string|Object|null} body - Payload for POST/PUT
+ * @param {Object} headers - Custom headers
+ * @param {string} contentType - MIME type (default 'application/json')
+ * @param {string} responseType - Expected response type (e.g., 'json', 'text', 'xml')
+ * @returns {Promise<any>} - API response
  */
 export const apiRequest = async (
-    url,
-    method,
-    body = null,
-    headers = {},
-    contentType = "application/json",
-    responseType = "json"
+  url,
+  method,
+  body = null,
+  headers = {},
+  contentType = "application/json",
+  responseType = "json"
 ) => {
-    try {
-        // Default headers with specified content type
-        const defaultHeaders = {
-            "Content-Type": contentType,
-            ...headers,
-        };
+  try {
+    const targetUrl = isElectron ? url : `${BackendLink}${url}`;
+    console.log("📡 Requesting:", targetUrl, isElectron ? "[Electron]" : "[Web]");
 
-        // Options for fetch
-        const options = {
-            method,
-            headers: defaultHeaders,
-        };
+    const defaultHeaders = {
+      "Content-Type": contentType,
+      ...headers,
+    };
 
-        // Determine which base URL to use - for Electron apps, you might need
-        // to handle this differently based on development vs production
-        const fullUrl = localUrl + url;
-        
-        console.log("Making request to:", fullUrl);
+    const options = {
+      method,
+      headers: defaultHeaders,
+    };
 
-        // Add body to the request if it's not a GET request
-        if (body && method !== "GET") {
-            // If content type is XML, send the body as is (assuming it's already XML string)
-            // Otherwise, JSON stringify if it's an object
-            if (contentType.includes("xml")) {
-                options.body = typeof body === 'string' ? body : body.toString();
-            } else if (contentType.includes("json") && typeof body !== 'string') {
-                options.body = JSON.stringify(body);
-            } else {
-                options.body = body;
-            }
-        }
-
-        // Fetch the response from the given URL
-        const response = await fetch(fullUrl, options);
-        
-        // Check if the response is okay (status in the range 200-299)
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(
-                `Error from API request: ${response.status} ${response.statusText}\n${errorText}`
-            );
-        }
-        
-        // Parse the response based on the responseType
-        let data;
-        switch (responseType.toLowerCase()) {
-            case 'json':
-                data = await response.json();
-                break;
-            case 'text':
-                data = await response.text();
-                break;
-            case 'xml':
-                const text = await response.text();
-                // You might want to use a proper XML parser here
-                data = text;
-                break;
-            default:
-                data = await response.json();
-        }
-        
-        return data;
-    } catch (error) {
-        // Handle errors and log them
-        console.error("API Error for", url, ":", error);
-        throw error; // Re-throw error for further handling
+    if (body && method !== "GET") {
+      if (contentType.includes("xml")) {
+        options.body = typeof body === "string" ? body : body.toString();
+      } else if (contentType.includes("json") && typeof body !== "string") {
+        options.body = JSON.stringify(body);
+      } else {
+        options.body = body;
+      }
     }
+
+    // Use Electron IPC if available
+    const response = isElectron
+      ? await window.electronAPI.proxyFetch(url, options)
+      : await fetch(targetUrl, options).then((res) => {
+          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+          switch (responseType.toLowerCase()) {
+            case "json":
+              return res.json();
+            case "text":
+            case "xml":
+              return res.text();
+            default:
+              return res.json();
+          }
+        });
+
+    return response;
+  } catch (error) {
+    console.error(`❌ API Error [${url}]:`, error);
+    throw error;
+  }
 };

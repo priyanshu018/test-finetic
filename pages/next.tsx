@@ -1,482 +1,24 @@
-// @ts-nocheck
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  FiSettings,
-  FiUsers,
   FiDollarSign,
   FiTrendingUp,
   FiBarChart2,
   FiChevronRight,
-  FiClock,
-  FiShield,
+  FiDatabase,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
-import {
-  getGSTData,
-  createPartyName,
-  createPurchaserLedger,
-  getTaxLedgerData,
-  getCompanyData,
-  createUnit,
-  createItem,
-  createPurchaseEntry,
-} from "../service/tally";
 
 export default function IndexPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [email, setEmail] = useState("");
   const router = useRouter();
   // Keep existing electron functions
-
-  const ledgerXmlData = `
-  <ENVELOPE>
-<HEADER>
-  <VERSION>1</VERSION>
-  <TALLYREQUEST>Export</TALLYREQUEST>
-  <TYPE>Collection</TYPE>
-  <ID>Ledgers</ID>
-</HEADER>
-<BODY>
-  <DESC>
-    <STATICVARIABLES>
-      <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
-      <SVCURRENTCOMPANY>PrimeDepth Labs</SVCURRENTCOMPANY>
-    </STATICVARIABLES>
-    <TDL>
-      <TDLMESSAGE>
-        <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
-          <TYPE>Ledger</TYPE>
-          <NATIVEMETHOD>Address</NATIVEMETHOD>
-          <NATIVEMETHOD>Masterid</NATIVEMETHOD>
-          <NATIVEMETHOD>*</NATIVEMETHOD>
-        </COLLECTION>
-      </TDLMESSAGE>
-    </TDL>
-  </DESC>
-</BODY>
-</ENVELOPE>
-  `;
-
-  const handleGetGstData = async () => {
-    const xmlData = `<ENVELOPE>
-	<HEADER>
-		<VERSION>1</VERSION>
-		<TALLYREQUEST>Export</TALLYREQUEST>
-		<TYPE>Collection</TYPE>
-		<ID>Ledgers</ID>
-	</HEADER>
-	<BODY>
-		<DESC>
-			<STATICVARIABLES>
-				<SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
-				<SVCURRENTCOMPANY>PrimeDepth Labs</SVCURRENTCOMPANY>
-			</STATICVARIABLES>
-			<TDL>
-				<TDLMESSAGE>
-					<COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="No" ISOPTION="No" ISINTERNAL="No" NAME="Ledgers">
-						<TYPE>Ledger</TYPE>
-						<NATIVEMETHOD>Address</NATIVEMETHOD>
-						<NATIVEMETHOD>Masterid</NATIVEMETHOD>
-						<NATIVEMETHOD>*</NATIVEMETHOD>
-					</COLLECTION>
-				</TDLMESSAGE>
-			</TDL>
-		</DESC>
-	</BODY>
-</ENVELOPE>`;
-
-    const response = await getGSTData(xmlData);
-  };
-
-  const handleCreatePartyLedger = async () => {
-    const response = await createPartyName(
-      ledgerXmlData,
-      "code test",
-      {
-        name: "code test",
-        parent: "Sundry Creditors",
-        address: "",
-        country: "India",
-        state: "Punjab",
-        date: "01-04-2025",
-        gstin: "04AAACI7952A1ZZ",
-      }
-    );
-    if (response.success) {
-      console.log("Response from Tally:", response.data);
-    } else {
-      console.error("Error sending XML to Tally:", response.error);
-    }
-
-    console.log(response, "taxLedgerData");
-  };
-
   useEffect(() => {
     const email = localStorage.getItem("email");
     setEmail(email);
   }, []);
-
-  const handleCreatePurchaseLedger = async () => {
-    const purchaserLedgerResponse = await createPurchaserLedger(
-      ledgerXmlData,
-      "Purchase"
-    );
-    console.log(purchaserLedgerResponse, "purchaserLedgerResponse");
-  };
-
-  const handleCreateCgstIgstSgstLedger = async () => {
-    const response = await getTaxLedgerData(ledgerXmlData);
-    if (response.success) {
-      console.log("Response from Tally:", response);
-    } else {
-      console.error("Error sending XML to Tally:", response.error);
-    }
-  };
-
-  const handleGetComapnyData = async () => {
-    const xmlData = `<ENVELOPE>
-    <HEADER>
-      <VERSION>1</VERSION>
-      <TALLYREQUEST>Export</TALLYREQUEST>
-      <TYPE>Collection</TYPE>
-      <ID>List of Companies</ID>
-    </HEADER>
-    <BODY>
-      <DESC>
-        <STATICVARIABLES>
-          <SVIsSimpleCompany>No</SVIsSimpleCompany>
-        </STATICVARIABLES>
-        <TDL>
-          <TDLMESSAGE>
-            <COLLECTION ISMODIFY="No" ISFIXED="No" ISINITIALIZE="Yes" ISOPTION="No" ISINTERNAL="No" NAME="List of Companies">
-              <TYPE>Company</TYPE>
-              <NATIVEMETHOD>Name</NATIVEMETHOD>
-            </COLLECTION>
-            <ExportHeader>EmpId:5989</ExportHeader>
-          </TDLMESSAGE>
-        </TDL>
-      </DESC>
-    </BODY>
-  </ENVELOPE>`;
-
-    try {
-      // Calculate content length (in bytes) from the XML data.
-
-      const response = await getCompanyData(xmlData);
-      console.log(response, "responseeee");
-    } catch (error) {
-      console.error("Error fetching companies:", error);
-    }
-  };
-
-  const handleCheckUnit = async () => {
-    const units = [
-      {
-        name: "LTR",
-        decimal: 3,
-      },
-      {
-        name: "KG",
-        decimal: 3,
-      },
-      {
-        name: "GM",
-        decimal: 3,
-      },
-      {
-        name: "PCS",
-        decimal: 3,
-      },
-    ];
-
-    const response = await createUnit(units);
-    console.log(response, "here is ");
-  };
-
-  const handleExportItems = async () => {
-    const items = [
-      {
-        Product:
-          "SWADIST SOYA OIL 1LTR (POUCH) SPECIAL POUCH PACKING MFG BY AVI AGRO MARKETED BY DAMMANI",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "LTR",
-      },
-      {
-        Product: "BALAJI BASMATI RICE 1 KG",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "KG",
-      },
-      {
-        Product: "LIFEBUOY SOAP (LEMON) 125GM*4 94/-",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "GM",
-      },
-      {
-        Product: "CAMEL TEA 500GM",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "GM",
-      },
-      {
-        Product: "DABUR HONEY 50GM 37/-",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "GM",
-      },
-      {
-        Product: "GOLD COIN BREAD 33/-",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "PCS",
-      },
-      {
-        Product: "KISSAN TOMATO KETCHUP REFILL 450GM 50/-2ND",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "GM",
-      },
-      {
-        Product: "BRITANIA MUFFILLS CAKE 10/-",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "PCS",
-      },
-      {
-        Product: "KHARAK SAKHARIYA (SPECIAL) 1KG",
-        HSN: null,
-        SGST: 0,
-        CGST: 0,
-        gst: 0,
-        decimal: 0,
-        symbol: "KG",
-      },
-    ];
-
-    const response = await createItem(items);
-    console.log(response);
-  };
-
-  const handlePurchaseEntry = async () => {
-    const payload = {
-      invoiceNumber: "2254",
-      invoiceDate: "01-04-2025",
-      companyName: "PrimeDepth Labs",
-      partyName: "RAJ SUPER WHOLESALE BAZAR",
-      purchaseLedger: "Purchase",
-      items: [
-        {
-          name: "SWADIST SOYA OIL 1LTR (POUCH) SPECIAL POUCH PACKING MFG BY AVI AGRO MARKETED BY DAMMANI",
-          price: 78.1,
-          quantity: 10,
-          unit: "LTR",
-        },
-        {
-          name: "BALAJI BASMATI RICE 1 KG",
-          price: 45.71,
-          quantity: 12,
-          unit: "KG",
-        },
-        {
-          name: "LIFEBUOY SOAP (LEMON) 125GM*4 94/-",
-          price: 76.27,
-          quantity: 12,
-          unit: "GM",
-        },
-        {
-          name: "CAMEL TEA 500GM",
-          price: 94.29,
-          quantity: 6,
-          unit: "GM",
-        },
-        {
-          name: "DABUR HONEY 50GM 37/-",
-          price: 34.29,
-          quantity: 2,
-          unit: "GM",
-        },
-        {
-          name: "GOLD COIN BREAD 33/-",
-          price: 30,
-          quantity: 3,
-          unit: "PCS",
-        },
-        {
-          name: "KISSAN TOMATO KETCHUP REFILL 450GM 50/-2ND",
-          price: 40.68,
-          quantity: 2,
-          unit: "GM",
-        },
-        {
-          name: "BRITANIA MUFFILLS CAKE 10/-",
-          price: 8.48,
-          quantity: 1,
-          unit: "PCS",
-        },
-        {
-          name: "KHARAK SAKHARIYA (SPECIAL) 1KG",
-          price: 120.54,
-          quantity: 1,
-          unit: "KG",
-        },
-      ],
-      gstNumber: "ABCDE1234F",
-      isWithinState: true,
-      sgst: {
-        percentage: "0%",
-        amount: 0,
-      },
-      cgst: {
-        percentage: "0%",
-        amount: 0,
-      },
-    };
-
-    // [
-    //   {
-    //     name: "CRAMEL 230GM",
-    //     price: 71.2,
-    //     quantity: 3,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA BLISS VEBA MAYONNAISE MINT",
-    //     price: 105,
-    //     quantity: 1,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "MAYONNAISE OLIVE OIL",
-    //     price: 156.45,
-    //     quantity: 1,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA PSTA N PIZZA HRDY TOMATO",
-    //     price: 32.15,
-    //     quantity: 12,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA RSTA N PIZZA HRBY TOMATO",
-    //     price: 70.75,
-    //     quantity: 3,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA VEBAIPSTA N PIZZA HRBY TOMATO",
-    //     price: 120.75,
-    //     quantity: 3,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "PSTA CHESSY SAUCES ALFRDO",
-    //     price: 2.15,
-    //     quantity: 3,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA DIP SALSA",
-    //     price: 117.15,
-    //     quantity: 2,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA SNDWCH SPRD CRT CUCMBR",
-    //     price: 77.9,
-    //     quantity: 3,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA VEBA HOT SAUCES SRIRCHA CHILLI",
-    //     price: 125,
-    //     quantity: 2,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "SWEET SAUCES OINION",
-    //     price: 120.75,
-    //     quantity: 3,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA VEBATHAI-STYLESWEET CHILLI",
-    //     price: 90.52,
-    //     quantity: 3,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA KETCHUPTOMATO NONGARLIC",
-    //     price: 2.86,
-    //     quantity: 3,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA KETCHUPTOMATO CHERS SPL",
-    //     price: 120.75,
-    //     quantity: 3,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA KETCHUP TOMATO NO AD SUGI",
-    //     price: 135,
-    //     quantity: 2,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA HAYONNAISETANDOORI",
-    //     price: 77.9,
-    //     quantity: 3,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA WHOLE GRAIN MUSTRD",
-    //     price: 135,
-    //     quantity: 3,
-    //     unit: "PCS"
-    //   },
-    //   {
-    //     name: "VEBA SALAD SAUCE TOKYO STYL",
-    //     price: 142.15,
-    //     quantity: 3,
-    //     unit: "PCS"
-    //   }
-    // ]
-    //   , false);
-
-    {
-      const response = await createPurchaseEntry(payload);
-      console.log({ response });
-    }
-  };
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -488,7 +30,6 @@ export default function IndexPage() {
         <div className="absolute -top-10 -left-10 w-56 h-56 bg-blue-400 rounded-full opacity-[0.07] blur-3xl"></div>
         <div className="absolute -bottom-10 -right-10 w-56 h-56 bg-indigo-400 rounded-full opacity-[0.07] blur-3xl"></div>
       </div>
-
       {/* Professional Navigation Bar */}
       <nav className="fixed top-0 w-full bg-white shadow-sm z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -502,20 +43,6 @@ export default function IndexPage() {
 
             {/* Professional user menu */}
             <div className="relative flex items-center space-x-4">
-              {/* <button 
-                className="hidden md:flex items-center text-sm text-gray-700 py-1.5 px-3 rounded-md hover:bg-gray-100 transition-colors duration-150"
-              >
-                <FiClock className="w-4 h-4 mr-1.5 text-gray-500" />
-                <span>Activity</span>
-              </button> */}
-
-              {/* <button 
-                className="hidden md:flex items-center text-sm text-gray-700 py-1.5 px-3 rounded-md hover:bg-gray-100 transition-colors duration-150"
-              >
-                <FiShield className="w-4 h-4 mr-1.5 text-gray-500" />
-                <span>Support</span>
-              </button> */}
-
               <div className="h-5 w-px bg-gray-300 hidden md:block"></div>
 
               <button
@@ -599,7 +126,7 @@ export default function IndexPage() {
           <p className="text-gray-600 mt-1">Select an option to get started</p>
         </div>
 
-        {/* Action Cards Grid - Professional Version */}
+        {/* Action Cards Grid - Updated to 2x2 grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {/* AI Workflow Card */}
           <Link
@@ -617,12 +144,12 @@ export default function IndexPage() {
                 <div className="ml-4 flex-1">
                   <div className="flex justify-between items-center mb-1">
                     <h2 className="text-lg font-medium text-gray-900">
-                      AI Workflow
+                      Purchase Workflow
                     </h2>
                     <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all duration-200" />
                   </div>
                   <p className="text-gray-600">
-                    Automated bill processing powered by AI
+                    Automated purchse bill processing powered by AI
                   </p>
                   <div className="mt-4 flex items-center text-xs text-blue-600">
                     <span className="font-medium">Get started</span>
@@ -648,7 +175,7 @@ export default function IndexPage() {
                 <div className="ml-4 flex-1">
                   <div className="flex justify-between items-center mb-1">
                     <h2 className="text-lg font-medium text-gray-900">
-                      Management
+                      Bill Management
                     </h2>
                     <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all duration-200" />
                   </div>
@@ -662,41 +189,70 @@ export default function IndexPage() {
               </div>
             </div>
           </Link>
-        </div>
 
-        {/* Activity summary - a professional touch */}
-        {/* <div className="mt-10 max-w-5xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-sm font-medium text-gray-900">Recent Activity</h2>
-            <button className="text-xs text-blue-600 font-medium">View all</button>
-          </div>
-          <div className="divide-y divide-gray-100">
-            <div className="px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+          {/* Bank Workflow Card */}
+          <Link
+            href="/payment-workflow"
+            className="group flex bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+          >
+            <div className="w-3 bg-green-600 hidden sm:block"></div>
+            <div className="flex-1 p-6 sm:p-8">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center">
+                    <FiDollarSign className="w-6 h-6 text-green-600" />
+                  </div>
                 </div>
-                <span className="ml-3 text-sm text-gray-700">Bill processed successfully</span>
+                <div className="ml-4 flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <h2 className="text-lg font-medium text-gray-900">
+                      Bank Workflow
+                    </h2>
+                    <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-green-600 group-hover:translate-x-0.5 transition-all duration-200" />
+                  </div>
+                  <p className="text-gray-600">
+                    Export bank data intelligently into accounting software using AI
+                  </p>
+                  <div className="mt-4 flex items-center text-xs text-green-600">
+                    <span className="font-medium">Get started</span>
+                  </div>
+                </div>
               </div>
-              <span className="text-xs text-gray-500">Just now</span>
             </div>
-          </div>
-        </div> */}
+          </Link>
+
+          {/* Bank Flow Data Card - NEW */}
+          <Link
+            href="/bank-flow-data"
+            className="group flex bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+          >
+            <div className="w-3 bg-purple-600 hidden sm:block"></div>
+            <div className="flex-1 p-6 sm:p-8">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-lg bg-purple-50 flex items-center justify-center">
+                    <FiDatabase className="w-6 h-6 text-purple-600" />
+                  </div>
+                </div>
+                <div className="ml-4 flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <h2 className="text-lg font-medium text-gray-900">
+                      Bank Flow Data
+                    </h2>
+                    <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all duration-200" />
+                  </div>
+                  <p className="text-gray-600">
+                    View and manage your stored bank transaction data
+                  </p>
+                  <div className="mt-4 flex items-center text-xs text-purple-600">
+                    <span className="font-medium">Get started</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
       </div>
-
-      {/* <div>
-      <button className="text-black bg-blue-400 p-4" onClick={handleCreatePartyLedger}>Create party name ledger</button>
-      <button className="text-black bg-blue-400 p-4" onClick={handleGetGstData}>GST DATA</button>
-        <button className="text-black bg-red-400 p-4" onClick={handleGetComapnyData}>Get Company Data</button>
-        <button className="text-black bg-blue-400 p-4" onClick={handleCreatePurchaseLedger}>Create purchase ledger</button>
-        <button className="text-black bg-blue-400 p-4" onClick={handleCreateCgstIgstSgstLedger}>Create IGST/CGST/SGST ledger</button>
-        <button className="text-black bg-blue-400 p-4" onClick={handleCheckUnit}>Create unit</button>
-        <button className="text-black bg-blue-400 p-4" onClick={handleExportItems}>Create item</button>
-        <button className="text-black bg-blue-400 p-4" onClick={handlePurchaseEntry}>Create purchase</button>
-      </div> */}
-
       {/* Footer - professional touch */}
       <footer className="bg-white absolute bottom-0 left-0 w-full border-t border-gray-200 py-4 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -713,12 +269,3 @@ export default function IndexPage() {
     </div>
   );
 }
-
-/* Add this to your global CSS
-.bg-grid-pattern {
-  background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-*/

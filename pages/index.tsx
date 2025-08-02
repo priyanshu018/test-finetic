@@ -13,7 +13,6 @@ export default function HeroSection({ setIsAuth }) {
 
   useEffect(() => {
     supabase.auth.onAuthStateChange((e, session) => {
-      console.log(session?.user)
       if (session?.user) {
         setCurrentPage("next");
       } else {
@@ -36,10 +35,6 @@ export default function HeroSection({ setIsAuth }) {
     }
 
     switch (currentPage) {
-      case "bill-management":
-        return <BillManagement onBack={() => handleNavigation("home")} />;
-      case "ai-bill":
-        return <AiBill onBack={() => handleNavigation("home")} />;
       case "next":
         return <Next onBack={() => handleNavigation("home")} />;
       default:
@@ -63,8 +58,8 @@ export default function HeroSection({ setIsAuth }) {
                     <a href="#enterprise" className="text-gray-600 hover:text-gray-900 font-medium">Enterprise</a>
                     <a href="#security" className="text-gray-600 hover:text-gray-900 font-medium">Security</a>
                     <a href="#pricing" className="text-gray-600 hover:text-gray-900 font-medium">Pricing</a>
-                    <EmailOtpModal />
                   </nav>
+                    <EmailOtpModal />
                 </div>
               </div>
             </header>
