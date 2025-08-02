@@ -216,9 +216,9 @@ export function EmailOtpModal() {
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-4 rounded-xl font-semibold hover:scale-105 transition-transform duration-300 shadow-lg hover:shadow-xl"
+                className="bg-gradient-to-r from-[#09357E] to-[#0F4DB3] text-white px-5 py-2 rounded-xl font-semibold hover:scale-105 transition-transform duration-300 shadow-lg hover:shadow-xl"
             >
-                Sign In with Email
+                Sign In
             </button>
 
             {isOpen && (
