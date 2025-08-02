@@ -15,6 +15,7 @@ export default function HeroSection({ setIsAuth }) {
 
   useEffect(() => {
     supabase.auth.onAuthStateChange((e, session) => {
+      console.log(session?.user)
       if (session?.user) {
         setCurrentPage("next");
       } else {
