@@ -886,19 +886,19 @@ const ExpenseClassifier = () => {
         `Click Cancel to export full data instead.`
       );
       const dataToExport = (exportType ? filteredData : results).map((item) => {
+        const formattedDate = item.date?.replace(/-/g, "");
         if (
           item.classification === "Cash Deposit" ||
           item.classification === "Cash Withdrawal"
         ) {
           return {
             ...item,
+            date: formattedDate,
             classification: "Cash",
           };
         }
         return item;
       });
-
-      console.log({ dataToExport })
 
       const count = dataToExport.length;
       const isFiltered = exportType;
@@ -913,21 +913,21 @@ const ExpenseClassifier = () => {
       toast.info(`Processing ${count} transactions for Tally export...`, {
         position: "top-right",
       });
-      const response = await startTransactionProcessing(
-        dataToExport,
-        tallyInfo,
-        accountDetails
-      );
+      // const response = await startTransactionProcessing(
+      //   dataToExport,
+      //   tallyInfo,
+      //   accountDetails
+      // );
 
-      if (response?.status) {
+      // if (response?.status) {
 
-        toast.success(
-          `Successfully exported ${count} transactions to Tally for ${companyName?.data}!`,
-          {
-            position: "top-right",
-          }
-        );
-      }
+      //   toast.success(
+      //     `Successfully exported ${count} transactions to Tally for ${companyName?.data}!`,
+      //     {
+      //       position: "top-right",
+      //     }
+      //   );
+      // }
     } catch (error) {
       toast.error(`Export failed: ${error.message}`, {
         position: "top-right",

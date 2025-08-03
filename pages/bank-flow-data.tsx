@@ -131,18 +131,21 @@ export default function BankFlowData() {
 
             // Prepare transaction data for Tally export
             const dataToExport = (statement.results || []).map((item) => {
-                // Handle cash transactions
-                if (
-                    item.classification === "Cash Deposit" ||
-                    item.classification === "Cash Withdrawal"
-                ) {
-                    return {
-                        ...item,
-                        classification: "Cash",
-                    };
+                const formattedDate = item.date?.replace(/-/g, "") || ""; // Safely format date
+                let classification = item.classification;
+
+                if (classification === "Cash Deposit" || classification === "Cash Withdrawal") {
+                    classification = "Cash";
                 }
-                return item;
+
+                return {
+                    ...item,
+                    date: formattedDate,
+                    classification,
+                };
             });
+
+            console.log({dataToExport})
 
             // Show processing message
             alert(`Processing ${dataToExport.length} transactions for Tally export...`);
@@ -348,8 +351,8 @@ export default function BankFlowData() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${transaction.transaction_type === 'CREDIT'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-red-100 text-red-800'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-red-100 text-red-800'
                                                     }`}>
                                                     {transaction.transaction_type || 'N/A'}
                                                 </span>
@@ -473,7 +476,7 @@ export default function BankFlowData() {
                                             </div>
                                             <div>
                                                 <h3 className="font-semibold text-gray-900">
-                                                   {statement.header?.ifsc_code?.match(/^[A-Za-z]+/)?.[0] || 'BANK'}
+                                                    {statement.header?.ifsc_code?.match(/^[A-Za-z]+/)?.[0] || 'BANK'}
                                                 </h3>
                                                 <p className="text-sm text-gray-500">
                                                     {statement.header?.account_number || 'Unknown'}
