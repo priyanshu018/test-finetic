@@ -913,21 +913,21 @@ const ExpenseClassifier = () => {
       toast.info(`Processing ${count} transactions for Tally export...`, {
         position: "top-right",
       });
-      // const response = await startTransactionProcessing(
-      //   dataToExport,
-      //   tallyInfo,
-      //   accountDetails
-      // );
+      const response = await startTransactionProcessing(
+        dataToExport,
+        tallyInfo,
+        accountDetails
+      );
 
-      // if (response?.status) {
+      if (response?.status) {
 
-      //   toast.success(
-      //     `Successfully exported ${count} transactions to Tally for ${companyName?.data}!`,
-      //     {
-      //       position: "top-right",
-      //     }
-      //   );
-      // }
+        toast.success(
+          `Successfully exported ${count} transactions to Tally for ${companyName?.data}!`,
+          {
+            position: "top-right",
+          }
+        );
+      }
     } catch (error) {
       toast.error(`Export failed: ${error.message}`, {
         position: "top-right",
