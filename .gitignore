@@ -3,7 +3,6 @@ node_modules
 
 # logs
 *.log
-
 # next.js
 .next
 next-env.d.ts
@@ -11,3 +10,4 @@ next-env.d.ts
 # build
 /app
 dist
+

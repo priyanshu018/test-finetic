@@ -886,19 +886,19 @@ const ExpenseClassifier = () => {
         `Click Cancel to export full data instead.`
       );
       const dataToExport = (exportType ? filteredData : results).map((item) => {
+        const formattedDate = item.date?.replace(/-/g, "");
         if (
           item.classification === "Cash Deposit" ||
           item.classification === "Cash Withdrawal"
         ) {
           return {
             ...item,
+            date: formattedDate,
             classification: "Cash",
           };
         }
         return item;
       });
-
-      console.log({ dataToExport })
 
       const count = dataToExport.length;
       const isFiltered = exportType;

@@ -6,7 +6,6 @@ import BillManagement from "./bill-management";
 import AiBill from "./ai-bill";
 import Next from "./next";
 import { ArrowRight, BarChart3, Calendar, CheckCircle, Clock, CreditCard, FileText, Receipt, Upload, Shield, Users, Zap, TrendingUp, Building2, DollarSign, ChevronRight, Package, Target, Settings, Star, ChevronLeft, Menu, X } from "lucide-react";
-
 export default function HeroSection({ setIsAuth }) {
   const [currentPage, setCurrentPage] = useState<"home" | "bill-management" | "ai-bill" | "next">("next");
   const [isLoading, setIsLoading] = useState(false);
@@ -654,3 +653,4 @@ function LoadingScreen() {
     </div>
   );
 }
+

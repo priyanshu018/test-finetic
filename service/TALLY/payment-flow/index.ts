@@ -934,7 +934,7 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
       );
       voucherXML += `\n${receiptXML}`;
     }
-
+    // downloadXML(voucherXML)
     console.log("📜 Final Voucher XML", voucherXML);
 
     // 🚀 Step 6: Send to Tally
