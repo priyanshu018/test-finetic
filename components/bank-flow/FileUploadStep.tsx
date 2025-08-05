@@ -282,7 +282,7 @@ const FileUploadStep = ({
               Processing {businessSubcategory} Statements
             </h2>
             <p className="text-gray-600 mb-6">
-              DeepSeek AI is analyzing your bank statements (PDF/Excel) with{" "}
+              Finetic AI is analyzing your bank statements (PDF/Excel) with{" "}
               {businessSubcategory} business context...
             </p>
             <p className="text-sm text-gray-500 mb-4">{processingMessage}</p> {/* Message */}
