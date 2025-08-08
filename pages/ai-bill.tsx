@@ -293,6 +293,77 @@ export default function BillWorkflow() {
 
       const results = await Promise.all(requests);
       setBillData(results);
+
+      /* ---------- 🔑  PERSIST PREVIEWS PER COMPANY · MONTH · DAY ---------- */
+      if (typeof window !== "undefined") {
+        const company = selectedCompanyName ?? "UNNAMED_COMPANY";
+
+        // helper for month labels
+        const MONTHS = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+
+        // today's date (or swap in the bill's real date if you have it here)
+        const now = new Date();
+        const monthKey = MONTHS[now.getMonth()]; // "May"
+        const dayKey = String(now.getDate()); // "13"
+
+        // full tree from LS (or empty)
+        const store: Record<string, any> = JSON.parse(
+          localStorage.getItem("BILLS") || "{}"
+        );
+
+        // ensure all nesting levels exist
+
+        /* just the new previews ─ no blobs */
+        const newPreviews = allFiles
+          .map((f) => f.dataUrl) // -> string[]
+          .filter(Boolean);
+
+        // push objects { imageUrl } so UI code can stay the same
+        newPreviews.forEach((url, index) => {
+          const allCurrentResultData = results[index]
+          const billDateStr = allCurrentResultData.billDate; // e.g., '12/20/2021'
+          const [month, day, year] = billDateStr.split('/');
+          store[company] = store[company] ?? {};
+          store[company][year] = store[company][year] ?? {};
+
+          store[company][year][month] = store[company][year][month] ?? {};
+          store[company][year][month][day] =
+            store[company][year][month][day] ?? [];
+
+          // optional dedupe
+          if (
+            !store[company][year][month][day].some(
+              (o: any) => o.imageUrl === url
+            )
+          ) {
+            store[company][year][month][day].push({
+              imageUrl: url,
+              gst: allCurrentResultData.gstNumber,
+              invoiceNo: allCurrentResultData.invoiceNumber,
+              invoiceValue: allCurrentResultData.totalAmount,
+              senderDetails: allCurrentResultData.receiverDetails,
+              receiverDetails: allCurrentResultData.receiverDetails
+            });
+          }
+        });
+
+        localStorage.setItem("BILLS", JSON.stringify(store));
+      }
+
+
       setCurrentStep(2);
     } catch (error: any) {
       console.error("Error extracting bill details:", error);
