@@ -12,7 +12,10 @@ import {
     FiTrendingDown,
     FiFilter,
     FiSearch,
-    FiRefreshCw
+    FiRefreshCw,
+    FiSave,
+    FiX,
+    FiEdit
 } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 
@@ -22,11 +25,61 @@ export default function BankFlowData() {
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'details'
     const [searchTerm, setSearchTerm] = useState('');
     const [filterMonth, setFilterMonth] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+    const [editableTransactions, setEditableTransactions] = useState([]);
+    const [currentEditIndex, setCurrentEditIndex] = useState(null);
+
     const router = useRouter();
 
     useEffect(() => {
         loadBankStatements();
     }, []);
+
+    // NEW: Handle edit mode toggle
+    const toggleEditMode = () => {
+        setIsEditing(!isEditing);
+        if (!isEditing) {
+            setEditableTransactions([...selectedStatement.results]);
+        }
+    };
+
+    // NEW: Handle field changes
+    const handleFieldChange = (index, field, value) => {
+        const updatedTransactions = [...editableTransactions];
+        updatedTransactions[index] = {
+            ...updatedTransactions[index],
+            [field]: value
+        };
+        setEditableTransactions(updatedTransactions);
+    };
+
+    // NEW: Save edited transactions
+    const saveEdits = () => {
+        // Create updated statement
+        const updatedStatement = {
+            ...selectedStatement,
+            results: editableTransactions
+        };
+
+        // Update localStorage
+        const key = "BankStatement_" + updatedStatement.month;
+        const dataToStore = {
+            header: updatedStatement.header,
+            results: updatedStatement.results,
+            summary: updatedStatement.summary
+        };
+        const encoded = btoa(JSON.stringify(dataToStore));
+        localStorage.setItem(key, encoded);
+
+        // Update state
+        setSelectedStatement(updatedStatement);
+        setBankStatements(prev =>
+            prev.map(stmt => stmt.month === updatedStatement.month ? updatedStatement : stmt)
+        );
+        setIsEditing(false);
+        setCurrentEditIndex(null);
+        alert("Changes saved successfully!");
+    };
 
     const loadBankStatements = () => {
         try {
@@ -145,7 +198,7 @@ export default function BankFlowData() {
                 };
             });
 
-            console.log({dataToExport})
+            console.log({ dataToExport })
 
             // Show processing message
             alert(`Processing ${dataToExport.length} transactions for Tally export...`);
@@ -220,13 +273,55 @@ export default function BankFlowData() {
                                     Bank Statement Details
                                 </h1>
                             </div>
-                            <button
+                            {/* <button
                                 onClick={() => exportStatement(selectedStatement)}
                                 className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                             >
                                 <FiDownload className="w-4 h-4" />
                                 <span>Export to Tally</span>
-                            </button>
+                            </button> */}
+
+                            <div className="flex space-x-3">
+                                {isEditing ? (
+                                    <>
+                                        <button
+                                            onClick={saveEdits}
+                                            className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                                        >
+                                            <FiSave className="w-4 h-4" />
+                                            <span>Save Changes</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setIsEditing(false);
+                                                setCurrentEditIndex(null);
+                                            }}
+                                            className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                                        >
+                                            <FiX className="w-4 h-4" />
+                                            <span>Cancel</span>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={toggleEditMode}
+                                            className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                        >
+                                            <FiEdit className="w-4 h-4" />
+                                            <span>Edit Transactions</span>
+                                        </button>
+                                        <button
+                                            onClick={() => exportStatement(selectedStatement)}
+                                            className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                                        >
+                                            <FiDownload className="w-4 h-4" />
+                                            <span>Export to Tally</span>
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -341,33 +436,91 @@ export default function BankFlowData() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {selectedStatement.results?.slice(0, 100).map((transaction, index) => (
-                                        <tr key={index} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {transaction.date || 'N/A'}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                                                {transaction.vendor || 'Unknown'}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${transaction.transaction_type === 'CREDIT'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-red-100 text-red-800'
-                                                    }`}>
-                                                    {transaction.transaction_type || 'N/A'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {formatCurrency(transaction.amount)}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                                                {transaction.classification || 'Unclassified'}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {formatCurrency(transaction.running_balance)}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {(isEditing ? editableTransactions : selectedStatement.results)
+                                        ?.slice(0, 100)
+                                        .map((transaction, index) => (
+                                            <tr
+                                                key={index}
+                                                className={`hover:bg-gray-50 ${currentEditIndex === index ? 'bg-blue-50' : ''}`}
+                                                onClick={() => isEditing && setCurrentEditIndex(index)}
+                                            >
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {isEditing && currentEditIndex === index ? (
+                                                        <input
+                                                            type="date"
+                                                            value={transaction.date}
+                                                            onChange={(e) => handleFieldChange(index, 'date', e.target.value)}
+                                                            className="w-full px-2 py-1 border rounded text-sm"
+                                                        />
+                                                    ) : (
+                                                        transaction.date || 'N/A'
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm max-w-xs">
+                                                    {isEditing && currentEditIndex === index ? (
+                                                        <input
+                                                            type="text"
+                                                            value={transaction.vendor || ''}
+                                                            onChange={(e) => handleFieldChange(index, 'vendor', e.target.value)}
+                                                            className="w-full px-2 py-1 border rounded text-sm"
+                                                        />
+                                                    ) : (
+                                                        <span className="truncate">
+                                                            {transaction.vendor || 'Unknown'}
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {isEditing && currentEditIndex === index ? (
+                                                        <select
+                                                            value={transaction.transaction_type}
+                                                            onChange={(e) => handleFieldChange(index, 'transaction_type', e.target.value)}
+                                                            className="w-full px-2 py-1 border rounded text-sm"
+                                                        >
+                                                            <option value="CREDIT">CREDIT</option>
+                                                            <option value="DEBIT">DEBIT</option>
+                                                        </select>
+                                                    ) : (
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${transaction.transaction_type === 'CREDIT'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-red-100 text-red-800'
+                                                            }`}>
+                                                            {transaction.transaction_type || 'N/A'}
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    {isEditing && currentEditIndex === index ? (
+                                                        <input
+                                                            type="number"
+                                                            value={transaction.amount}
+                                                            onChange={(e) => handleFieldChange(index, 'amount', parseFloat(e.target.value))}
+                                                            className="w-full px-2 py-1 border rounded text-sm"
+                                                            step="0.01"
+                                                        />
+                                                    ) : (
+                                                        formatCurrency(transaction.amount)
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm max-w-xs">
+                                                    {isEditing && currentEditIndex === index ? (
+                                                        <input
+                                                            type="text"
+                                                            value={transaction.classification || ''}
+                                                            onChange={(e) => handleFieldChange(index, 'classification', e.target.value)}
+                                                            className="w-full px-2 py-1 border rounded text-sm"
+                                                        />
+                                                    ) : (
+                                                        <span className="truncate">
+                                                            {transaction.classification || 'Unclassified'}
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {formatCurrency(transaction.running_balance)}
+                                                </td>
+                                            </tr>
+                                        ))}
                                 </tbody>
                             </table>
                         </div>
