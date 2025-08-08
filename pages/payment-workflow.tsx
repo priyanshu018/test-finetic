@@ -885,20 +885,25 @@ const ExpenseClassifier = () => {
         `Click OK to export filtered data.\n` +
         `Click Cancel to export full data instead.`
       );
+
       const dataToExport = (exportType ? filteredData : results).map((item) => {
-        const formattedDate = item.date?.replace(/-/g, "");
+        const formattedDate = item.date?.replace(/-/g, "") || "";
+
+        const updatedItem = {
+          ...item,
+          date: formattedDate, // ✅ always set the formatted date
+        };
+
         if (
           item.classification === "Cash Deposit" ||
           item.classification === "Cash Withdrawal"
         ) {
-          return {
-            ...item,
-            date: formattedDate,
-            classification: "Cash",
-          };
+          updatedItem.classification = "Cash"; // ✅ update classification if needed
         }
-        return item;
+
+        return updatedItem;
       });
+
 
       const count = dataToExport.length;
       const isFiltered = exportType;

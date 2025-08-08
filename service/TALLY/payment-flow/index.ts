@@ -501,6 +501,8 @@ export async function generateTallyLedgerXML(entries = []) {
   </BODY>
 </ENVELOPE>`;
 
+downloadXML(xml)
+
   const response = await postXml(xml)
 
   const text = await response
@@ -934,7 +936,7 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
       );
       voucherXML += `\n${receiptXML}`;
     }
-    // downloadXML(voucherXML)
+    downloadXML(voucherXML)
     console.log("📜 Final Voucher XML", voucherXML);
 
     // 🚀 Step 6: Send to Tally
