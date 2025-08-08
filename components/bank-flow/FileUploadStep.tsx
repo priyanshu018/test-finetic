@@ -177,7 +177,7 @@ const FileUploadStep = ({
             <p>📁 <strong>Format:</strong> PDF or Excel files (.xls, .xlsx)</p>
             <p>📏 <strong>Size limit:</strong> 20MB per file</p>
             <p>📄 <strong>Content:</strong> Bank statements with transaction details</p>
-            <p>🤖 <strong>AI:</strong> DeepSeek with {businessSubcategory} context</p>
+            <p>🤖 <strong>AI:</strong> Finetic with {businessSubcategory} context</p>
           </div>
         </div>
         {(uploadedFiles.length > 0 || mobileFiles.length > 0) && (
