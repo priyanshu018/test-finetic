@@ -501,10 +501,9 @@ export async function generateTallyLedgerXML(entries = []) {
   </BODY>
 </ENVELOPE>`;
 
-downloadXML(xml)
+  // downloadXML(xml, "TallyLedger")
 
   const response = await postXml(xml)
-
   const text = await response
   console.log("🧾 Ledger Creation Response:", text);
   return text;
@@ -854,8 +853,8 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
 
     // 🧠 Step 2: Enrich each transaction with appropriate category labeling
     const formattedTransactions = transactions.map(txn => {
-      const classification = txn.classification?.toLowerCase();
-      const originalCategory = txn.category?.trim();
+      const classification = txn.classification?.toLowerCase() || "";
+      const originalCategory = txn.category?.trim() || "";
 
       // ✅ Skip tagging for cash-related
       const isCash = ["cash withdrawal", "cash deposit"].some(type =>
@@ -871,13 +870,16 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
         category = `${originalCategory} (${tag})`;
       }
 
+      // 🔹 Replace "&" with " n "
+      category = category.replace(/&/g, " n ");
+
       return {
         account: holder_name || "Unknown",
         category,
         amount: txn.amount,
         type: txn.transaction_type,
         date: txn.date,
-        narration: `${narrationPrefix} Payment for ${originalCategory}`
+        narration: `${narrationPrefix} Payment for ${category}`
       };
     });
 
@@ -936,7 +938,7 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
       );
       voucherXML += `\n${receiptXML}`;
     }
-    downloadXML(voucherXML)
+    // downloadXML(voucherXML,"VoucherXml")
     console.log("📜 Final Voucher XML", voucherXML);
 
     // 🚀 Step 6: Send to Tally
