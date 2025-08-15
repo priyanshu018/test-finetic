@@ -111,7 +111,7 @@ export const TallyConnectionOverlay = () => {
                 className={`font-semibold text-sm text-center ${isConnected ? 'text-black' : 'text-black animate-pulse'
                   }`}
               >
-                {isLoading ? 'Checking...' : isConnected ? 'Tally Connected' : 'Tally Not Connected'}<br />
+                {isLoading ? 'Checking...' : isConnected ? 'Testing Tally Connected' : 'Testing Tally Not Connected'}<br />
                 {!isLoading && ` Active Company in Tally : ${currentCompany}`}
               </span>
             </div>
