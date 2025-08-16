@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wifi, WifiOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { WifiOff, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { getCompanyData, getCurrentCompanyData } from '../service/tally';
 
 // Custom CSS for subtle blink
@@ -14,21 +14,18 @@ export const TallyConnectionOverlay = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [companyList, setCompanyList] = useState([]);
-  const [currentCompany, setCurrentCompany] = useState(null);
-
-
+  const [companyList, setCompanyList] = useState<any[]>([]);
+  const [currentCompany, setCurrentCompany] = useState<string | null>(null);
 
   const fetchCompanies = async () => {
     setIsLoading(true);
-
     try {
       const response: any = await getCompanyData();
-      if (response.success) {
+      if (response?.success) {
         setCompanyList(response.data);
         setIsConnected(true);
       } else {
-        console.error('Error fetching companies:', response.error);
+        console.error('Error fetching companies:', response?.error);
         setIsConnected(false);
       }
     } catch (error) {
@@ -39,21 +36,55 @@ export const TallyConnectionOverlay = () => {
     }
   };
 
-  const fetchCurrentComapny = async () => {
+  const fetchCurrentCompany = async () => {
+    try {
+      const response = await getCurrentCompanyData();
+      setCurrentCompany(response?.data ?? null);
+    } catch (e) {
+      setCurrentCompany(null);
+    }
+  };
 
-    const response = await getCurrentCompanyData()
-    setCurrentCompany(response?.data)
-  }
+  const refreshNow = async () => {
+    if (isLoading) return;
+    setShowTooltip(false);
+    setIsLoading(true);
+    try {
+      const [companiesRes, currentRes] = await Promise.allSettled([
+        getCompanyData(),
+        getCurrentCompanyData(),
+      ]);
+
+      if (companiesRes.status === 'fulfilled' && (companiesRes.value as any)?.success) {
+        setCompanyList((companiesRes.value as any).data);
+        setIsConnected(true);
+      } else {
+        setIsConnected(false);
+      }
+
+      if (currentRes.status === 'fulfilled') {
+        setCurrentCompany((currentRes.value as any)?.data ?? null);
+      } else {
+        setCurrentCompany(null);
+      }
+    } catch {
+      setIsConnected(false);
+      setCurrentCompany(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetchCompanies();
-    fetchCurrentComapny()
-    // Check connection every 30 seconds
+    // initial load
+    refreshNow();
+
+    // periodic check (currently every 5s)
     const interval = setInterval(() => {
-      fetchCompanies();
-      fetchCurrentComapny();
+      refreshNow();
     }, 5000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleClick = () => {
@@ -64,15 +95,11 @@ export const TallyConnectionOverlay = () => {
   };
 
   const handleMouseEnter = () => {
-    if (!isConnected) {
-      setShowTooltip(true);
-    }
+    if (!isConnected) setShowTooltip(true);
   };
 
   const handleMouseLeave = () => {
-    if (!isConnected) {
-      setTimeout(() => setShowTooltip(false), 2000);
-    }
+    if (!isConnected) setTimeout(() => setShowTooltip(false), 2000);
   };
 
   return (
@@ -88,14 +115,41 @@ export const TallyConnectionOverlay = () => {
         >
           <div
             className={`
-            relative px-4 py-3 rounded-xl border shadow-lg
-            bg-white border-gray-300
-            transition-all duration-500 ease-in-out
-          `}
-            style={!isConnected && !isLoading ? {
-              animation: 'subtle-blink 2s ease-in-out infinite'
-            } : {}}
+              relative pl-4 pr-12 py-3 rounded-xl border shadow-lg
+              bg-white border-gray-300
+              transition-all duration-500 ease-in-out
+            `}
+            style={
+              !isConnected && !isLoading
+                ? { animation: 'subtle-blink 2s ease-in-out infinite' }
+                : {}
+            }
           >
+            {/* Refresh button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                refreshNow();
+              }}
+              disabled={isLoading}
+              className={`
+                absolute right-2 top-1/2 -translate-y-1/2
+                inline-flex items-center justify-center
+                h-8 w-8 rounded-lg border border-gray-200
+                hover:bg-gray-100 active:scale-95
+                disabled:opacity-50 disabled:cursor-not-allowed
+              `}
+              title="Refresh connection"
+              aria-label="Refresh connection"
+            >
+              {isLoading ? (
+                <div className="animate-spin h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full" />
+              ) : (
+                <RefreshCw className="h-4 w-4 text-gray-700" />
+              )}
+            </button>
+
             <div className="flex items-center space-x-3">
               {isLoading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
@@ -111,8 +165,13 @@ export const TallyConnectionOverlay = () => {
                 className={`font-semibold text-sm text-center ${isConnected ? 'text-black' : 'text-black animate-pulse'
                   }`}
               >
-                {isLoading ? 'Checking...' : isConnected ? 'Testing Tally Connected' : 'Testing Tally Not Connected'}<br />
-                {!isLoading && ` Active Company in Tally : ${currentCompany}`}
+                {isLoading
+                  ? 'Checking...'
+                  : isConnected
+                    ? 'Testing Tally Connected'
+                    : 'Testing Tally Not Connected'}
+                <br />
+                {!isLoading && ` Active Company in Tally : ${currentCompany ?? '—'}`}
               </span>
             </div>
           </div>
@@ -132,10 +191,11 @@ export const TallyConnectionOverlay = () => {
                     Please open Tally and select a company to connect Finetec AI to Tally.
                   </p>
                   <button
-                    onClick={fetchCompanies}
-                    className="mt-3 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
+                    onClick={refreshNow}
+                    disabled={isLoading}
+                    className="mt-3 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50"
                   >
-                    Retry Connection
+                    {isLoading ? 'Checking…' : 'Retry Connection'}
                   </button>
                 </div>
               </div>
@@ -158,5 +218,3 @@ export const TallyConnectionOverlay = () => {
 };
 
 export default TallyConnectionOverlay;
-
-
