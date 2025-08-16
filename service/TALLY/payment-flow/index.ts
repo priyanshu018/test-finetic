@@ -161,7 +161,7 @@ export async function generateCashLedgerXML({ name, parent, companyName }) {
     const res = await postXml(xmlPayload)
 
     const result = await res
-    console.log("✅ Ledger Created:", result);
+    console.log("✅ generateCashLedgerXML Created:", result);
     return result;
   } catch (error) {
     console.error("❌ Failed to create ledger:", error);
@@ -213,7 +213,7 @@ export async function generateAccountLedgerXML({
     const res = await postXml(xmlPayload)
 
     const result = await res
-    console.log("✅ Ledger Created:", result);
+    console.log("✅ generateAccountLedgerXMl Created:", result);
     return result;
   } catch (error) {
     console.error("❌ Failed to create ledger:", error);
@@ -297,7 +297,6 @@ export async function generateAccountLedgerXML({
 export async function extractLedgerCategories(transactions: any[], options: any) {
   const ledgerMap: Map<string, { ledgerName: string; type: string }> = new Map();
   const cashLedgers: Map<string, { ledgerName: string; parent: string }> = new Map();
-  console.log({ transactions }, "generateTallyLedgerXML")
   for (const txn of transactions) {
     if (!txn.category) continue;
 
@@ -505,7 +504,7 @@ export async function generateTallyLedgerXML(entries = []) {
 
   const response = await postXml(xml)
   const text = await response
-  console.log("🧾 Ledger Creation Response:", text);
+  console.log("🧾 generateTallyLedgerXml Response:", text);
   return text;
 }
 
@@ -610,7 +609,6 @@ export function generateReceiptVoucherXMLFromPayload(receipts: any, options: any
 
   const defaultAccount = accountDetails[0]?.holder_name?.trim() || "UNKNOWN_ACCOUNT";
   const entries = Array.isArray(receipts) ? receipts : [receipts];
-  console.log({ entries }, "generateReceiptVoucherXMLFromPayload")
   const voucherBlocks = entries.map((entry, index) => {
     const {
       account,
@@ -681,162 +679,6 @@ ${voucherBlocks}
   return xmlOutput;
 }
 
-// export async function processTransactions(transactions: any, tallyInfo: any, accountDetails: any) {
-//   // 🧠 Step 1: Extract metadata
-//   const {
-//     companyName,
-//     date,
-//     voucherType,
-//     narrationPrefix
-//   } = tallyInfo;
-
-//   const { holder_name = "" } = accountDetails[0];
-
-//   // 🧠 Step 2: Enrich each transaction with appropriate category labeling
-//   const formattedTransactions = transactions.map(txn => {
-//     const classification = txn.classification?.toLowerCase();
-//     const originalCategory = txn.category?.trim();
-
-//     // ✅ Skip tagging for cash-related
-//     const isCash = ["cash withdrawal", "cash deposit"].some(type =>
-//       classification.includes(type)
-//     );
-
-//     let category = originalCategory;
-//     if (!isCash) {
-//       let tag = "Indirect";
-//       if (classification.includes("direct") && !classification.includes("indirect")) {
-//         tag = "Direct";
-//       }
-//       category = `${originalCategory} (${tag})`;
-//     }
-
-//     return {
-//       account: holder_name || "Unknown",
-//       category,
-//       amount: txn.amount,
-//       type: txn.transaction_type,
-//       narration: `${narrationPrefix} Payment for ${originalCategory}`
-//     };
-//   });
-
-//   // 📋 Step 3: Extract and create missing ledgers
-//   const { newLedgers } = await extractLedgerCategories(formattedTransactions, { companyName });
-
-//   if (newLedgers.length > 0) {
-//     console.log("📥 Creating missing ledgers...");
-//     await generateTallyLedgerXML(newLedgers);
-//   }
-
-//   // ⏳ Step 4: Wait for ledger sync
-//   await new Promise(res => setTimeout(res, 1000));
-
-//   // 🔍 Step 5: Split Cash & Non-Cash transactions
-//   const cashTransactions = formattedTransactions.filter(
-//     (txn) => txn.category === "Cash"
-//   );
-
-//   const nonCashTransactions = formattedTransactions.filter(
-//     (txn) => txn.category !== "Cash"
-//   );
-
-//   let voucherXML = "";
-
-//   // 💵 Step 5A: If there are cash entries, generate Contra voucher
-//   if (cashTransactions.length > 0) {
-//     const cashXML = generateContraVoucherXMLFromTransactions(
-//       cashTransactions,
-//       accountDetails,
-//       { companyName, date, voucherType, narrationPrefix }
-//     );
-//     voucherXML += cashXML;
-//   }
-
-//   // 🧾 Step 5B: Process non-cash transactions by type
-//   const paymentTransactions = nonCashTransactions.filter(t => t.type === "DEBIT");
-//   const receiptTransactions = nonCashTransactions.filter(t => t.type === "CREDIT");
-
-//   if (paymentTransactions.length > 0) {
-//     const paymentXML = generatePaymentVoucherXMLFromPayload(
-//       paymentTransactions,
-//       { companyName, date, voucherType: "Payment", narrationPrefix },
-//       accountDetails
-//     );
-//     voucherXML += `\n${paymentXML}`;
-//   }
-
-//   if (receiptTransactions.length > 0) {
-//     const receiptXML = generateReceiptVoucherXMLFromPayload(
-//       receiptTransactions,
-//       { companyName, date, voucherType: "Receipt", narrationPrefix },
-//       accountDetails
-//     );
-//     voucherXML += `\n${receiptXML}`;
-//   }
-
-//   // 🚀 Step 6: Send to Tally
-//   const res = await postXml(voucherXML);
-//   const result = await res;
-//   console.log({ result }, "voucher result")
-//   return { status: true, result };
-// }
-
-// export async function startTransactionProcessing(transactions: any, tallyInfo: any, accountDetails: any) {
-//   console.log("🚀 Starting transaction processing (Bank Ledger + Expense Categories)...");
-
-//   try {
-//     // Extract tally metadata
-//     const {
-//       companyName
-//     } = tallyInfo;
-
-//     // Extract bank account details
-//     const {
-//       holder_name,
-//       ifsc_code,
-//       account_number
-//     } = accountDetails[0];
-
-//     const bankLedgerName = holder_name?.trim();
-
-//     if (!bankLedgerName) {
-//       throw new Error("❌ Missing holder_name in accountDetails");
-//     }
-
-//     // Step 0: Fetch all ledgers and check if bank exists
-//     const existingLedgers = await fetchLedgerList(companyName);
-//     const existingLedgerNames = existingLedgers.map(l => l.name?.trim());
-
-//     if (!existingLedgerNames.includes(bankLedgerName)) {
-//       console.log(`🏦 Bank ledger "${bankLedgerName}" not found. Creating...`);
-
-//       await generateAccountLedgerXML({
-//         name: bankLedgerName,
-//         parent: "Bank Accounts",
-//         ifsc: ifsc_code,
-//         accountNumber: account_number,
-//         accountHolder: bankLedgerName
-//       });
-
-//       console.log("✅ Bank ledger created successfully.");
-//     } else {
-//       console.log(`✅ Bank ledger "${bankLedgerName}" already exists.`);
-//     }
-
-//     // ✅ Step 1: Extract ledger categories from transactions
-//     // const { newLedgers, xml } = await extractLedgerCategories(transactions, { companyName });
-
-//     const response = await processTransactions(transactions, tallyInfo, accountDetails)
-//     console.log({ response }, "processTransactions")
-//     return response
-
-//   } catch (error) {
-//     console.error("❌ Error during transaction processing:", error);
-//     throw error;
-//   }
-// }
-
-
 export async function processTransactions(transactions: any, tallyInfo: any, accountDetails: any) {
   try {
     // 🧠 Step 1: Extract metadata
@@ -848,9 +690,7 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
     } = tallyInfo;
 
     const { holder_name = "" } = accountDetails[0];
-    console.log({ transactions }, "generateTallyLedgerXML1")
-    console.log("🚀 Starting transaction processing...");
-
+  
     // 🧠 Step 2: Enrich each transaction with appropriate category labeling
     const formattedTransactions = transactions.map(txn => {
       const classification = txn.classification?.toLowerCase() || "";
@@ -883,13 +723,10 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
       };
     });
 
-    console.log("🔍 Transactions Enriched", formattedTransactions);
-
     // 📋 Step 3: Extract and create missing ledgers
     const { newLedgers } = await extractLedgerCategories(formattedTransactions, { companyName });
 
     if (newLedgers.length > 0) {
-      console.log("📥 Creating missing ledgers...");
       await generateTallyLedgerXML(newLedgers);
     }
 
@@ -939,7 +776,6 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
       voucherXML += `\n${receiptXML}`;
     }
     // downloadXML(voucherXML,"VoucherXml")
-    console.log("📜 Final Voucher XML", voucherXML);
 
     // 🚀 Step 6: Send to Tally
     const res = await postXml(voucherXML);
@@ -956,7 +792,6 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
 
 
 export async function startTransactionProcessing(transactions: any, tallyInfo: any, accountDetails: any) {
-  console.log("🚀 Starting transaction processing (Bank Ledger + Expense Categories)...");
 
   try {
     // Extract tally metadata
@@ -975,7 +810,6 @@ export async function startTransactionProcessing(transactions: any, tallyInfo: a
     }
 
     // Step 0: Fetch all ledgers and check if bank exists
-    console.log("🔍 Fetching existing ledgers...");
     const existingLedgers = await fetchLedgerList(companyName);
     const existingLedgerNames = existingLedgers.map(l => l.name?.trim());
 
