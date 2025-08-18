@@ -14,7 +14,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   const [user, setUser] = useState(null)
   useEffect(() => {
     supabase.auth.onAuthStateChange((e, session) => {
-      console.log(session?.user)
+      // console.log(session?.user)
       if (session?.user) {
         setUser(session?.user);
       } else {

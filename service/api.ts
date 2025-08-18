@@ -26,7 +26,7 @@ export const apiRequest = async (
 ) => {
   try {
     const targetUrl = isElectron ? url : `${BackendLink}${url}`;
-    console.log("📡 Requesting:", targetUrl, isElectron ? "[Electron]" : "[Web]");
+    // console.log("📡 Requesting:", targetUrl, isElectron ? "[Electron]" : "[Web]");
 
     const defaultHeaders = {
       "Content-Type": contentType,
