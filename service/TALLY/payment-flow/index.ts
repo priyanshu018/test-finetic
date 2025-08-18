@@ -527,8 +527,6 @@ export function generatePaymentVoucherXMLFromPayload(payments: any, options: any
       date,
     } = entry;
 
-
-
     const resolvedAccount = (account || defaultAccount).trim();
     const resolvedCategory = category?.trim();
 
@@ -690,7 +688,7 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
     } = tallyInfo;
 
     const { holder_name = "" } = accountDetails[0];
-  
+
     // 🧠 Step 2: Enrich each transaction with appropriate category labeling
     const formattedTransactions = transactions.map(txn => {
       const classification = txn.classification?.toLowerCase() || "";
@@ -719,7 +717,7 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
         amount: txn.amount,
         type: txn.transaction_type,
         date: txn.date,
-        narration: `${narrationPrefix} Payment for ${category}`
+        narration: `${narrationPrefix} Payment for ${txn.vendor}`
       };
     });
 

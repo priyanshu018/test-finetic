@@ -41,24 +41,6 @@ const creditClassificationOptions = [
     "SUSPENSE",
 ];
 
-// Business categories (moved from ExpenseClassifier)
-const businessCategories = [
-  "Retail",
-  "Manufacturing",
-  "Hospitality",
-  "Healthcare",
-  "Professional Services",
-  "Technology",
-  "Construction",
-  "Transportation",
-  "Education",
-  "Agriculture",
-  "Real Estate",
-  "Entertainment",
-  "Finance",
-  "Non-Profit",
-  "Other"
-];
 
 export default function BankFlowData() {
     const [bankStatements, setBankStatements] = useState([]);
@@ -91,25 +73,62 @@ export default function BankFlowData() {
     const loadBankStatements = () => {
         try {
             const summaryList = JSON.parse(localStorage.getItem("summaryBankStatement") || "[]");
-            const statementsWithData = summaryList.map(summary => {
-                const key = "BankStatement_" + summary.month;
-                const encoded = localStorage.getItem(key);
-                if (encoded) {
+
+            const statementsWithData = summaryList
+                .map((summary) => {
+                    const key = "BankStatement_" + summary.month;
+                    const encoded = localStorage.getItem(key);
+
+                    if (!encoded) return null;
+
                     const decoded = JSON.parse(atob(encoded));
+
+                    // 🔁 Normalize classifications in RESULTS (used by your UI)
+                    if (Array.isArray(decoded.results)) {
+                        decoded.results = decoded.results.map((txn) => {
+                            let classification = txn.classification;
+
+                            // Other Income -> Direct Income
+                            if (classification === "Other Income" && txn.transaction_type === "CREDIT") {
+                                classification = "Direct Income";
+                            }
+
+                            // Indirect Business -> Indirect Expense
+                            // (also handle the longer variant you use in debit options)
+                            if (
+                                classification === "Indirect Business" ||
+                                classification === "Non-Trading Variable (Indirect Business)"
+                            ) {
+                                classification = "Indirect Expense";
+                            }
+
+                            return { ...txn, classification };
+                        });
+
+                        // ✅ Persist normalized data back to localStorage
+                        const dataToStore = {
+                            header: decoded.header,
+                            results: decoded.results,
+                            summary: decoded.summary,
+                        };
+                        localStorage.setItem(key, btoa(JSON.stringify(dataToStore)));
+                    }
+
                     return {
                         ...summary,
                         ...decoded,
-                        id: summary.month
+                        id: summary.month,
                     };
-                }
-                return null;
-            }).filter(Boolean);
+                })
+                .filter(Boolean);
 
+            console.log({ statementsWithData });
             setBankStatements(statementsWithData);
         } catch (error) {
             console.error("Error loading bank statements:", error);
         }
     };
+
 
     const formatMonth = (monthStr) => {
         if (!monthStr) return "";
@@ -145,13 +164,21 @@ export default function BankFlowData() {
 
     const exportStatement = async (statement) => {
         try {
-            // Show confirmation dialog
+            // Get filtered data FIRST
+            const filteredData = getFilteredResults();
+            const filteredSummary = getFilteredSummary();
+
+            if (filteredData.length === 0) {
+                alert("No transactions to export for the current filter criteria");
+                return;
+            }
+
+            // Show confirmation with FILTERED data
             const confirmed = window.confirm(
-                `Export bank statement for ${formatMonth(statement.month)} to Tally?\n\n` +
+                `Export ${filteredData.length} filtered transactions to Tally?\n\n` +
                 `• Account: ${statement.header?.holder_name || 'Unknown'}\n` +
-                `• Transactions: ${statement.results?.length || 0}\n` +
-                `• Credits: ${formatCurrency(statement.summary?.total_credit_amount)}\n` +
-                `• Debits: ${formatCurrency(statement.summary?.total_debit_amount)}\n\n` +
+                `• Credits: ${formatCurrency(filteredSummary?.total_credit_amount)}\n` +
+                `• Debits: ${formatCurrency(filteredSummary?.total_debit_amount)}\n\n` +
                 `Proceed with Tally export?`
             );
 
@@ -173,10 +200,8 @@ export default function BankFlowData() {
                 narrationPrefix: "Auto-entry:"
             };
 
-            // Extract bank name from IFSC code
             const BankName = statement.header?.ifsc_code?.match(/^[A-Za-z]+/)?.[0] || "Bank";
 
-            // Prepare account details
             const accountDetails = [
                 {
                     holder_name: `${BankName}-${statement.header?.account_number}`,
@@ -185,8 +210,8 @@ export default function BankFlowData() {
                 }
             ];
 
-            // Prepare transaction data for Tally export
-            const dataToExport = (statement.results || []).map((item) => {
+            // Use FILTERED data for export
+            const dataToExport = filteredData.map((item) => {
                 const formattedDate = item.date?.replace(/-/g, "") || "";
                 let classification = item.classification;
 
@@ -201,10 +226,8 @@ export default function BankFlowData() {
                 };
             });
 
-            // Show processing message
-            alert(`Processing ${dataToExport.length} transactions for Tally export...`);
+            alert(`Processing ${dataToExport.length} filtered transactions for Tally export...`);
 
-            // Start the export process
             const response = await startTransactionProcessing(
                 dataToExport,
                 tallyInfo,
@@ -213,14 +236,13 @@ export default function BankFlowData() {
 
             if (response?.status) {
                 alert(
-                    `Successfully exported ${dataToExport.length} transactions to Tally for ${companyName.data}!\n\n` +
+                    `Successfully exported ${dataToExport.length} filtered transactions to Tally for ${companyName.data}!\n\n` +
                     `Statement: ${formatMonth(statement.month)}\n` +
                     `Account: ${statement.header?.holder_name}`
                 );
             } else {
                 throw new Error(response?.message || 'Export failed');
             }
-
         } catch (error) {
             console.error("Tally export failed:", error);
             alert(`Tally export failed: ${error.message}`);
@@ -264,7 +286,7 @@ export default function BankFlowData() {
     };
 
     // ====== Functions from ExpenseClassifier ResultsStep ======
-    
+
     const startRowEdit = (index, category) => {
         setEditingRow(index);
         setEditingCategory(category);
@@ -279,11 +301,11 @@ export default function BankFlowData() {
 
     const saveRowChanges = (index, updateAll = false) => {
         const updatedTransactions = [...selectedStatement.results];
-        const newTransaction = { 
+        const newTransaction = {
             ...updatedTransactions[index],
-            [editingCategory]: tempCategoryValue 
+            [editingCategory]: tempCategoryValue
         };
-        
+
         // If we're updating all similar transactions
         if (updateAll) {
             const vendorPrefix = (newTransaction.vendor || "").trim().toUpperCase().substring(0, 6);
@@ -536,7 +558,7 @@ export default function BankFlowData() {
 
     const exportToCSV = () => {
         try {
-            const filteredData = getFilteredResults();
+            const filteredData = getFilteredResults(); // Use filtered data
             if (filteredData.length === 0) {
                 alert("No data to export for the selected filter criteria");
                 return;
@@ -606,7 +628,7 @@ export default function BankFlowData() {
 
     const exportToExcel = () => {
         try {
-            const filteredData = getFilteredResults();
+            const filteredData = getFilteredResults(); // Use filtered data
             const filteredSummary = getFilteredSummary();
 
             if (filteredData.length === 0) {
@@ -669,12 +691,13 @@ export default function BankFlowData() {
     };
 
     // ====== UI Components from ExpenseClassifier ======
-    
+
     const getClassificationColor = (classification) => {
         const colors = {
             'Fixed (Capital Good)': 'bg-blue-100 text-blue-800',
             'Trading Variable (Direct Business)': 'bg-green-100 text-green-800',
             'Non-Trading Variable (Indirect Business)': 'bg-purple-100 text-purple-800',
+            'Indirect Expense': 'bg-purple-100 text-purple-800', // ← new
             'Cash Withdrawal': 'bg-yellow-100 text-yellow-800',
             'SUSPENSE': 'bg-gray-100 text-gray-800',
             'Direct Income': 'bg-green-100 text-green-800',
@@ -685,8 +708,8 @@ export default function BankFlowData() {
     };
 
     const getTransactionTypeColor = (type) => {
-        return type === 'CREDIT' 
-            ? 'bg-green-100 text-green-800' 
+        return type === 'CREDIT'
+            ? 'bg-green-100 text-green-800'
             : 'bg-red-100 text-red-800';
     };
 
@@ -695,7 +718,7 @@ export default function BankFlowData() {
     };
 
     // ====== ResultsStep UI Integration ======
-    
+
     const renderResultsStep = () => {
         const filteredResults = getFilteredResults();
         const filteredSummary = getFilteredSummary();
@@ -1094,7 +1117,7 @@ export default function BankFlowData() {
                                                                 ))}
                                                         </select>
                                                     ) : (
-                                                        <span 
+                                                        <span
                                                             onClick={() => startRowEdit(index, 'classification')}
                                                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${getClassificationColor(transaction.classification)}`}
                                                         >
@@ -1126,7 +1149,7 @@ export default function BankFlowData() {
                                                             </button>
                                                         </div>
                                                     ) : (
-                                                        <span 
+                                                        <span
                                                             onClick={() => startRowEdit(index, 'category')}
                                                             className="cursor-pointer"
                                                         >
