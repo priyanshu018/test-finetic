@@ -133,6 +133,19 @@ const ExpenseClassifier = () => {
     ],
   };
 
+  // --- Normalization helpers ---
+  const normalizeClassification = (cls?: string) => {
+    if (!cls) return cls;
+    if (cls === "Other Income") return "Direct Income";
+    if (cls === "Indirect Business" || cls === "Non-Trading Variable (Indirect Business)")
+      return "Indirect Expense";
+    return cls;
+  };
+
+  const normalizeResults = (list: any[] = []) =>
+    list.map((t) => ({ ...t, classification: normalizeClassification(t.classification) }));
+
+
   const debitClassificationOptions = [
     "Fixed (Capital Good)",
     "Trading Variable (Direct Business)",
@@ -395,7 +408,11 @@ const ExpenseClassifier = () => {
         };
 
       setHeader(bankDetails);
-      setResults(data.results || []);
+
+      // ✅ normalize classifications right away
+      const normalizedResults = normalizeResults(data.results || []);
+      setResults(normalizedResults);
+
       setSummary(
         data.summary || {
           total_items: 0,
@@ -409,11 +426,12 @@ const ExpenseClassifier = () => {
         }
       );
 
-      const latestMonth = data?.results?.[0]?.date?.substring(0, 7); // YYYY-MM
-      console.log({ latestMonth })
+      const latestMonth = normalizedResults?.[0]?.date?.substring(0, 7);
       if (latestMonth) {
-        storeBankStatement(latestMonth, bankDetails, data.summary, data.results);
+        // ✅ store normalized results
+        storeBankStatement(latestMonth, bankDetails, data.summary, normalizedResults);
       }
+
 
       setCurrentStep(4);
 
@@ -481,41 +499,6 @@ const ExpenseClassifier = () => {
     }).length;
   };
 
-  // const saveRowChanges = (id) => {
-  //   const selectElement: any = document.querySelector(
-  //     `select[data-item-id="${id}"]`
-  //   );
-  //   const newClassification = selectElement ? selectElement.value : null;
-  //   const currentItem = results.find((item) => item.id === id);
-  //   if (!currentItem) return;
-  //   const vendorPrefix = (currentItem.vendor || "")
-  //     .trim()
-  //     .toUpperCase()
-  //     .substring(0, 6);
-  //   setResults(
-  //     results.map((item) => {
-  //       const itemVendorPrefix = (item.vendor || "")
-  //         .trim()
-  //         .toUpperCase()
-  //         .substring(0, 6);
-  //       const shouldUpdate =
-  //         item.id === id ||
-  //         (vendorPrefix.length >= 6 && itemVendorPrefix === vendorPrefix);
-  //       if (shouldUpdate) {
-  //         const updates: any = {};
-  //         if (newClassification) updates.classification = newClassification;
-  //         if (tempCategoryValue !== undefined)
-  //           updates.category = tempCategoryValue;
-  //         return { ...item, ...updates };
-  //       }
-  //       return item;
-  //     })
-  //   );
-  //   setEditingRow(null);
-  //   setEditingCategory(null);
-  //   setTempCategoryValue("");
-  // };
-
   const saveRowChanges = (id, updateAll = false) => {
     const selectElement: any = document.querySelector(
       `select[data-item-id="${id}"]`
@@ -544,9 +527,11 @@ const ExpenseClassifier = () => {
 
         if (shouldUpdate) {
           const updates: any = {};
-          if (newClassification) updates.classification = newClassification;
-          if (tempCategoryValue !== undefined)
-            updates.category = tempCategoryValue;
+          if (newClassification) {
+            // ✅ normalize the picked classification before saving
+            updates.classification = normalizeClassification(newClassification);
+          }
+          if (tempCategoryValue !== undefined) updates.category = tempCategoryValue;
           return { ...item, ...updates };
         }
         return item;
@@ -599,7 +584,12 @@ const ExpenseClassifier = () => {
 
   const handleAddTransaction = (newTransaction) => {
     // Add the new transaction to results
-    const updatedResults = [...results, newTransaction];
+    const normalizedNew = {
+      ...newTransaction,
+      classification: normalizeClassification(newTransaction.classification)
+    };
+    const updatedResults = [...results, normalizedNew];
+
     setResults(updatedResults);
 
     // Update the summary to reflect the new transaction
@@ -677,6 +667,10 @@ const ExpenseClassifier = () => {
     if (classification?.includes("Cash")) {
       return "text-amber-700 bg-amber-100";
     }
+    if (classification?.includes("Indirect Expense")) {
+      return "text-purple-700 bg-purple-100";
+    }
+
     return "text-gray-700 bg-gray-100";
   };
 
