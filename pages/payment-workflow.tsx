@@ -952,20 +952,26 @@ const ExpenseClassifier = () => {
 
   const getFilteredResults = () => {
     if (!results) return [];
-    let filtered = results.filter((item) => isDateInFilter(item.date));
+
+    // clone results and normalize category if classification === "SUSPENSE"
+    let normalized = results.map((item) => {
+      if (item.classification === "SUSPENSE") {
+        return { ...item, category: "Suspense Account" };
+      }
+      return item;
+    });
+
+    let filtered = normalized.filter((item) => isDateInFilter(item.date));
+
     switch (filterType) {
       case "debit":
         filtered = filtered.filter((item) => item.transaction_type === "DEBIT");
         break;
       case "credit":
-        filtered = filtered.filter(
-          (item) => item.transaction_type === "CREDIT"
-        );
+        filtered = filtered.filter((item) => item.transaction_type === "CREDIT");
         break;
       case "suspense":
-        filtered = filtered.filter(
-          (item) => item.classification === "SUSPENSE"
-        );
+        filtered = filtered.filter((item) => item.classification === "SUSPENSE");
         break;
       case "cash":
         filtered = filtered.filter(
@@ -978,22 +984,25 @@ const ExpenseClassifier = () => {
       default:
         break;
     }
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (item) =>
-          (item.vendor?.toLowerCase().includes(term)) ||
-          (item.description?.toLowerCase().includes(term)) ||
-          (item.classification?.toLowerCase().includes(term)) ||
-          (item.category?.toLowerCase().includes(term)) ||
-          (item.date?.includes(term)) ||
-          (item.amount?.toString().includes(term))
+          item.vendor?.toLowerCase().includes(term) ||
+          item.description?.toLowerCase().includes(term) ||
+          item.classification?.toLowerCase().includes(term) ||
+          item.category?.toLowerCase().includes(term) ||
+          item.date?.includes(term) ||
+          item.amount?.toString().includes(term)
       );
     }
+
     if (sortConfig.key) {
       filtered.sort((a, b) => {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
+
         if (
           sortConfig.key === "amount" ||
           sortConfig.key === "balance_change" ||
@@ -1008,6 +1017,7 @@ const ExpenseClassifier = () => {
           aValue = String(aValue || "").toLowerCase();
           bValue = String(bValue || "").toLowerCase();
         }
+
         if (aValue < bValue) {
           return sortConfig.direction === "asc" ? -1 : 1;
         }
@@ -1017,6 +1027,7 @@ const ExpenseClassifier = () => {
         return 0;
       });
     }
+
     return filtered;
   };
 

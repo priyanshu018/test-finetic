@@ -648,7 +648,7 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
         amount: txn.amount,
         type: txn.transaction_type,
         date: txn.date,
-        narration: `${narrationPrefix} Payment for ${txn.vendor}`
+        narration: `${narrationPrefix} Payment for ${txn.description}`
       };
     });
 

@@ -1449,6 +1449,7 @@ export default function BankFlowData() {
                     if (Array.isArray(decoded.results)) {
                         decoded.results = decoded.results.map((txn) => {
                             let classification = txn.classification;
+                            let category = txn.category;
 
                             // Other Income -> Direct Income
                             if (classification === "Other Income" && txn.transaction_type === "CREDIT") {
@@ -1456,7 +1457,6 @@ export default function BankFlowData() {
                             }
 
                             // Indirect Business -> Indirect Expense
-                            // (also handle the longer variant you use in debit options)
                             if (
                                 classification === "Indirect Business" ||
                                 classification === "Non-Trading Variable (Indirect Business)"
@@ -1464,7 +1464,12 @@ export default function BankFlowData() {
                                 classification = "Indirect Expense";
                             }
 
-                            return { ...txn, classification };
+                            // SUSPENSE -> set category as Suspense Account
+                            if (classification === "SUSPENSE") {
+                                category = "Suspense Account";
+                            }
+
+                            return { ...txn, classification, category };
                         });
 
                         // ✅ Persist normalized data back to localStorage
