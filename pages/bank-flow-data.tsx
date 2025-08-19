@@ -1369,7 +1369,7 @@ import * as XLSX from 'xlsx';
 import { getCurrentCompanyData } from '../service/tally';
 import { startTransactionProcessing } from '../service/TALLY/payment-flow';
 import { statementsWithData } from '../service/TALLY/payment-flow/data-for-testing';
-import Pagination from '../components/pagination ';
+import Pagination from '../components/pagination';
 
 // Classification options
 const debitClassificationOptions = [

@@ -613,7 +613,7 @@ import {
     PlusCircle
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
-import Pagination from "../pagination ";
+import Pagination from "../pagination";
 
 
 const TransactionTable = ({
