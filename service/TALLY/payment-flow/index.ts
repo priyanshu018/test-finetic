@@ -20,7 +20,6 @@ export function extractBankHolderDetails(bankDataArray: any): {
   ifsc_code: string;
   account_number: string;
 } {
-  // Validate input
   if (!bankDataArray) {
     console.warn('Bank data is undefined or null');
     return {
@@ -48,7 +47,6 @@ export function extractBankHolderDetails(bankDataArray: any): {
     };
   }
 
-  // Safely extract data with nested optional chaining
   const firstItem = bankDataArray[0] || {};
 
   try {
@@ -110,7 +108,6 @@ export async function fetchLedgerList(companyName) {
 
     if (!ledgers) return [];
 
-    // Always return array
     const ledgerArray = Array.isArray(ledgers) ? ledgers : [ledgers];
 
     const final = ledgerArray.map((ledger) => {
@@ -161,7 +158,6 @@ export async function generateCashLedgerXML({ name, parent, companyName }) {
     const res = await postXml(xmlPayload)
 
     const result = await res
-    console.log("✅ generateCashLedgerXML Created:", result);
     return result;
   } catch (error) {
     console.error("❌ Failed to create ledger:", error);
@@ -213,86 +209,12 @@ export async function generateAccountLedgerXML({
     const res = await postXml(xmlPayload)
 
     const result = await res
-    console.log("✅ generateAccountLedgerXMl Created:", result);
     return result;
   } catch (error) {
     console.error("❌ Failed to create ledger:", error);
     throw error;
   }
 }
-
-
-// export async function extractLedgerCategories(transactions: any[], options: any) {
-//   const ledgerMap: Map<string, { ledgerName: string; type: string }> = new Map();
-//   const cashLedgers: Map<string, { ledgerName: string; parent: string }> = new Map();
-
-//   for (const txn of transactions) {
-//     if (!txn.category) continue;
-
-//     const originalCategory = txn.category.trim();
-//     const lowerCategory = originalCategory.toLowerCase();
-
-//     // 💵 Handle Cash Ledgers
-//     if (lowerCategory.includes("cash withdrawal") || lowerCategory.includes("cash deposit")) {
-//       const ledgerName = originalCategory;
-//       const parent = "Cash-in-Hand";
-//       const key = `${ledgerName}|||${parent}`;
-
-//       if (!cashLedgers.has(key)) {
-//         cashLedgers.set(key, { ledgerName, parent });
-//       }
-//       continue;
-//     }
-
-//     // 🧾 Handle Business Ledgers (Direct/Indirect)
-//     const match = originalCategory.match(/\((Direct|Indirect)\)$/i);
-//     const tag = match ? match[1] : "Unknown";
-//     const parent = tag === "Direct" ? "Direct Expenses" : "Indirect Expenses";
-
-//     const ledgerName = originalCategory; // Already tagged like "X (Direct)"
-//     const key = `${ledgerName}|||${parent}`;
-
-//     if (!ledgerMap.has(key)) {
-//       ledgerMap.set(key, { ledgerName, type: parent });
-//     }
-//   }
-
-//   // Fetch existing ledgers from Tally
-//   const existingLedgers: any[] = await fetchLedgerList(options.companyName);
-//   const existingLedgerKeys = new Set(
-//     existingLedgers.map((l) => `${l.name.trim()}|||${l.parent?.trim() || ""}`)
-//   );
-
-//   // Get new ledgers not present in Tally
-//   const newBusinessLedgers = Array.from(ledgerMap.entries())
-//     .filter(([key]) => !existingLedgerKeys.has(key))
-//     .map(([, ledger]) => ledger);
-
-//   const newCashLedgers = Array.from(cashLedgers.entries())
-//     .filter(([key]) => !existingLedgerKeys.has(key))
-//     .map(([, ledger]) => ledger);
-
-//   // Generate XML
-//   const businessXML = newBusinessLedgers.length > 0
-//     ? generateTallyLedgerXML(newBusinessLedgers)
-//     : null;
-
-//   const cashXMLs = [];
-//   for (const ledger of newCashLedgers) {
-//     const xml = await generateCashLedgerXML({
-//       name: ledger.ledgerName,
-//       parent: ledger.parent,
-//       companyName: options.companyName,
-//     });
-//     if (xml) cashXMLs.push(xml);
-//   }
-
-//   return {
-//     newLedgers: [...newBusinessLedgers, ...newCashLedgers],
-//     xml: [businessXML, ...cashXMLs].filter(Boolean).join("\n"),
-//   };
-// }
-
 
 export async function extractLedgerCategories(transactions: any[], options: any) {
   const ledgerMap: Map<string, { ledgerName: string; type: string }> = new Map();
@@ -303,9 +225,8 @@ export async function extractLedgerCategories(transactions: any[], options: any)
     let originalCategory = txn.category.trim();
     const lowerCategory = originalCategory.toLowerCase();
 
-    // 💵 Normalize cash deposit/withdrawal to 'Cash'
     if (lowerCategory.includes("cash withdrawal") || lowerCategory.includes("cash deposit")) {
-      originalCategory = "Cash"; // Normalize category
+      originalCategory = "Cash";
       const ledgerName = "Cash";
       const parent = "Cash-in-Hand";
       const key = `${ledgerName}|||${parent}`;
@@ -314,13 +235,34 @@ export async function extractLedgerCategories(transactions: any[], options: any)
         cashLedgers.set(key, { ledgerName, parent });
       }
 
-      // Optional: if you want to reflect this back in the transaction object too
       txn.category = "Cash";
       txn.classification = "Cash";
       continue;
     }
 
-    // 🧾 Handle Business Ledgers (Direct/Indirect)
+    const isSuspense =
+      txn.classification?.toLowerCase?.() === "suspense" ||
+      /\bsuspense\s*(account|a\/?c)?\b/i.test(originalCategory);
+
+    if (isSuspense) {
+      // strip any trailing " (Direct|Indirect)" tags if present
+      const stripped = originalCategory.replace(/\s*\((Direct|Indirect)\)\s*$/i, "").trim();
+
+      // force canonical ledger name
+      const ledgerName = "Suspense Account";
+      const parent = "Suspense A/c";
+      const key = `${ledgerName}|||${parent}`;
+
+      if (!ledgerMap.has(key)) {
+        ledgerMap.set(key, { ledgerName, type: parent });
+      }
+
+      // normalize txn fields so downstream code sees it correctly
+      txn.category = "Suspense Account";
+      txn.classification = "Suspense";
+      continue;
+    }
+
     const match = originalCategory.match(/\((Direct|Indirect)\)$/i);
     const tag = match ? match[1] : "Unknown";
     const parent = tag === "Direct" ? "Direct Expenses" : "Indirect Expenses";
@@ -333,13 +275,11 @@ export async function extractLedgerCategories(transactions: any[], options: any)
     }
   }
 
-  // Fetch existing ledgers from Tally
   const existingLedgers: any[] = await fetchLedgerList(options.companyName);
   const existingLedgerKeys = new Set(
     existingLedgers.map((l) => `${l.name.trim()}|||${l.parent?.trim() || ""}`)
   );
 
-  // Get new ledgers not present in Tally
   const newBusinessLedgers = Array.from(ledgerMap.entries())
     .filter(([key]) => !existingLedgerKeys.has(key))
     .map(([, ledger]) => ledger);
@@ -348,7 +288,6 @@ export async function extractLedgerCategories(transactions: any[], options: any)
     .filter(([key]) => !existingLedgerKeys.has(key))
     .map(([, ledger]) => ledger);
 
-  // Generate XML
   const businessXML = newBusinessLedgers.length > 0
     ? generateTallyLedgerXML(newBusinessLedgers)
     : null;
@@ -460,8 +399,6 @@ ${tallyMessages}
 }
 
 
-
-// STEP 2: XML Generator (already provided)
 export async function generateTallyLedgerXML(entries = []) {
   const ledgerEntries = Array.isArray(entries) ? entries : [entries];
 
@@ -504,7 +441,6 @@ export async function generateTallyLedgerXML(entries = []) {
 
   const response = await postXml(xml)
   const text = await response
-  console.log("🧾 generateTallyLedgerXml Response:", text);
   return text;
 }
 
@@ -530,7 +466,6 @@ export function generatePaymentVoucherXMLFromPayload(payments: any, options: any
     const resolvedAccount = (account || defaultAccount).trim();
     const resolvedCategory = category?.trim();
 
-    // Skip invalid entries
     if (!resolvedAccount || !resolvedCategory || amount == null) {
       console.warn(`⚠️ Skipping voucher entry due to missing fields:`, entry);
       return '';
@@ -679,7 +614,6 @@ ${voucherBlocks}
 
 export async function processTransactions(transactions: any, tallyInfo: any, accountDetails: any) {
   try {
-    // 🧠 Step 1: Extract metadata
     const {
       companyName,
       date,
@@ -689,12 +623,10 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
 
     const { holder_name = "" } = accountDetails[0];
 
-    // 🧠 Step 2: Enrich each transaction with appropriate category labeling
     const formattedTransactions = transactions.map(txn => {
       const classification = txn.classification?.toLowerCase() || "";
       const originalCategory = txn.category?.trim() || "";
 
-      // ✅ Skip tagging for cash-related
       const isCash = ["cash withdrawal", "cash deposit"].some(type =>
         classification.includes(type)
       );
@@ -708,7 +640,6 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
         category = `${originalCategory} (${tag})`;
       }
 
-      // 🔹 Replace "&" with " n "
       category = category.replace(/&/g, " n ");
 
       return {
@@ -721,17 +652,14 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
       };
     });
 
-    // 📋 Step 3: Extract and create missing ledgers
     const { newLedgers } = await extractLedgerCategories(formattedTransactions, { companyName });
 
     if (newLedgers.length > 0) {
       await generateTallyLedgerXML(newLedgers);
     }
 
-    // ⏳ Step 4: Wait for ledger sync
     await new Promise(res => setTimeout(res, 1000));
 
-    // 🔍 Step 5: Split Cash & Non-Cash transactions
     const cashTransactions = formattedTransactions.filter(
       (txn) => txn.category === "Cash"
     );
@@ -742,7 +670,6 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
 
     let voucherXML = "";
 
-    // 💵 Step 5A: If there are cash entries, generate Contra voucher
     if (cashTransactions.length > 0) {
       const cashXML = generateContraVoucherXMLFromTransactions(
         cashTransactions,
@@ -752,7 +679,6 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
       voucherXML += cashXML;
     }
 
-    // 🧾 Step 5B: Process non-cash transactions by type
     const paymentTransactions = nonCashTransactions.filter(t => t.type === "DEBIT");
     const receiptTransactions = nonCashTransactions.filter(t => t.type === "CREDIT");
 
@@ -775,30 +701,23 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
     }
     // downloadXML(voucherXML,"VoucherXml")
 
-    // 🚀 Step 6: Send to Tally
     const res = await postXml(voucherXML);
     const result = await res;
-    console.log({ result }, "voucher result");
 
     return { status: true, result };
   } catch (error) {
     console.error("❌ Error in processTransactions:", error.message || error);
-    console.log("Full error stack:", error); // Log the full error for debugging
     throw error;
   }
 }
 
-
+// Step 1 From Where the Bank Flow Started
 export async function startTransactionProcessing(transactions: any, tallyInfo: any, accountDetails: any) {
 
   try {
-    // Extract tally metadata
     const { companyName } = tallyInfo;
-    console.log(`📋 Tally Info: ${JSON.stringify(tallyInfo)}`);
 
-    // Extract bank account details
     const { holder_name, ifsc_code, account_number } = accountDetails[0];
-    console.log(`🏦 Bank Account Details: ${JSON.stringify(accountDetails[0])}`);
 
     const bankLedgerName = holder_name?.trim();
 
@@ -807,13 +726,10 @@ export async function startTransactionProcessing(transactions: any, tallyInfo: a
       throw new Error("❌ Missing holder_name in accountDetails");
     }
 
-    // Step 0: Fetch all ledgers and check if bank exists
     const existingLedgers = await fetchLedgerList(companyName);
     const existingLedgerNames = existingLedgers.map(l => l.name?.trim());
 
     if (!existingLedgerNames.includes(bankLedgerName)) {
-      console.log(`🏦 Bank ledger "${bankLedgerName}" not found. Creating...`);
-
       await generateAccountLedgerXML({
         name: bankLedgerName,
         parent: "Bank Accounts",
@@ -821,25 +737,14 @@ export async function startTransactionProcessing(transactions: any, tallyInfo: a
         accountNumber: account_number,
         accountHolder: bankLedgerName
       });
-
-      console.log("✅ Bank ledger created successfully.");
-    } else {
-      console.log(`✅ Bank ledger "${bankLedgerName}" already exists.`);
     }
 
-    // ✅ Step 1: Extract ledger categories from transactions
-    console.log("📊 Extracting ledger categories from transactions...");
     const response = await processTransactions(transactions, tallyInfo, accountDetails);
-    console.log("✅ processTransactions response:", response);
 
     return response;
   } catch (error) {
     console.error("❌ Error during transaction processing:", error);
 
-    // Detailed logs for debugging purposes
-    console.log("💬 Detailed Error:", error);
-
-    // If running in production, log to the console for visibility
     if (process.env.NODE_ENV === "production") {
       console.error(`[${new Date().toISOString()}] startTransactionProcessing error: ${error.message || error}`);
     }
@@ -870,7 +775,7 @@ export async function fetchProfitAndLossReport(companyName) {
 </ENVELOPE>`;
 
   try {
-    const response = await postXml(xmlPayload); // raw XML text from Tally
+    const response = await postXml(xmlPayload);
 
     const parser = new XMLParser({
       ignoreAttributes: false,
@@ -882,17 +787,15 @@ export async function fetchProfitAndLossReport(companyName) {
     const dspNames = parsed?.ENVELOPE?.DSPACCNAME || [];
     const plAmts = parsed?.ENVELOPE?.PLAMT || [];
 
-    // Ensure both are arrays (Tally might send a single object if only one entry)
     const accounts = Array.isArray(dspNames) ? dspNames : [dspNames];
     const amounts = Array.isArray(plAmts) ? plAmts : [plAmts];
 
-    // Pair up name and amount
     const result = accounts.map((acc, index) => ({
       name: acc?.DSPDISPNAME || '',
       amount: amounts[index]?.PLSUBAMT || '',
     }));
 
-    return result; // Final structured array
+    return result;
   } catch (error) {
     console.error("Failed to fetch Profit and Loss report:", error);
     return [];

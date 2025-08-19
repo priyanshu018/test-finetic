@@ -24,6 +24,7 @@ import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 import { getCurrentCompanyData } from '../service/tally';
 import { startTransactionProcessing } from '../service/TALLY/payment-flow';
+import { statementsWithData } from '../service/TALLY/payment-flow/data-for-testing';
 
 // Classification options
 const debitClassificationOptions = [
@@ -211,7 +212,7 @@ export default function BankFlowData() {
             ];
 
             // Use FILTERED data for export
-            const dataToExport = filteredData.map((item) => {
+            const dataToExport = statementsWithData?.[0]?.results.map((item) => {
                 const formattedDate = item.date?.replace(/-/g, "") || "";
                 let classification = item.classification;
 
