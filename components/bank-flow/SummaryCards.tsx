@@ -1,26 +1,3 @@
-// // components/SummaryCards.jsx
-// import {
-//     Download, BookMarked, ArrowDownCircle,
-//     ArrowUpCircle, DollarSign, FileSpreadsheet,
-//     TrendingUp, Banknote, AlertCircle
-// } from 'lucide-react';
-
-// export default function SummaryCards({
-//     summary,
-//     businessSubcategory,
-//     getFilteredSummary,
-//     dateFilterType,
-//     exportToExcel,
-//     exportToCSV,
-//     exportToTally
-// }) {
-//     return (
-//         <div className="bg-white rounded-xl shadow-sm p-6">
-//             {/* ... summary cards content ... */}
-//         </div>
-//     );
-// }
-
 import {
   Download, BookMarked, ArrowDownCircle,
   ArrowUpCircle, DollarSign, FileSpreadsheet,
@@ -28,7 +5,6 @@ import {
   Calendar,
   Wallet
 } from "lucide-react";
-import { generateReceiptVoucherXMLFromPayload } from "../../service/TALLY/payment-flow";
 
 const SummaryCards = ({
   summary,
