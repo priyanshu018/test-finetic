@@ -8,11 +8,140 @@ import {
     PlusCircle,
     Eye,
     EyeOff,
+    Edit2,
+    Save,
+    X,
 } from "lucide-react";
 import DateFilter from "./DateFilter";
 import SummaryCards from "./SummaryCards";
 import TransactionTable from "./TransactionTable";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const EditableBankDetails = ({ header, setHeader }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedDetails, setEditedDetails] = useState(header);
+
+    const handleSave = () => {
+        setHeader(editedDetails);
+        setIsEditing(false);
+    };
+
+    const handleCancel = () => {
+        setEditedDetails(header);
+        setIsEditing(false);
+    };
+
+    const handleChange = (field, value) => {
+        setEditedDetails(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    return (
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200 text-black">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800">Bank Account Details</h2>
+                {!isEditing ? (
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="flex items-center text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                        <Edit2 className="w-4 h-4 mr-1" />
+                        Edit
+                    </button>
+                ) : (
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={handleSave}
+                            className="flex items-center px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700"
+                        >
+                            <Save className="w-4 h-4 mr-1" />
+                            Save
+                        </button>
+                        <button
+                            onClick={handleCancel}
+                            className="flex items-center px-3 py-1 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                        >
+                            <X className="w-4 h-4 mr-1" />
+                            Cancel
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder Name</label>
+                    {isEditing ? (
+                        <input
+                            type="text"
+                            value={editedDetails.holder_name || ''}
+                            onChange={(e) => handleChange('holder_name', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter account holder name"
+                        />
+                    ) : (
+                        <p className="px-3 py-2 bg-gray-50 rounded-md">{header.holder_name || 'Not provided'}</p>
+                    )}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                    {isEditing ? (
+                        <input
+                            type="text"
+                            value={editedDetails.account_number || ''}
+                            onChange={(e) => handleChange('account_number', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter account number"
+                        />
+                    ) : (
+                        <p className="px-3 py-2 bg-gray-50 rounded-md">{header.account_number || 'Not provided'}</p>
+                    )}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">IFSC Code</label>
+                    {isEditing ? (
+                        <input
+                            type="text"
+                            value={editedDetails.ifsc_code || ''}
+                            onChange={(e) => handleChange('ifsc_code', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter IFSC code"
+                        />
+                    ) : (
+                        <p className="px-3 py-2 bg-gray-50 rounded-md">{header.ifsc_code || 'Not provided'}</p>
+                    )}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                    {isEditing ? (
+                        <input
+                            type="text"
+                            value={editedDetails.bank_name || ''}
+                            onChange={(e) => handleChange('bank_name', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter bank name"
+                        />
+                    ) : (
+                        <p className="px-3 py-2 bg-gray-50 rounded-md">{header.bank_name || 'Not provided'}</p>
+                    )}
+                </div>
+            </div>
+
+            {isEditing && (
+                <p className="text-sm text-gray-500 mt-4">
+                    Note: These details will be used for Tally export and future reference.
+                </p>
+            )}
+        </div>
+    );
+};
+
+
 
 const ResultsStep = ({
     businessCategory,
@@ -65,6 +194,7 @@ const ResultsStep = ({
     showDetails,
     setShowDetails,
     onAddTransaction,
+    header, setHeader
 }) => {
 
     const [isAdding, setIsAdding] = useState(false);
@@ -199,6 +329,7 @@ const ResultsStep = ({
                         </button>
                     </div>
                 </div>
+                <EditableBankDetails header={header} setHeader={setHeader} />
                 <DateFilter
                     result={results}
                     dateFilterType={dateFilterType}

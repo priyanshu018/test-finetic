@@ -714,6 +714,8 @@ export async function processTransactions(transactions: any, tallyInfo: any, acc
 // Step 1 From Where the Bank Flow Started
 export async function startTransactionProcessing(transactions: any, tallyInfo: any, accountDetails: any) {
 
+  console.log({ transactions, tallyInfo, accountDetails })
+
   try {
     const { companyName } = tallyInfo;
 

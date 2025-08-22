@@ -1199,6 +1199,8 @@ const ExpenseClassifier = () => {
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             sortConfig={sortConfig}
+            header={header}
+            setHeader={setHeader}
             setSortConfig={setSortConfig}
             editingRow={editingRow}
             setEditingRow={setEditingRow}
